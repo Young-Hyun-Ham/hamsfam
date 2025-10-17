@@ -1,0 +1,59 @@
+# ======================
+# FastAPI 웹 프레임워크
+# ======================
+fastapi==0.115.0
+
+# ASGI 서버 (FastAPI 실행용)
+uvicorn[standard]==0.30.1
+
+# ======================
+# 데이터베이스 & ORM
+# ======================
+SQLAlchemy==2.0.31
+asyncpg==0.30.0
+
+# PostgreSQL 데이터베이스 드라이버
+psycopg2-binary==2.9.9
+
+# PostgreSQL 벡터 확장 라이브러리
+pgvector
+
+# ======================
+# 환경 변수 관리
+# ======================
+python-dotenv==1.0.1
+
+# ======================
+# 보안 및 인증
+# ======================
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
+python-jose[cryptography]>=3.3.0
+
+# ======================
+# 데이터 유효성 검사
+# ======================
+pydantic==2.7.1
+pydantic-settings==2.2.1
+
+# ======================
+# HTTP 요청 / Google OAuth
+# ======================
+requests==2.32.3
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1
+
+# ======================
+# 이메일 유효성 검증 (Pydantic EmailStr 등에서 필요)
+# ======================
+email-validator==2.2.0
+
+# ======================
+# AI / LLM (LangChain, OpenAI)
+# ======================
+openai
+# langsmith
+# langchain
+# langchain-community
+# langchain-openai
+# langchain-teddynote

@@ -1,0 +1,10 @@
+:root { font-family: ui-sans-serif, system-ui; }
+.container { max-width: 720px; margin: 40px auto; padding: 0 16px; }
+.row { display: flex; gap: 8px; }
+.todo { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1px solid #eee; border-radius:8px; margin:8px 0;}
+.todo .left { display:flex; align-items:center; gap:10px; }
+input[type="text"]{ flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; }
+button{ padding:8px 12px; border:1px solid #ddd; border-radius:8px; background:#f8f8f8; cursor:pointer;}
+button:hover{ background:#efefef; }
+small{ color:#666; }
+h1{ margin-bottom:8px; }
