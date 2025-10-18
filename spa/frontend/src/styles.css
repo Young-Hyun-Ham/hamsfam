@@ -7,6 +7,23 @@
      base / >=769px / >=1281px
    ================================ */
 
+/* === Safe-area tokens (iOS에서만 >0, 그 외 0) === */
+:root{
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 헤더 높이를 “기본 + safe-top”으로 정의 */
+:root{
+  --header-base: 56px;
+  --header-h: calc(var(--header-base) + var(--safe-top));
+}
+
+/* 헤더는 safe-top만큼 위 패딩을 준다 */
+.app-header{
+  padding-top: var(--safe-top);
+}
+
 /* ===== Design Tokens ===== */
 :root{
   /* spacing */
