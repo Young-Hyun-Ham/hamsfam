@@ -1,36 +1,55 @@
+// src/App.tsx
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import './styles.css'
+import TabBar from './componets/Tabbar'
 
 export default function App() {
-  const linkStyle: React.CSSProperties = {
-    padding: '8px 12px',
-    borderRadius: 8,
-    textDecoration: 'none',
-    border: '1px solid #e5e5e5',
-  }
-  const activeStyle: React.CSSProperties = {
-    ...linkStyle,
-    fontWeight: 700,
-    background: '#f3f3f3',
-  }
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="container">
-      <header style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <h1 style={{ marginRight: 'auto' }}>SPA 샘플</h1>
-        <NavLink to="/" end style={({ isActive }) => (isActive ? activeStyle : linkStyle)}>
-          Home
-        </NavLink>
-        <NavLink to="/todos" style={({ isActive }) => (isActive ? activeStyle : linkStyle)}>
-          Todos
-        </NavLink>
-        <NavLink to="/settings" style={({ isActive }) => (isActive ? activeStyle : linkStyle)}>
-          Settings
-        </NavLink>
+    <div className={`app ${sidebarOpen ? 'sidebar-open' : ''} has-tabbar`}>
+      <header className="app-header">
+        <button
+          className="burger"
+          aria-label="open menu"
+          onClick={() => setSidebarOpen((v) => !v)}
+        >
+          ☰
+        </button>
+        <div className="brand">AppWeb</div>
+        <nav className="top-nav">
+          <NavLink to="/" end>Home</NavLink>
+          <NavLink to="/todos">Todos</NavLink>
+          <NavLink to="/settings">Settings</NavLink>
+        </nav>
       </header>
 
-      <div style={{ height: 16 }} />
-      <Outlet /> {/* 여기에 각 페이지가 렌더링됨 */}
+      <aside className="app-sidebar" onClick={() => setSidebarOpen(false)}>
+        <div className="sidebar-inner" onClick={(e) => e.stopPropagation()}>
+          <div className="sidebar-header">메뉴</div>
+          <NavLink to="/" end>🏠 홈</NavLink>
+          <NavLink to="/todos">✅ 할일</NavLink>
+          <NavLink to="/settings">⚙️ 설정</NavLink>
+          <div className="sidebar-footer">v0.1</div>
+        </div>
+      </aside>
+
+      <main className="app-main">
+        <Outlet />
+      </main>
+
+      <footer className="app-footer">
+        © {new Date().getFullYear()} AppWeb
+      </footer>
+
+      {/* 모바일 하단 탭바 */}
+      <TabBar />
+
+      {/* 오버레이 */}
+      <div 
+        className="overlay" 
+        onClick={() => setSidebarOpen(false)} aria-hidden={!sidebarOpen} />
     </div>
   )
 }

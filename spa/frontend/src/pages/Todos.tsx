@@ -62,8 +62,8 @@ export default function Todos() {
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
         />
-        <button onClick={add}>추가</button>
-        <button onClick={refresh}>새로고침</button>
+        <button className="btn-block" onClick={add}>추가</button>
+        <button className="btn-block" onClick={refresh}>새로고침</button>
       </div>
 
       <div style={{ height: 16 }} />
@@ -81,9 +81,9 @@ export default function Todos() {
               <small>#{t.id} • {t.created_at}</small>
             </div>
           </div>
-          <div className="right">
-            <button onClick={() => rename(t)}>이름변경</button>
-            <button onClick={() => remove(t.id)}>삭제</button>
+          <div className="right ">
+            <button className="btn-block" onClick={() => rename(t)}>이름변경</button>
+            <button className="btn-block" onClick={() => remove(t.id)}>삭제</button>
           </div>
         </div>
       ))}
