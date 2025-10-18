@@ -9,14 +9,10 @@
 html, body, #root, .app{ width:100%; overflow-x: clip; }
 @supports not (overflow: clip){ html, body, #root, .app{ overflow-x: hidden; } }
 
-/* === Safe-area tokens (iOS에서만 >0, 그 외 0) === */
-:root{
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 /* 헤더 높이를 “기본 + safe-top”으로 정의 */
 :root{
+  --safe-top: env(safe-area-inset-top, 100px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   --header-base: 56px;
   --header-h: calc(var(--header-base) + var(--safe-top));
 }
@@ -83,7 +79,9 @@ body{
   grid-area: header;
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; gap: var(--space-2);
-  padding: 0 var(--space-4);
+  /* padding: 0 var(--space-4); */
+  /* safe-top을 살리면서 좌우 여백 유지 */
+  padding: var(--safe-top) var(--space-4) 0 var(--space-4);
   background: rgba(15,16,18,0.75);
   backdrop-filter: saturate(1.2) blur(10px);
   border-bottom: 1px solid var(--border);
