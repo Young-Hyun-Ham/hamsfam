@@ -11,20 +11,22 @@ html, body, #root, .app{ width:100%; overflow-x: clip; }
 
 /* === Safe-area tokens (iOS에서만 >0, 그 외 0) === */
 :root{
-  /* --safe-top: env(safe-area-inset-top, 0px); */
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* 헤더 높이를 “기본 + safe-top”으로 정의 */
 :root{
   --header-base: 56px;
-  /* --header-h: calc(var(--header-base) + var(--safe-top)); */
+  --header-h: calc(var(--header-base) + var(--safe-top));
 }
 
 /* 헤더는 safe-top만큼 위 패딩을 준다 */
-/* .app-header{
+.app-header{
   padding-top: var(--safe-top);
-} */
+  /* 그 외 기존 스타일 유지(배경/보더/z-index 등) */
+}
+
 
 /* 하단 탭바도 안전영역 보정 */ 
 .tabbar{
@@ -118,7 +120,7 @@ body{
 .sidebar-inner{
   position: fixed;         /* ← drawer 핵심: 모바일에서만 fixed */
   right: 0; top: 0; bottom: 0;
-  width: min(86vw, 320px);
+  width: min(86vw, 2000px); /* 모바일일때 메뉴 넓이 */
   background: var(--panel);
   border-left: 1px solid var(--border);
   transform: translateX(100%);
