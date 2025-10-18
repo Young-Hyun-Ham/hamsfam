@@ -52,7 +52,7 @@ html, body, #root, .app{ width:100%; overflow-x: clip; }
   --brand: #5b8cff;
 
   /* layout */
-  --header-h: 56px;
+  /* --header-h: 56px; */
   --sidebar-w: 200px;     /* >=769px 고정 폭 */
   --content-max: 1200px;  /* 본문 최대너비 */
 }
