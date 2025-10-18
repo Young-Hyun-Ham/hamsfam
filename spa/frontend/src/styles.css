@@ -27,7 +27,6 @@ html, body, #root, .app{ width:100%; overflow-x: clip; }
   /* 그 외 기존 스타일 유지(배경/보더/z-index 등) */
 }
 
-
 /* 하단 탭바도 안전영역 보정 */ 
 .tabbar{
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
