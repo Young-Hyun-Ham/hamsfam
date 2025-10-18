@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import './styles.css'
-import TabBar from './componets/Tabbar'
+import TabBar from './componets/TabBar'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
