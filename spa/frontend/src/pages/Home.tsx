@@ -66,9 +66,9 @@ export default function Home() {
 
         <SectionCard title="최근 활동" footer="최근 7일의 히스토리만 표시됩니다.">
           <div className="grid grid-1">
-            <div className="card">섹션 1</div>
-            <div className="card">섹션 2</div>
-            <div className="card">섹션 3</div>
+            <div className="card">섹션 11</div>
+            <div className="card">섹션 22</div>
+            <div className="card">섹션 33</div>
           </div>
         </SectionCard>
       </div>
