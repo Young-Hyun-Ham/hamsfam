@@ -24,6 +24,11 @@
   padding-top: var(--safe-top);
 }
 
+/* 하단 탭바도 안전영역 보정 */ 
+.tabbar{
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+}
+
 /* ===== Design Tokens ===== */
 :root{
   /* spacing */
