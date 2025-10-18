@@ -6,15 +6,42 @@ import Home from './pages/Home'
 import Todos from './pages/Todos'
 import Settings from './pages/Settings'
 
-import { StatusBar, Style } from '@capacitor/status-bar';
+// import { StatusBar, Style } from '@capacitor/status-bar';
 
-(async () => {
-  // 상태바를 WebView 위에 ‘겹치지 않게’ (= WebView를 아래로 밀기)
-  await StatusBar.setOverlaysWebView({ overlay: false });
+// (async () => {
+//   // 상태바를 WebView 위에 ‘겹치지 않게’ (= WebView를 아래로 밀기)
+//   await StatusBar.setOverlaysWebView({ overlay: false });
 
-  // 다크 배경이면 아이콘 밝게
-  await StatusBar.setStyle({ style: Style.Dark });
-})();
+//   // 다크 배경이면 아이콘 밝게
+//   await StatusBar.setStyle({ style: Style.Dark });
+// })();
+
+import { Capacitor } from '@capacitor/core'
+
+async function setupStatusBar() {
+  // 웹(PWA/브라우저)에서는 실행하지 않음
+  if (!Capacitor.isNativePlatform()) return
+
+  // 플러그인 가용성도 체크 (안전)
+  if (!Capacitor.isPluginAvailable('StatusBar')) return
+
+  // 네이티브에서만 동적 import (번들 최적화 + 웹 예외 방지)
+  const { StatusBar, Style } = await import('@capacitor/status-bar')
+
+  try {
+    // 상태바를 WebView 위에 겹치지 않게 → WebView를 아래로 내림
+    await StatusBar.setOverlaysWebView({ overlay: false })
+
+    // 다크 배경이면 아이콘 밝게
+    await StatusBar.setStyle({ style: Style.Dark })
+  } catch (e) {
+    // 네이티브 장치별 미구현/권한 이슈 대비
+    console.warn('[StatusBar]', e)
+  }
+}
+
+// 앱 시작 시 1회 실행
+setupStatusBar();
 
 const router = createBrowserRouter([
   {
