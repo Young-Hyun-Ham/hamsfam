@@ -17,6 +17,7 @@ import Settings from './pages/Settings'
 // })();
 
 import { Capacitor } from '@capacitor/core'
+import Chat from './pages/Chat'
 
 async function setupStatusBar() {
   // 웹(PWA/브라우저)에서는 실행하지 않음
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'todos', element: <Todos /> },
       { path: 'settings', element: <Settings /> },
+      { path: 'chat', element: <Chat /> },
     ],
   },
 ])

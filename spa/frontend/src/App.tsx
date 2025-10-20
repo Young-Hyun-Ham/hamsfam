@@ -21,6 +21,7 @@ export default function App() {
         <nav className="top-nav">
           <NavLink to="/" end>Home</NavLink>
           <NavLink to="/todos">Todos</NavLink>
+          <NavLink to="/chat">Chat</NavLink>
           <NavLink to="/settings">Settings</NavLink>
         </nav>
       </header>
@@ -30,6 +31,7 @@ export default function App() {
           <div className="sidebar-header">메뉴</div>
           <NavLink to="/" end>🏠 홈</NavLink>
           <NavLink to="/todos">✅ 할일</NavLink>
+          <NavLink to="/chat">💬 채팅</NavLink>
           <NavLink to="/settings">⚙️ 설정</NavLink>
           <div className="sidebar-footer">v0.1</div>
         </div>
