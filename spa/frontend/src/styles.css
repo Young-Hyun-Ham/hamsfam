@@ -117,7 +117,8 @@ body{
 .sidebar-inner{
   position: fixed;         /* ← drawer 핵심: 모바일에서만 fixed */
   right: 0; top: 0; bottom: 0;
-  width: min(86vw, 2000px); /* 모바일일때 메뉴 넓이 */
+  /* width: min(86vw, 2000px); 모바일일때 메뉴 넓이 */
+  width: var(--sidebar-w);  /* 모바일 고정 폭: 200px */
   background: var(--panel);
   border-left: 1px solid var(--border);
   transform: translateX(100%);
@@ -154,9 +155,19 @@ body{
 }
 .app-footer{
   grid-area: footer;
+  /*
   padding: var(--space-4);
   border-top: 1px solid var(--border);
   color: var(--muted);
+  */
+  height: 100px;                     /* 👈 고정 높이 */
+  display: flex;                     /* 수직정렬 정리 */
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0 var(--space-4);         /* 좌우 여백만 유지 */
+  box-sizing: border-box;
 }
 
 /* ===== Cards / Inputs ===== */
@@ -244,7 +255,7 @@ button:hover{ background: #25262a; }
     grid-template:
       "header header" var(--header-h)
       "sidebar main" 1fr
-      "footer footer" auto
+      "footer footer" 100px
       / var(--sidebar-w) 1fr;
     column-gap: var(--space-6);   /* ← 기존 var(--space-4)에서 넓힘 (24px) */
   }
@@ -297,7 +308,7 @@ button:hover{ background: #25262a; }
     grid-template:
       "header header" var(--header-h)
       "sidebar main" auto
-      "footer footer" auto
+      "footer footer" 100px
       / calc(var(--sidebar-w) + 12px) 1fr;
   }
   /* 넓은 화면에서 본문 가독 폭 조정 */
@@ -336,7 +347,7 @@ html, body, #root, .app{ width: 100%; overflow-x: clip; }
     grid-template:
       "header header" var(--header-h)
       "sidebar main"  1fr
-      "footer footer" auto
+      "footer footer" 100px
       / var(--sidebar-w) 1fr;
     column-gap: var(--space-6);       /* 24px: 사이드바-메인 간격 */
   }

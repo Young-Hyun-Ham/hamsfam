@@ -11,14 +11,14 @@ export default function TabBar(){
         <div>✅</div>
         <small>Todos</small>
       </NavLink>
+      <NavLink to="/chat">
+        <div>💬</div>
+        <small>Chat</small>
+      </NavLink>
       <NavLink to="/settings">
         <div>⚙️</div>
         <small>Settings</small>
       </NavLink>
-      <a href="https://example.com" target="_blank" rel="noreferrer">
-        <div>⭐️</div>
-        <small>More</small>
-      </a>
     </nav>
   )
 }
