@@ -5,11 +5,20 @@
 | [ios](./README-IOS.md) | ios 설치 및 배포 |
 
 <details>
-<summary>v1.0 (2024)</summary>
+<summary>v1.0 (2025)</summary>
 v1.0
+- 대쉬보드: 
+- 할일: 
+- 채팅: 
+- 설정: 
+
+2025.10.18 
+ - 프로젝트 생성
+2025.10.20
+ - 안드로이드 빌드 및 README 개정
 </details>
 <details>
-<summary>v1.1 (2025)</summary>
+<summary>v1.1 (2026)</summary>
 v1.1
 </details>
 
