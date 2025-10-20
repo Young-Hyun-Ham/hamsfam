@@ -6,7 +6,7 @@
 
 <details>
 <summary>v1.0 (2025)</summary>
-v1.0
+v1.0 
  - 대쉬보드: 
  - 할일: 
  - 채팅: 
