@@ -4,6 +4,15 @@
 | [android](./README-ANDROID.md) | 안드로이드 설치 및 배포 |
 | [ios](./README-IOS.md) | ios 설치 및 배포 |
 
+<details>
+<summary>v1.0 (2024)</summary>
+v1.0
+</details>
+<details>
+<summary>v1.1 (2025)</summary>
+v1.1
+</details>
+
 # React + TypeScript + Vite
 
 ## 1. 프로젝트생성
