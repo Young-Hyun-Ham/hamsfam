@@ -1,3 +1,4 @@
+// src/components/TabBar.tsx
 import { NavLink } from 'react-router-dom'
 
 export default function TabBar(){

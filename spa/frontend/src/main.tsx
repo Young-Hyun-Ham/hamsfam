@@ -1,23 +1,16 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import App from './App'
 import Home from './pages/Home'
 import Todos from './pages/Todos'
 import Settings from './pages/Settings'
-
-// import { StatusBar, Style } from '@capacitor/status-bar';
-
-// (async () => {
-//   // 상태바를 WebView 위에 ‘겹치지 않게’ (= WebView를 아래로 밀기)
-//   await StatusBar.setOverlaysWebView({ overlay: false });
-
-//   // 다크 배경이면 아이콘 밝게
-//   await StatusBar.setStyle({ style: Style.Dark });
-// })();
-
 import { Capacitor } from '@capacitor/core'
 import Chat from './pages/Chat'
+import Login from './pages/Login'
+import { AuthProvider } from './auth/AuthContext'
+import RequireAuth from './auth/RequireAuth'
+import App from './App'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 async function setupStatusBar() {
   // 웹(PWA/브라우저)에서는 실행하지 않음
@@ -45,20 +38,30 @@ async function setupStatusBar() {
 setupStatusBar();
 
 const router = createBrowserRouter([
+  { path: '/login', element: <Login /> },  // 공개
   {
     path: '/',
-    element: <App />,              // 공통 레이아웃
+    element: <App />,
     children: [
-      { index: true, element: <Home /> },
-      { path: 'todos', element: <Todos /> },
-      { path: 'settings', element: <Settings /> },
-      { path: 'chat', element: <Chat /> },
+      {
+        element: <RequireAuth />,              // 보호 구간
+        children: [
+          { index: true, element: <Home /> },
+          { path: 'todos', element: <Todos /> },
+          { path: 'settings', element: <Settings /> },
+          { path: 'chat', element: <Chat /> },
+        ],
+      },
     ],
-  },
+  }
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID!}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </GoogleOAuthProvider>
   </StrictMode>
 )

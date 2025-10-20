@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0' // 모든 네트워크 인터페이스에서 접근 허용
-  }
-})
+    headers: {
+      // OAuth 팝업과의 통신 허용
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      // COEP를 강제하지 않음
+      'Cross-Origin-Embedder-Policy': 'unsafe-none',
+    },
+  },
+});
