@@ -6,7 +6,7 @@
 
 <details>
 <summary>v1.0 (2025)</summary>
-```
+<pre>
 v1.0 
   - 대쉬보드: 
   - 할일: 
@@ -16,7 +16,7 @@ v1.0
   - 프로젝트 생성
 2025.10.20
   - 안드로이드 빌드 및 README 개정
-```
+</pre>
 </details>
 <details>
 <summary>v1.1 (2026)</summary>
