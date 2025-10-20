@@ -1,0 +1,1502 @@
+[
+  {
+    "id": "preset-1",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "오늘의 작은 걸음이 내일을 바꾼다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-2",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "스스로를 믿는 순간 가능성이 열린다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-3",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "천천히 가도 포기지만 않으면 도착한다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-4",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "당신은 이미 충분히 빛나고 있어요.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-5",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "실수는 성장의 또 다른 이름이다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-6",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "지금 이 순간도 나를 앞으로 보낸다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-7",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "가장 어두운 밤 뒤엔 해가 뜬다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-8",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "작은 친절이 큰 기쁨을 만든다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-9",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "오늘의 나를 어제보다 사랑하자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-10",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "꾸준함은 결국 모든 걸 이긴다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-11",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "불안보다 호기심을 선택하자.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-12",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "완벽보다 시작이 더 중요하다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-13",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "마음에 햇살을 들여보내자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-14",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "긴 호흡으로 천천히 가자.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-15",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "어제의 나는 오늘의 발판이다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-16",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "내가 나의 든든한 편이 되자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-17",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "괜찮지 않아도 괜찮다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-18",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "가능성은 시도 속에서 자란다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-19",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "당신의 속도를 믿어도 된다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-20",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "작아도 꾸준하면 충분하다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-21",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "오늘도 스스로를 격려하자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-22",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "가볍게 시작하면 멀리 간다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-23",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "하루 한 번, 나에게 미소.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-24",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "멈춤도 여행의 일부다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-25",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "용기는 아주 작은 한 걸음.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-26",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "끝처럼 보여도 사실은 시작.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-27",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "마음이 가는 곳에 힘이 있다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-28",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "시간은 정직하게 답해준다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-29",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "부드러움이 강함을 만든다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-30",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "기적은 성실함 속에 숨어 있다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-31",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "불꽃은 작은 불씨에서 시작된다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-32",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "나의 페이스로 달려도 괜찮다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-33",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "오늘의 선택이 내일을 만든다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-34",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "행복은 가까운 곳에 있다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-35",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "사랑스럽게 실패하자.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-36",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "두려움보다 설렘을 크게.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-37",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "나답게 사는 것이 용기다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-38",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "감사함이 기회를 부른다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-39",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "쉬어가도 흐름은 이어진다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-40",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "마음에 평온을 심자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-41",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "할 수 있다고 생각해보자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-42",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "더하는 것보다 비워내기.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-43",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "어제보다 1% 나아지기.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-44",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "작은 성취를 크게 축하하자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-45",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "빛은 언제나 스며든다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-46",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "내가 나를 돌보는 시간.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-47",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "다정함은 습관이 된다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-48",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "변화는 불편함의 문을 통과한다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-49",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "유연함이 나를 구한다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-50",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "한 번 더 시도해도 된다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-51",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "나의 리듬을 존중하자.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-52",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "지난 날을 다독이고 앞으로.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-53",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "오늘도 충분히 괜찮았어요.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-54",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "희망은 행동과 함께 온다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-55",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "내 선택에 책임질 용기.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-56",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "멋진 우연을 위해 준비하자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-57",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "결핍보다 가능성을 보자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-58",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "더딘 성장도 성장이다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-59",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "비바람 뒤엔 무지개가 뜬다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-60",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "나의 세계를 내가 만든다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-61",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "다음 장을 넘길 시간.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-62",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "작은 루틴이 큰 변화를 만든다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-63",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "불안은 확인으로 잦아든다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-64",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "나를 사랑하면 세상이 달라진다.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-65",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "내일의 나는 오늘을 좋아할 거야.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-66",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "무심한 성실이 가장 강하다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-67",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "오늘의 수고가 내일을 편하게 한다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-68",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "나에게 친절한 말을 건네자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-69",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "한 걸음 뒤에서 바라보자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-70",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "실패는 방향을 알려준다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-71",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "웃음은 최고의 연료.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-72",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "나의 가능성은 아직 미정.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-73",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "비교 대신 기록을 남기자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-74",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "타인의 기대보다 나의 기준.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-75",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "사랑받을 자격은 이미 충분.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-76",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "작아도 반짝이는 순간.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-77",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "새로운 시도는 선물이 된다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-78",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "호흡을 고르고 다시 시작.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-79",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "나의 우선순위를 지키자.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-80",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "과정이 기쁨이 되도록.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-81",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "가뿐하게 내려놓는 용기.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-82",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "오늘도 나에게 고마워.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-83",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "문은 밀면 열린다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-84",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "천천히, 그러나 끈질기게.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-85",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "지금 이대로도 충분히 아름답다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-86",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "어제의 걱정, 오늘은 덜어내자.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-87",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "가능성은 언제나 옆자리에.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-88",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "내가 원하는 삶에 표를 끊자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-89",
+    "avatarColors": [
+      {
+        "from": "#FFDEE9",
+        "to": "#B5FFFC"
+      },
+      {
+        "from": "#E0C3FC",
+        "to": "#8EC5FC"
+      }
+    ],
+    "message": "비워야 채울 수 있다.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-90",
+    "avatarColors": [
+      {
+        "from": "#C2FFD8",
+        "to": "#465EFB"
+      },
+      {
+        "from": "#F9D1B7",
+        "to": "#FAD0C4"
+      }
+    ],
+    "message": "나의 속도로 충분하다.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-91",
+    "avatarColors": [
+      {
+        "from": "#D4FC79",
+        "to": "#96E6A1"
+      },
+      {
+        "from": "#FBD3E9",
+        "to": "#BB377D"
+      }
+    ],
+    "message": "작은 배려가 큰 온기를 만든다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-92",
+    "avatarColors": [
+      {
+        "from": "#E2F0CB",
+        "to": "#C2E9FB"
+      },
+      {
+        "from": "#FBC2EB",
+        "to": "#A6C1EE"
+      }
+    ],
+    "message": "마음이 원하는 것을 따라가자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-93",
+    "avatarColors": [
+      {
+        "from": "#E8E2FF",
+        "to": "#F1EEFF"
+      },
+      {
+        "from": "#E6FFD8",
+        "to": "#F0FFE6"
+      }
+    ],
+    "message": "오늘의 선택에 사랑을 담자.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-94",
+    "avatarColors": [
+      {
+        "from": "#FFE6D0",
+        "to": "#FFF2E6"
+      },
+      {
+        "from": "#D8F0FF",
+        "to": "#ECF7FF"
+      }
+    ],
+    "message": "두 눈에 별을, 마음에 평화를.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-95",
+    "avatarColors": [
+      {
+        "from": "#D5FFF2",
+        "to": "#E9FFF9"
+      },
+      {
+        "from": "#FFD8C2",
+        "to": "#FFE9DF"
+      }
+    ],
+    "message": "할 수 있는 만큼만 잘 하면 돼.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-96",
+    "avatarColors": [
+      {
+        "from": "#E0EAFc",
+        "to": "#CFDEF3"
+      },
+      {
+        "from": "#FDE2FF",
+        "to": "#E9E4F0"
+      }
+    ],
+    "message": "내가 나의 안식처가 되자.",
+    "avatarCount": 7
+  },
+  {
+    "id": "preset-97",
+    "avatarColors": [
+      {
+        "from": "#FFDDE1",
+        "to": "#EE9CA7"
+      },
+      {
+        "from": "#D7FFFE",
+        "to": "#E0C3FC"
+      }
+    ],
+    "message": "부드럽지만 단단하게.",
+    "avatarCount": 4
+  },
+  {
+    "id": "preset-98",
+    "avatarColors": [
+      {
+        "from": "#FDE2E4",
+        "to": "#FAD2E1"
+      },
+      {
+        "from": "#BEE1E6",
+        "to": "#CDEDF6"
+      }
+    ],
+    "message": "하루의 끝에 스스로를 토닥.",
+    "avatarCount": 5
+  },
+  {
+    "id": "preset-99",
+    "avatarColors": [
+      {
+        "from": "#FFF5BA",
+        "to": "#FFEEAD"
+      },
+      {
+        "from": "#C1E1DC",
+        "to": "#F7D1CD"
+      }
+    ],
+    "message": "기대하지 못한 선물이 온다.",
+    "avatarCount": 6
+  },
+  {
+    "id": "preset-100",
+    "avatarColors": [
+      {
+        "from": "#F3E7E9",
+        "to": "#E3EEFF"
+      },
+      {
+        "from": "#FFF1EB",
+        "to": "#ACE0F9"
+      }
+    ],
+    "message": "내면의 기준을 믿자.",
+    "avatarCount": 7
+  }
+]
