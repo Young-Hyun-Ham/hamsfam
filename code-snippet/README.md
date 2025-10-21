@@ -1,3 +1,67 @@
+# React + TypeScript + Vite
+
+## 1. 프로젝트생성
+```bash
+npm create vite@latest [프로젝트명] --template react-ts
+```
+
+## 2. 의존성설치 (package.json) 및 기본 css 적용
+```json
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.7.1",
+    "zustand": "^5.0.7"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/status-bar": "^7.0.3",
+    "@eslint/js": "^9.30.1",
+    "@heroicons/react": "^2.2.0",
+    "@react-oauth/google": "^0.12.2",
+    "@reduxjs/toolkit": "^2.8.2",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "@xyflow/react": "^12.8.2",
+    "autoprefixer": "^10.4.21",
+    "classnames": "^2.5.1",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "jwt-decode": "^4.0.0",
+    "nanoid": "^5.1.6",
+    "postcss": "^8.5.6",
+    "react-flow": "^1.0.3",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "tailwindcss": "^3.4.18",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.35.1",
+    "vite": "^7.0.4"
+  }
+}
+```
+
+<details>
+<summary>공통 css(index.css)</summary>
+<pre>
 /* ================================
    AppWeb Global Styles (refactored v2)
    - Mobile-first
@@ -557,3 +621,17 @@ button{
   }
   .row > button.btn-block{ width: 100%; } /* 원하면 한 줄씩 꽉 차게 */
 }
+</pre>
+</details>
+```bash 
+npm install
+```
+
+## 3. Build
+```bash 
+npm run build
+```
+## 4. 실행
+```bash
+npm run dev
+```

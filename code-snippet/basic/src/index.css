@@ -1,6 +1,13 @@
+/* ================================
+   AppWeb Global Styles (refactored v2)
+   - Mobile-first
+   - Drawer = .sidebar-inner (모바일에서만 fixed)
+   - .app-sidebar는 컨테이너, 데스크톱에서 grid-area: sidebar
+   - 3 breakpoints only: base / >=769px / >=1281px
+   ================================ */
 
 /* ===== import css ===== */
-@import url("styles.css");
+@import url("./styles.css");
 /* ====================== */
 
 html, body, #root, .app{ width:100%; overflow-x: clip; }
