@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { listTodos, createTodo, patchTodo, deleteTodo } from './api'
 import type { Todo } from './types'
-import './styles.css'
+import './App.css'
 
 export default function Todos() {
   const [todos, setTodos] = useState<Todo[]>([])
