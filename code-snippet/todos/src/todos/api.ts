@@ -1,6 +1,6 @@
 // src/api/todos.ts
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://hamfas-chatting-backend.vercel.app';
 
 export async function listTodos() {
   const res = await fetch(`${API_BASE}/todos`);

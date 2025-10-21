@@ -1,0 +1,298 @@
+/* ================================
+   AppWeb Global Styles (refactored v2)
+   - Mobile-first
+   - Drawer = .sidebar-inner (모바일에서만 fixed)
+   - .app-sidebar는 컨테이너, 데스크톱에서 grid-area: sidebar
+   - 3 breakpoints only: base / >=769px / >=1281px
+   ================================ */
+
+/* ===== Header (safe-top 반영) ===== */
+.app-header{
+  /* index.css 에서 --safe-top / --header-h 제공 */
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  /* safe-top을 살리면서 좌우 여백 유지 */
+  padding: var(--safe-top) var(--space-4) 0 var(--space-4);
+
+  background: rgba(15,16,18,0.75);
+  backdrop-filter: saturate(1.2) blur(10px);
+  border-bottom: 1px solid var(--border);
+
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.burger{
+  appearance: none; border: 0; outline: 0; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--panel); color: var(--text);
+  display: grid; place-items: center;
+}
+.brand{
+  font-weight: 700; letter-spacing: .2px; margin-left: 6px;
+}
+.top-nav{ margin-left: auto; display: none; gap: var(--space-2); }
+.top-nav a{
+  color: var(--text); text-decoration: none;
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--panel);
+}
+.top-nav a.active{ background: var(--panel-2); border-color: #3a3b40; }
+
+/* ===== App Grid (모바일 기본: 1열) ===== */
+.app{
+  display: grid;
+  grid-template:
+    "header" var(--header-h)
+    "main"   1fr
+    / 1fr;
+  min-height: 100dvh; /* 모바일 주소창 높이 변화 대응 */
+}
+
+/* ===== Sidebar (컨테이너 + Drawer 내용) ===== */
+.app-sidebar{
+  /* base에서는 그리드 컬럼이 없어서 grid-area unset */
+  grid-area: unset;
+  position: static;
+  inset: auto;
+  width: auto;
+  pointer-events: auto;
+}
+
+/* Drawer는 .sidebar-inner가 담당(모바일 기본) */
+.sidebar-inner{
+  position: fixed;         /* ← drawer 핵심: 모바일에서만 fixed */
+  right: 0; top: 0; bottom: 0;
+  width: var(--sidebar-w); /* index.css :root 기본 200px */
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  display: flex; flex-direction: column;
+  padding: var(--space-4);
+  z-index: 40;             /* overlay 위 */
+  will-change: transform;
+  contain: paint;
+  overscroll-behavior: contain;
+}
+
+.sidebar-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+}
+.sidebar-header .sidebar-title{ white-space: nowrap; }
+.sidebar-header .collapse-btn{ display: none; } /* 데스크톱에서만 노출 */
+
+.app-sidebar a{
+  color: var(--text); text-decoration: none;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid transparent;
+  display: block; margin-bottom: 6px; background: transparent;
+}
+.app-sidebar a:hover{ background: var(--panel-2); border-color: var(--border); }
+
+.sidebar-footer{ 
+  margin-top: auto; 
+  color: var(--muted); 
+  font-size: 12px;
+  text-align: right;
+}
+
+/* 모바일 오버레이 */
+.overlay{
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 35;
+  contain: layout paint; /* 레이어 분리 */
+}
+.sidebar-open .sidebar-inner{ transform: translateX(0); }
+.sidebar-open .overlay{ opacity: 1; pointer-events: auto; }
+
+/* ===== Main / Footer ===== */
+.app-main{
+  grid-area: main;
+  width: 100%;
+  padding: var(--space-4);
+  /* 추가 ↓ */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--header-h));
+  min-width: 0;
+}
+.app-main > *{
+  max-width: var(--content-max); /* index.css :root 1200px */
+  margin: 0 auto;
+}
+/* 교체 */
+.app-footer{
+  /* grid-area: footer;   ← 삭제 */
+  /* height: var(--footer-h); ← 삭제 */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  padding: var(--space-4);
+  box-sizing: border-box;
+  width: 100%;
+
+  /* 추가 ↓ : 본문 아래로 밀착 */
+  margin-top: auto;
+  position: static;
+  inset: auto;
+  z-index: 0;
+}
+
+/* ===== Bottom Tabbar (mobile-only) ===== */
+.tabbar{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 56px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  z-index: 45;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.tabbar a{
+  text-decoration: none; color: var(--text);
+  display: grid; place-items: center; gap: 2px;
+  font-size: 11px;
+}
+.tabbar a.active{ color: var(--brand); }
+
+/* content 영역이 탭바만큼 들뜨도록 (모바일) */
+.has-tabbar .app-main{ padding-bottom: calc(var(--space-8) + 24px); }
+
+/* =========================================================
+   >= 769px : Fixed sidebar + show top nav (tablet/desktop)
+   ========================================================= */
+@media (min-width: 769px){
+  /* 데스크톱 레이아웃: 사이드바 + 메인 2열 */
+  .app{
+    grid-template:
+      "header header" var(--header-h)
+      "sidebar main"  1fr
+      / var(--sidebar-w) 1fr;
+    column-gap: var(--space-6); /* 24px: 사이드바-메인 간격 */
+  }
+  .app{ height: 100dvh; min-height: unset; } /* 데스크톱: 정확히 100dvh로 고정 */
+
+  /* grid 영역 명시 */
+  .app-sidebar{ grid-area: sidebar; }
+  .app-main{ grid-area: main; }
+  
+  /* grid 셀 자체가 행 높이를 꽉 채우도록 보장(안전장치) */
+  .app-sidebar{ align-self: stretch; }
+
+  /* 데스크톱에서 사이드바는 sticky 컨테이너로 변환 */
+  .sidebar-inner{
+    position: sticky;
+    /* top: calc(var(--header-h) + 1px);
+    height: calc(100dvh - var(--header-h) - var(--footer-h)); */
+    top: var(--header-h);
+    height: calc(100dvh - var(--header-h));
+    box-sizing: border-box;
+    overflow: auto;
+    transform: none;
+    right: auto; bottom: auto;
+    width: 100%;
+    border-left: none;                 /* 모바일 때 쓴 경계 제거 */
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+    z-index: 1;
+    padding: var(--space-4);
+    scrollbar-width: none;
+  }
+  /* WebKit (Chrome, Safari, Edge) sidebar 스크롤 */
+  .sidebar-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 모바일 전용 UI 숨김 / 데스크톱 전용 UI 노출 */
+  .tabbar{ display: none; }
+  .overlay{ display: none; }
+  .burger{ display: none; }
+  .top-nav{ display: flex; }
+
+  /* 모바일 여백 보정 해제 */
+  .has-tabbar .app-main{ padding-bottom: var(--space-4); }
+
+  /* ===== 데스크톱: 사이드바 항목 정렬 (아이콘 + 라벨) ===== */
+  .app-sidebar a{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  /* App.tsx의 <span class="icon">, <span class="label"> 기준 */
+  .app-sidebar a .icon{
+    flex: 0 0 24px;
+    text-align: center;
+  }
+  .app-sidebar a .label{
+    white-space: nowrap;
+  }
+
+  /* collapse 버튼 데스크톱에서만 노출 */
+  .sidebar-header .collapse-btn{
+    display: inline-grid;
+    place-items: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    cursor: pointer;
+  }
+
+  /* ===== 접힘 상태 (rail) ===== */
+  /* --sidebar-w는 index.css :root 200px → 접힘 시 64px로 축소 */
+  .app.sidebar-collapsed{ --sidebar-w: 14px; }
+
+  .app.sidebar-collapsed .app-sidebar a{
+    justify-content: center;    /* 아이콘만 가운데 */
+    padding: 10px 0;
+  }
+  .app.sidebar-collapsed .sidebar-header{
+    justify-content: center;
+  }
+  .app.sidebar-collapsed .sidebar-header .sidebar-title,
+  .app.sidebar-collapsed .app-sidebar a .label{
+    display: none;              /* 라벨/제목 숨김 */
+  }
+}
+
+/* ==========================================
+   >= 1281px : Large desktop polish (2xl)
+   ========================================== */
+/* 삭제 (≥1281px 구간에서 footer 행 추가하던 부분 전부 제거)
+@media (min-width: 1281px){
+  .app:not(.sidebar-collapsed){
+    grid-template:
+      "header header" var(--header-h)
+      "sidebar main"  1fr
+      "footer footer" var(--footer-h)
+      / var(--sidebar-w) 1fr;
+  }
+}
+*/
+
+/* === 헤더/푸터가 100%를 넘지 않도록 강제 (안전장치) === */
+.app-header, .app-footer{
+  max-width: 100vw;
+  overflow-x: clip;
+}

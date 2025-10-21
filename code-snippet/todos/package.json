@@ -1,39 +1,4 @@
-# 앱 설치 및 배포 가이드
-| 버전 | 설명 |
-|------|------|
-| [android](./README-ANDROID.md) | 안드로이드 설치 및 배포 |
-| [ios](./README-IOS.md) | ios 설치 및 배포 |
 
-<details>
-<summary>v1.0 (2025)</summary>
-<pre>
-v1.0 
- - 대쉬보드: 
- - 할일: 코드스니펫 완료
- - 채팅: 
- - 설정: 
-2025.10.18 
- - 프로젝트 생성
-2025.10.20
- - 안드로이드 빌드 및 README 개정
-</pre>
-</details>
-<details>
-<summary>v1.1 (2026)</summary>
-<pre>
-v1.1
-</pre>
-</details>
-
-# React + TypeScript + Vite
-
-## 1. 프로젝트생성
-```bash
-npm create vite@latest [프로젝트명] --template react-ts
-```
-
-## 2. 의존성설치 (package.json)
-```json
 {
   "name": "frontend",
   "private": true,
@@ -84,16 +49,3 @@ npm create vite@latest [프로젝트명] --template react-ts
     "vite": "^7.0.4"
   }
 }
-```
-```bash 
-npm install
-```
-
-## 3. Build
-```bash 
-npm run build
-```
-## 4. 실행
-```bash
-npm run dev
-```

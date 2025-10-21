@@ -1,0 +1,12 @@
+
+/* =============================== 추가 style ========================================== */
+/* todo 항목 우측 버튼 영역도 줄바꿈 허용 */
+.todo .right{
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;                   /* 좁으면 버튼이 다음 줄로 내려감 */
+}
+.todo .right > button{
+  white-space: nowrap;               /* 여기서는 한 단어라 nowrap 유지해도 OK */
+  min-width: fit-content;
+}

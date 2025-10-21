@@ -1,8 +1,8 @@
 // src/api.ts
 import axios from 'axios';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from './login/AuthContext';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://hamfas-chatting-backend.vercel.app';
 
 const api = axios.create({
   baseURL: API_BASE,

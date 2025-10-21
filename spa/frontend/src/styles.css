@@ -6,16 +6,6 @@
    - 3 breakpoints only:
      base / >=769px / >=1281px
    ================================ */
-html, body, #root, .app{ width:100%; overflow-x: clip; }
-@supports not (overflow: clip){ html, body, #root, .app{ overflow-x: hidden; } }
-
-/* 헤더 높이를 “기본 + safe-top”으로 정의 */
-:root{
-  --safe-top: env(safe-area-inset-top, 100px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --header-base: 56px;
-  --header-h: calc(var(--header-base) + var(--safe-top));
-}
 
 /* 헤더는 safe-top만큼 위 패딩을 준다 */
 .app-header{
@@ -26,41 +16,6 @@ html, body, #root, .app{ width:100%; overflow-x: clip; }
 /* 하단 탭바도 안전영역 보정 */ 
 .tabbar{
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
-}
-
-/* ===== Design Tokens ===== */
-:root{
-  /* spacing */
-  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
-  --space-4: 16px; --space-5: 20px; --space-6: 24px;
-  --space-8: 32px; --space-10: 40px;
-
-  /* radius */
-  --radius: 12px;
-
-  /* colors (dark default) */
-  --bg: #0f0f10;
-  --panel: #17181a;
-  --panel-2: #1f2023;
-  --text: #f5f6f7;
-  --muted: #a6a7ab;
-  --border: #2a2b2f;
-  --brand: #5b8cff;
-
-  /* layout */
-  /* --header-h: 56px; */
-  --sidebar-w: 200px;     /* >=769px 고정 폭 */
-  --content-max: 1200px;  /* 본문 최대너비 */
-}
-
-/* 라이트 테마가 필요하면 body.light-theme 사용 */
-body{
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, "Noto Sans KR", Helvetica, Arial;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 /* ===== App Grid (mobile drawer as default) ===== */
@@ -160,7 +115,7 @@ body{
   border-top: 1px solid var(--border);
   color: var(--muted);
   */
-  height: 100px;                     /* 👈 고정 높이 */
+  height: 100px;                     /* 고정 높이 */
   display: flex;                     /* 수직정렬 정리 */
   align-items: center;
   justify-content: center;
@@ -169,32 +124,6 @@ body{
   padding: 0 var(--space-4);         /* 좌우 여백만 유지 */
   box-sizing: border-box;
 }
-
-/* ===== Cards / Inputs ===== */
-.card{
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-5);
-}
-.row{ display: flex; gap: var(--space-2); }
-input[type="text"], input[type="search"], select{
-  width: 100%;
-  padding: 12px 12px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-}
-button{
-  padding: 10px 14px;
-  background: var(--panel-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-}
-button:hover{ background: #25262a; }
 
 /* ===== Bottom Tabbar (mobile-only) ===== */
 .tabbar{
@@ -219,38 +148,11 @@ button:hover{ background: #25262a; }
 /* content 영역이 탭바만큼 들뜨도록 */
 .has-tabbar .app-main{ padding-bottom: calc(var(--space-8) + 24px); }
 
-/* ===== Grid Utilities ===== */
-.grid{ display: grid; gap: var(--space-4); }
-.grid-1{ grid-template-columns: 1fr; }
-.grid-2{ grid-template-columns: repeat(2, 1fr); }
-.grid-3{ grid-template-columns: repeat(3, 1fr); }
-.grid-4{ grid-template-columns: repeat(4, 1fr); }
-
-/* 카드 유틸 */
-.cardify{
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-5);
-}
-
-/* 여백/정렬 유틸 */
-.mt-2{ margin-top: var(--space-2); }
-.mt-4{ margin-top: var(--space-4); }
-.mb-4{ margin-bottom: var(--space-4); }
-.center{ display: grid; place-items: center; }
-
-/* ===== Tiny type tweaks for small screens ===== */
-@media (max-width: 390px){
-  .brand{ font-size: 14px; }
-  .app-main{ padding: var(--space-3); }
-}
-
 /* =========================================================
    >= 769px : Fixed sidebar + show top nav (tablet/desktop)
    ========================================================= */
 @media (min-width: 769px){
-  /* 1) 데스크톱 구간: 사이드바와 메인 사이에 여백 추가 */
+  /* 데스크톱 구간: 사이드바와 메인 사이에 여백 추가 */
   .app{
     grid-template:
       "header header" var(--header-h)
@@ -260,7 +162,7 @@ button:hover{ background: #25262a; }
     column-gap: var(--space-6);   /* ← 기존 var(--space-4)에서 넓힘 (24px) */
   }
 
-  /* 2) 사이드바를 안전한 높이로 고정 + 스크롤 처리 */
+  /* 사이드바를 안전한 높이로 고정 + 스크롤 처리 */
   .sidebar-inner{
     position: sticky;
     top: calc(var(--header-h) + 1px);
@@ -275,22 +177,12 @@ button:hover{ background: #25262a; }
     z-index: 1;                                    /* 겹침 방지 */
   }
 
-  /* 3) 메인 영역은 일반 흐름(겹침 방지) */
-  .app-main{
-    position: relative;
-    z-index: 0;
-    padding-inline-start: var(--space-6); /* ← 왼쪽 여백 추가 */
-    padding-inline-end: var(--space-4);   /* 오른쪽은 그대로 */
-  }
-
-  /* 4) 모바일 탭바/오버레이는 숨김(이미 있으나 혹시 몰라 재확인) */
+  /* 모바일 탭바/오버레이는 숨김(이미 있으나 혹시 몰라 재확인) */
   .tabbar{ display: none; }
   .overlay{ display: none; }
   .burger{ display: none; }
   .top-nav{ display: flex; }
-
   /* 모바일 탭바 비활성 + 본문 패딩 원복 */
-  .tabbar{ display: none; }
   .has-tabbar .app-main{ padding-bottom: var(--space-4); }
 
   /* 그리드 유틸 (lg↑ 확장) */
@@ -311,21 +203,9 @@ button:hover{ background: #25262a; }
       "footer footer" 100px
       / calc(var(--sidebar-w) + 12px) 1fr;
   }
-  /* 넓은 화면에서 본문 가독 폭 조정 */
-  .app-main > *{
-    max-width: 1080px;
-    margin-left: 0;                 /* ← 좌측 정렬(센터가 필요하면 이 줄 삭제) */
-    margin-right: auto;
-  }
 }
 
-/* === 0) 전역 가드: 수평 스크롤 차단 (clip 지원 + fallback) === */
-html, body, #root, .app{ width: 100%; overflow-x: clip; }
-@supports not (overflow: clip){
-  html, body, #root, .app{ overflow-x: hidden; }
-}
-
-/* === 1) 헤더/푸터가 100%를 넘지 않도록 강제 === */
+/* === 헤더/푸터가 100%를 넘지 않도록 강제 === */
 .app-header, .app-footer{
   width: 100%;
   box-sizing: border-box;
@@ -333,151 +213,10 @@ html, body, #root, .app{ width: 100%; overflow-x: clip; }
   overflow-x: clip;       /* 내부 자식이 넘쳐도 가로 스크롤 금지 */
 }
 
-/* === 2) 오버레이/드로어가 레이아웃 밖으로 넘쳐도 스크롤 유발 금지 === */
+/* === 오버레이/드로어가 레이아웃 밖으로 넘쳐도 스크롤 유발 금지 === */
 .overlay{ inset: 0; contain: layout paint; }  /* 레이어 분리 */
 .sidebar-inner{
   will-change: transform;
   contain: paint;                   /* 레이아웃 영향 차단 */
   overscroll-behavior: contain;
-}
-
-/* === 3) 데스크톱 구간: 컬럼 간격 + 메인 좌측 여백 (붙어보이는 느낌 해소) === */
-@media (min-width: 769px){
-  .app{
-    grid-template:
-      "header header" var(--header-h)
-      "sidebar main"  1fr
-      "footer footer" 100px
-      / var(--sidebar-w) 1fr;
-    column-gap: var(--space-6);       /* 24px: 사이드바-메인 간격 */
-  }
-  .app-main{
-    padding-inline-start: var(--space-6); /* 메인 좌측 여백(24px) */
-    padding-inline-end: var(--space-4);
-  }
-}
-
-
-/* === 모바일(기본) 메인 좌우 여백 보정 === */
-.app-main{
-  padding-inline: var(--space-4);  /* ← 좌우 동일 여백(16px) */
-}
-
-/* 초소형 화면(예: iPhone 12 mini ≤360px)에서는 살짝 축소 */
-@media (max-width: 360px){
-  .app-main{
-    padding-inline: var(--space-3); /* 12px */
-  }
-}
-
-/* Grid/Flex 내부 요소가 줄어들지 못해 넘치는 문제 방지 */
-.app-main,
-.app-main > *,
-.grid,
-.grid > *,
-.row,
-.row > * {
-  min-width: 0;              /* ← 핵심: 수평 오버플로우 차단 */
-  box-sizing: border-box;
-}
-
-/* 입력/버튼 줄바꿈 허용(좁을 때 우측 넘침 방지) */
-input, select, button {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-
-/* ==================== 폼 입력 관련 공통 스타일 ==================== */
-
-/* 입력 UI가 그리드/플렉스 안에서 줄어들지 못하는 문제 예방 */
-.form, .form * { box-sizing: border-box; }
-.form, .form > *, .row, .row > *, .grid, .grid > * { min-width: 0; }
-
-/* 공통 인풋 폭 — 항상 컨테이너 100%에 맞게 */
-input[type="text"],
-input[type="search"],
-select,
-textarea {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;            /* 핵심 */
-  display: block;
-}
-
-/* 라벨은 위/아래로 정갈하게 */
-label.form-item{
-  display: grid;
-  gap: 6px;
-}
-
-/* 폼 컨테이너: 모바일 100%, 데스크톱에선 560px로 제한 */
-.form-narrow{
-  width: 100%;
-  max-width: min(560px, 100%);
-}
-
-/* 모바일 좌우 여백 균등 (safe-area 포함) */
-.app-main{
-  padding-left:  max(var(--space-4), env(safe-area-inset-left));
-  padding-right: max(var(--space-4), env(safe-area-inset-right));
-}
-
-/* 아주 작은 화면(≤360px) 보정 */
-@media (max-width: 360px){
-  .app-main{
-    padding-left:  max(var(--space-3), env(safe-area-inset-left));
-    padding-right: max(var(--space-3), env(safe-area-inset-right));
-  }
-}
-
-/* 모바일에서 버튼을 한 줄로 꽉 채우고 싶다면 */
-@media (max-width: 768px){
-  .form .btn-block { width: 100%; }
-}
-
-
-/* =============== 입력 행(row) 내부 요소들의 줄바꿈 허용 및 레이아웃 보강 ======================== */
-
-/* 1) 버튼은 줄바꿈 허용 + 내용 기준 최소폭 보장 */
-button{
-  white-space: normal;          /* ← nowrap 제거 (줄바꿈 허용) */
-  min-width: fit-content;       /* 내용보다 작아지지 않게 */
-}
-
-/* 2) 입력 줄(row) 레이아웃 보강: input은 늘어나고 버튼은 내용 크기 */
-.row{
-  display: flex;
-  gap: var(--space-2);
-  align-items: stretch;
-}
-.row > input{
-  flex: 1 1 auto;               /* 입력이 가로 공간 대부분 차지 */
-  min-width: 0;                 /* 오버플로우 방지 */
-}
-.row > button{
-  flex: 0 0 auto;               /* 버튼은 내용 크기만큼 */
-}
-
-/* 3) 좁은 화면(모바일)에서는 2줄 배치: input 1행, 버튼 2행 */
-@media (max-width: 560px){
-  .row{ flex-wrap: wrap; }
-  .row > input{ flex: 1 1 100%; }    /* 입력이 첫 줄 전체 차지 */
-  .row > button{
-    flex: 1 1 auto;                  /* 버튼은 두 번째 줄에서 균등 배치 */
-  }
-  .row > button.btn-block{ width: 100%; } /* 원하면 한 줄씩 꽉 차게 */
-}
-
-/* 4) 투두 항목 우측 버튼 영역도 줄바꿈 허용 */
-.todo .right{
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;                   /* 좁으면 버튼이 다음 줄로 내려감 */
-}
-.todo .right > button{
-  white-space: nowrap;               /* 여기서는 한 단어라 nowrap 유지해도 OK */
-  min-width: fit-content;
 }

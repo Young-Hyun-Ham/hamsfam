@@ -1,16 +1,7 @@
 // src/auth/AuthContext.tsx
 import React, { createContext, useContext, useEffect } from 'react'
 import { create } from 'zustand'
-
-type User = { id: string; email: string; name: string | null }
-type AuthState = {
-  user: User | null
-  token: string | null
-  ready: boolean               // 초기 부팅 체크 완료 여부
-  setAuth: (user: User | null, token: string | null) => void
-  clear: () => void
-  setReady: (v: boolean) => void
-}
+import type { AuthState } from './types';
 
 const useAuthStore = create<AuthState>((set) => ({
   user: null,

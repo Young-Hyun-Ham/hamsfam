@@ -1,7 +1,8 @@
 // src/pages/Todos.tsx
 import { useEffect, useState } from 'react'
-import { listTodos, createTodo, patchTodo, deleteTodo } from '../api/todos'
-import type { Todo } from '../types/todos'
+import { listTodos, createTodo, patchTodo, deleteTodo } from './api'
+import type { Todo } from './types'
+import './styles.css'
 
 export default function Todos() {
   const [todos, setTodos] = useState<Todo[]>([])
