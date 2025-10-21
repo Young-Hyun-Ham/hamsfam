@@ -1,7 +1,7 @@
 // src/App.tsx
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import './styles.css'
+import './index.css'
 import TabBar from './componets/TabBar'
 
 export default function App() {

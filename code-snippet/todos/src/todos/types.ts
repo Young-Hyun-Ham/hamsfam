@@ -1,4 +1,3 @@
-// src/types/todos.ts
 
 export type Todo = {
   id: number

@@ -1,19 +1,11 @@
 // src/pages/Login.tsx
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from './AuthContext';
 
-import presets from '../data/loginPresets.json';
+import presets from './data/loginPresets.json';
 import { useMemo } from 'react';
-
-// 타입 (선택)
-type AvatarColor = { from: string; to: string }
-type LoginPreset = {
-  id: string
-  avatarColors: AvatarColor[]   // 길이 2 권장 (번갈아 사용)
-  message: string
-  avatarCount: number
-}
+import type { LoginPreset } from './types';
 
 function BrandMark() {
   return (
@@ -158,10 +150,10 @@ export default function Login() {
                 letterSpacing: -0.3,
               }}
             >
-              오늘의 나를 기록하고, <br /> 내일의 나를 설레게.
+              오늘의 나를 기록하고, 내일의 나를 설레게.
             </h2>
             <p style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              가벼운 마음으로 시작하세요. 계정 하나면<br /> 어디서든 대화가 이어집니다.
+              가벼운 마음으로 시작하세요. 계정 하나면 어디서든 대화가 이어집니다.
             </p>
 
             {/* 소셜프루프 (랜덤 프리셋) */}
