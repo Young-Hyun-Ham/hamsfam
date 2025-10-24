@@ -1,0 +1,637 @@
+# React + TypeScript + Vite
+
+## 1. 프로젝트생성
+```bash
+npm create vite@latest [프로젝트명] --template react-ts
+```
+
+## 2. 의존성설치 (package.json) 및 기본 css 적용
+```json
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.7.1",
+    "zustand": "^5.0.7"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/status-bar": "^7.0.3",
+    "@eslint/js": "^9.30.1",
+    "@heroicons/react": "^2.2.0",
+    "@react-oauth/google": "^0.12.2",
+    "@reduxjs/toolkit": "^2.8.2",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "@xyflow/react": "^12.8.2",
+    "autoprefixer": "^10.4.21",
+    "classnames": "^2.5.1",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "jwt-decode": "^4.0.0",
+    "nanoid": "^5.1.6",
+    "postcss": "^8.5.6",
+    "react-flow": "^1.0.3",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "tailwindcss": "^3.4.18",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.35.1",
+    "vite": "^7.0.4"
+  }
+}
+```
+
+<details>
+<summary>공통 css(index.css)</summary>
+<pre>
+/* ================================
+   AppWeb Global Styles (refactored v2)
+   - Mobile-first
+   - Drawer = .sidebar-inner (모바일에서만 fixed)
+   - .app-sidebar는 컨테이너, 데스크톱에서 grid-area: sidebar
+   - 3 breakpoints only: base / >=769px / >=1281px
+   ================================ */
+
+/* ===== import css ===== */
+/* @import url("App.css"); */
+/* ====================== */
+
+/* ===== Header (safe-top 반영) ===== */
+.app-header{
+  /* index.css 에서 --safe-top / --header-h 제공 */
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  /* safe-top을 살리면서 좌우 여백 유지 */
+  padding: var(--safe-top) var(--space-4) 0 var(--space-4);
+
+  background: rgba(15,16,18,0.75);
+  backdrop-filter: saturate(1.2) blur(10px);
+  border-bottom: 1px solid var(--border);
+
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.burger{
+  appearance: none; border: 0; outline: 0; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--panel); color: var(--text);
+  display: grid; place-items: center;
+}
+.brand{
+  font-weight: 700; letter-spacing: .2px; margin-left: 6px;
+}
+.top-nav{ margin-left: auto; display: none; gap: var(--space-2); }
+.top-nav a{
+  color: var(--text); text-decoration: none;
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--panel);
+}
+.top-nav a.active{ background: var(--panel-2); border-color: #3a3b40; }
+
+/* ===== App Grid (모바일 기본: 1열) ===== */
+.app{
+  display: grid;
+  grid-template:
+    "header" var(--header-h)
+    "main"   1fr
+    / 1fr;
+  min-height: 100dvh; /* 모바일 주소창 높이 변화 대응 */
+}
+
+/* ===== Sidebar (컨테이너 + Drawer 내용) ===== */
+.app-sidebar{
+  /* base에서는 그리드 컬럼이 없어서 grid-area unset */
+  grid-area: unset;
+  position: static;
+  inset: auto;
+  width: auto;
+  pointer-events: auto;
+}
+
+/* Drawer는 .sidebar-inner가 담당(모바일 기본) */
+.sidebar-inner{
+  position: fixed;         /* ← drawer 핵심: 모바일에서만 fixed */
+  right: 0; top: 0; bottom: 0;
+  width: var(--sidebar-w); /* index.css :root 기본 200px */
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  transform: translateX(100%);
+  transition: transform .25s ease;
+  display: flex; flex-direction: column;
+  padding: var(--space-4);
+  z-index: 40;             /* overlay 위 */
+  will-change: transform;
+  contain: paint;
+  overscroll-behavior: contain;
+}
+
+.sidebar-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+}
+.sidebar-header .sidebar-title{ white-space: nowrap; }
+.sidebar-header .collapse-btn{ display: none; } /* 데스크톱에서만 노출 */
+
+.app-sidebar a{
+  color: var(--text); text-decoration: none;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid transparent;
+  display: block; margin-bottom: 6px; background: transparent;
+}
+.app-sidebar a:hover{ background: var(--panel-2); border-color: var(--border); }
+
+.sidebar-footer{ 
+  margin-top: auto; 
+  color: var(--muted); 
+  font-size: 12px;
+  text-align: right;
+}
+
+/* 모바일 오버레이 */
+.overlay{
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 35;
+  contain: layout paint; /* 레이어 분리 */
+}
+.sidebar-open .sidebar-inner{ transform: translateX(0); }
+.sidebar-open .overlay{ opacity: 1; pointer-events: auto; }
+
+/* ===== Main / Footer ===== */
+.app-main{
+  grid-area: main;
+  width: 100%;
+  padding: var(--space-4);
+  /* 추가 ↓ */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--header-h));
+  min-width: 0;
+}
+.app-main > *{
+  max-width: var(--content-max); /* index.css :root 1200px */
+  margin: 0 auto;
+}
+/* 교체 */
+.app-footer{
+  /* grid-area: footer;   ← 삭제 */
+  /* height: var(--footer-h); ← 삭제 */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  padding: var(--space-4);
+  box-sizing: border-box;
+  width: 100%;
+
+  /* 추가 ↓ : 본문 아래로 밀착 */
+  margin-top: auto;
+  position: static;
+  inset: auto;
+  z-index: 0;
+}
+
+/* ===== Bottom Tabbar (mobile-only) ===== */
+.tabbar{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 56px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  z-index: 45;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.tabbar a{
+  text-decoration: none; color: var(--text);
+  display: grid; place-items: center; gap: 2px;
+  font-size: 11px;
+}
+.tabbar a.active{ color: var(--brand); }
+
+/* content 영역이 탭바만큼 들뜨도록 (모바일) */
+.has-tabbar .app-main{ padding-bottom: calc(var(--space-8) + 24px); }
+
+/* =========================================================
+   >= 769px : Fixed sidebar + show top nav (tablet/desktop)
+   ========================================================= */
+@media (min-width: 769px){
+  /* 데스크톱 레이아웃: 사이드바 + 메인 2열 */
+  .app{
+    grid-template:
+      "header header" var(--header-h)
+      "sidebar main"  1fr
+      / var(--sidebar-w) 1fr;
+    column-gap: var(--space-6); /* 24px: 사이드바-메인 간격 */
+  }
+  .app{ height: 100dvh; min-height: unset; } /* 데스크톱: 정확히 100dvh로 고정 */
+
+  /* grid 영역 명시 */
+  .app-sidebar{ grid-area: sidebar; }
+  .app-main{ grid-area: main; }
+  
+  /* grid 셀 자체가 행 높이를 꽉 채우도록 보장(안전장치) */
+  .app-sidebar{ align-self: stretch; }
+
+  /* 데스크톱에서 사이드바는 sticky 컨테이너로 변환 */
+  .sidebar-inner{
+    position: sticky;
+    /* top: calc(var(--header-h) + 1px);
+    height: calc(100dvh - var(--header-h) - var(--footer-h)); */
+    top: var(--header-h);
+    height: calc(100dvh - var(--header-h));
+    box-sizing: border-box;
+    overflow: auto;
+    transform: none;
+    right: auto; bottom: auto;
+    width: 100%;
+    border-left: none;                 /* 모바일 때 쓴 경계 제거 */
+    border-right: 1px solid var(--border);
+    border-radius: 0;
+    z-index: 1;
+    padding: var(--space-4);
+    scrollbar-width: none;
+  }
+  /* WebKit (Chrome, Safari, Edge) sidebar 스크롤 */
+  .sidebar-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 모바일 전용 UI 숨김 / 데스크톱 전용 UI 노출 */
+  .tabbar{ display: none; }
+  .overlay{ display: none; }
+  .burger{ display: none; }
+  .top-nav{ display: flex; }
+
+  /* 모바일 여백 보정 해제 */
+  .has-tabbar .app-main{ padding-bottom: var(--space-4); }
+
+  /* ===== 데스크톱: 사이드바 항목 정렬 (아이콘 + 라벨) ===== */
+  .app-sidebar a{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  /* App.tsx의 <span class="icon">, <span class="label"> 기준 */
+  .app-sidebar a .icon{
+    flex: 0 0 24px;
+    text-align: center;
+  }
+  .app-sidebar a .label{
+    white-space: nowrap;
+  }
+
+  /* collapse 버튼 데스크톱에서만 노출 */
+  .sidebar-header .collapse-btn{
+    display: inline-grid;
+    place-items: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    cursor: pointer;
+  }
+
+  /* ===== 접힘 상태 (rail) ===== */
+  /* --sidebar-w는 index.css :root 200px → 접힘 시 64px로 축소 */
+  .app.sidebar-collapsed{ --sidebar-w: 14px; }
+
+  .app.sidebar-collapsed .app-sidebar a{
+    justify-content: center;    /* 아이콘만 가운데 */
+    padding: 10px 0;
+  }
+  .app.sidebar-collapsed .sidebar-header{
+    justify-content: center;
+  }
+  .app.sidebar-collapsed .sidebar-header .sidebar-title,
+  .app.sidebar-collapsed .app-sidebar a .label{
+    display: none;              /* 라벨/제목 숨김 */
+  }
+}
+
+/* ==========================================
+   >= 1281px : Large desktop polish (2xl)
+   ========================================== */
+/* 삭제 (≥1281px 구간에서 footer 행 추가하던 부분 전부 제거)
+@media (min-width: 1281px){
+  .app:not(.sidebar-collapsed){
+    grid-template:
+      "header header" var(--header-h)
+      "sidebar main"  1fr
+      "footer footer" var(--footer-h)
+      / var(--sidebar-w) 1fr;
+  }
+}
+*/
+
+/* === 헤더/푸터가 100%를 넘지 않도록 강제 (안전장치) === */
+.app-header, .app-footer{
+  max-width: 100vw;
+  overflow-x: clip;
+}
+/* ========================================================================================================================= */
+/* asis degisn end */
+/* ========================================================================================================================= */
+
+html, body, #root, .app{ width:100%; overflow-x: clip; }
+@supports not (overflow: clip){ html, body, #root, .app{ overflow-x: hidden; } }
+
+/* ===== Design Tokens ===== */
+:root{
+  /* spacing */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px; --space-5: 20px; --space-6: 24px;
+  --space-8: 32px; --space-10: 40px;
+
+  /* radius */
+  --radius: 12px;
+
+  /* colors (dark default) */
+  --bg: #0f0f10;
+  --panel: #17181a;
+  --panel-2: #1f2023;
+  --text: #f5f6f7;
+  --muted: #a6a7ab;
+  --border: #2a2b2f;
+  --brand: #5b8cff;
+
+  /* layout */
+  /* --header-h: 56px; */
+  --sidebar-w: 200px;     /* >=769px 고정 폭 */
+  --content-max: 1200px;  /* 본문 최대너비 */
+
+  /* 헤더 높이를 “기본 + safe-top”으로 정의 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --header-base: 56px;
+  --header-h: calc(var(--header-base) + var(--safe-top));
+  --footer-h: 100px;
+}
+
+/* 라이트 테마가 필요하면 body.light-theme 사용 */
+body{
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, "Noto Sans KR", Helvetica, Arial;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== Cards / Inputs ===== */
+.card{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+.row{ display: flex; gap: var(--space-2); }
+input[type="text"], input[type="search"], select{
+  width: 100%;
+  padding: 12px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+}
+button{
+  padding: 10px 14px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+button:hover{ background: #25262a; }
+
+/* ===== Grid Utilities ===== */
+.grid{ display: grid; gap: var(--space-4); }
+.grid-1{ grid-template-columns: 1fr; }
+.grid-2{ grid-template-columns: repeat(2, 1fr); }
+.grid-3{ grid-template-columns: repeat(3, 1fr); }
+.grid-4{ grid-template-columns: repeat(4, 1fr); }
+
+/* 카드 유틸 */
+.cardify{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+
+/* 여백/정렬 유틸 */
+.mt-2{ margin-top: var(--space-2); }
+.mt-4{ margin-top: var(--space-4); }
+.mb-4{ margin-bottom: var(--space-4); }
+.center{ display: grid; place-items: center; }
+
+/* ===== Tiny type tweaks for small screens ===== */
+@media (max-width: 390px){
+  .brand{ font-size: 14px; }
+  .app-main{ padding: var(--space-3); }
+}
+
+/* =========================================================
+   >= 769px : Fixed sidebar + show top nav (tablet/desktop)
+   ========================================================= */
+@media (min-width: 769px){
+  /* 메인 영역은 일반 흐름(겹침 방지) */
+  .app-main{
+    position: relative;
+    z-index: 0;
+    padding-inline-start: 0; /* ← 왼쪽 여백 추가 */
+    padding-inline-end: var(--space-4);   /* 오른쪽은 그대로 */
+  }
+}
+
+/* ==========================================
+   >= 1281px : Large desktop polish (2xl)
+   ========================================== */
+@media (min-width: 1281px){
+  /* 넓은 화면에서 본문 가독 폭 조정 */
+  .app-main > *{
+    max-width: 1080px;
+    margin-left: 0;                 /* ← 좌측 정렬(센터가 필요하면 이 줄 삭제) */
+    margin-right: auto;
+  }
+}
+
+/* === 전역 가드: 수평 스크롤 차단 (clip 지원 + fallback) === */
+html, body, #root, .app{ width: 100%; overflow-x: clip; }
+@supports not (overflow: clip){
+  html, body, #root, .app{ overflow-x: hidden; }
+}
+
+/* === 데스크톱 구간: 컬럼 간격 + 메인 좌측 여백 (붙어보이는 느낌 해소) === */
+@media (min-width: 769px){
+  .app{
+    grid-template:
+      "header header" var(--header-h)
+      "sidebar main"  1fr
+      "footer footer" var(--footer-h)
+      / var(--sidebar-w) 1fr;
+    column-gap: var(--space-4);       /* 24px: 사이드바-메인 간격 */
+  }
+  .app-main{
+    padding-inline-start: var(--space-6); /* 메인 좌측 여백(24px) */
+    padding-inline-end: var(--space-4);
+  }
+}
+
+/* === 모바일(기본) 메인 좌우 여백 보정 === */
+.app-main{
+  padding-inline: var(--space-4);  /* ← 좌우 동일 여백(16px) */
+}
+
+/* 초소형 화면(예: iPhone 12 mini ≤360px)에서는 살짝 축소 */
+@media (max-width: 360px){
+  .app-main{
+    padding-inline: var(--space-3); /* 12px */
+  }
+}
+
+/* Grid/Flex 내부 요소가 줄어들지 못해 넘치는 문제 방지 */
+.app-main,
+.app-main > *,
+.grid,
+.grid > *,
+.row,
+.row > * {
+  min-width: 0;              /* ← 핵심: 수평 오버플로우 차단 */
+  box-sizing: border-box;
+}
+
+/* 입력/버튼 줄바꿈 허용(좁을 때 우측 넘침 방지) */
+input, select, button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==================== 폼 입력 관련 공통 스타일 ==================== */
+/* 입력 UI가 그리드/플렉스 안에서 줄어들지 못하는 문제 예방 */
+.form, .form * { box-sizing: border-box; }
+.form, .form > *, .row, .row > *, .grid, .grid > * { min-width: 0; }
+
+/* 공통 인풋 폭 — 항상 컨테이너 100%에 맞게 */
+input[type="text"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;            /* 핵심 */
+  display: block;
+}
+
+/* 라벨은 위/아래로 정갈하게 */
+label.form-item{
+  display: grid;
+  gap: 6px;
+}
+
+/* 폼 컨테이너: 모바일 100%, 데스크톱에선 560px로 제한 */
+.form-narrow{
+  width: 100%;
+  max-width: min(560px, 100%);
+}
+
+/* 모바일 좌우 여백 균등 (safe-area 포함) */
+.app-main{
+  padding-left:  max(var(--space-4), env(safe-area-inset-left));
+  padding-right: max(var(--space-4), env(safe-area-inset-right));
+}
+
+/* 아주 작은 화면(≤360px) 보정 */
+@media (max-width: 360px){
+  .app-main{
+    padding-left:  max(var(--space-3), env(safe-area-inset-left));
+    padding-right: max(var(--space-3), env(safe-area-inset-right));
+  }
+}
+
+/* 모바일에서 버튼을 한 줄로 꽉 채우고 싶다면 */
+@media (max-width: 768px){
+  .form .btn-block { width: 100%; }
+}
+
+/* =============== 입력 행(row) 내부 요소들의 줄바꿈 허용 및 레이아웃 보강 ======================== */
+/* 버튼은 줄바꿈 허용 + 내용 기준 최소폭 보장 */
+button{
+  white-space: normal;          /* ← nowrap 제거 (줄바꿈 허용) */
+  min-width: fit-content;       /* 내용보다 작아지지 않게 */
+}
+
+/* 입력 줄(row) 레이아웃 보강: input은 늘어나고 버튼은 내용 크기 */
+.row{
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.row > input{
+  flex: 1 1 auto;               /* 입력이 가로 공간 대부분 차지 */
+  min-width: 0;                 /* 오버플로우 방지 */
+}
+.row > button{
+  flex: 0 0 auto;               /* 버튼은 내용 크기만큼 */
+}
+
+/* 좁은 화면(모바일)에서는 2줄 배치: input 1행, 버튼 2행 */
+@media (max-width: 560px){
+  .row{ flex-wrap: wrap; }
+  .row > input{ flex: 1 1 100%; }    /* 입력이 첫 줄 전체 차지 */
+  .row > button{
+    flex: 1 1 auto;                  /* 버튼은 두 번째 줄에서 균등 배치 */
+  }
+  .row > button.btn-block{ width: 100%; } /* 원하면 한 줄씩 꽉 차게 */
+}
+</pre>
+</details>
+```bash 
+npm install
+```
+
+## 3. Build
+```bash 
+npm run build
+```
+## 4. 실행
+```bash
+npm run dev
+```
