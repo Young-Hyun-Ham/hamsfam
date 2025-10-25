@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "name": "AppWeb Login",
+  "canvas": {
+    "type": "FRAME",
+    "name": "Login Page",
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 900,
+    "fills": [{ "type": "SOLID", "color": { "r": 0.055, "g": 0.055, "b": 0.059 }, "opacity": 1 }],
+    "children": [
+      {
+        "type": "FRAME",
+        "name": "Header",
+        "x": 80,
+        "y": 64,
+        "w": 400,
+        "h": 64,
+        "layoutMode": "HORIZONTAL",
+        "itemSpacing": 12,
+        "padding": { "t": 0, "r": 0, "b": 0, "l": 0 },
+        "children": [
+          {
+            "type": "FRAME",
+            "name": "PlusIcon",
+            "w": 28,
+            "h": 28,
+            "cornerRadius": 6,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.298, "g": 0.502, "b": 0.945 }, "opacity": 1 }],
+            "strokes": [{ "type": "SOLID", "color": { "r": 0.235, "g": 0.369, "b": 0.694 }, "opacity": 1 }],
+            "strokeWeight": 1,
+            "children": [
+              {
+                "type": "VECTOR",
+                "name": "plus",
+                "w": 12,
+                "h": 12,
+                "relative": { "x": 8, "y": 8 },
+                "strokes": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 0.95 }],
+                "strokeWeight": 2,
+                "paths": [
+                  { "cmd": "M 6 0 L 6 12" },
+                  { "cmd": "M 0 6 L 12 6" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "FRAME",
+            "name": "Brand",
+            "layoutMode": "VERTICAL",
+            "itemSpacing": 2,
+            "children": [
+              {
+                "type": "TEXT",
+                "name": "AppWeb",
+                "characters": "AppWeb",
+                "fontName": { "family": "Pretendard", "style": "SemiBold" },
+                "fontSize": 20,
+                "lineHeight": 24,
+                "fills": [{ "type": "SOLID", "color": { "r": 0.902, "g": 0.902, "b": 0.902 }, "opacity": 1 }]
+              },
+              {
+                "type": "TEXT",
+                "name": "welcome back",
+                "characters": "welcome back",
+                "fontName": { "family": "Pretendard", "style": "Regular" },
+                "fontSize": 12,
+                "lineHeight": 16,
+                "fills": [{ "type": "SOLID", "color": { "r": 0.65, "g": 0.65, "b": 0.67 }, "opacity": 1 }]
+              }
+            ]
+          }
+        ]
+      },
+
+      {
+        "type": "FRAME",
+        "name": "Hero",
+        "x": 80,
+        "y": 160,
+        "w": 800,
+        "h": 240,
+        "layoutMode": "VERTICAL",
+        "itemSpacing": 16,
+        "children": [
+          {
+            "type": "TEXT",
+            "name": "Title",
+            "characters": "오늘의 나를 기록하고, 내일의 나를 설레게.",
+            "fontName": { "family": "Pretendard", "style": "Bold" },
+            "fontSize": 44,
+            "lineHeight": 56,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.95, "g": 0.95, "b": 0.96 }, "opacity": 1 }]
+          },
+          {
+            "type": "TEXT",
+            "name": "Subtitle",
+            "characters": "가벼운 마음으로 시작하세요. 계정 하나면 어디서든 대화가 이어집니다.",
+            "fontName": { "family": "Pretendard", "style": "Regular" },
+            "fontSize": 16,
+            "lineHeight": 24,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.75, "g": 0.75, "b": 0.78 }, "opacity": 1 }]
+          },
+          {
+            "type": "FRAME",
+            "name": "Dots",
+            "layoutMode": "HORIZONTAL",
+            "itemSpacing": 12,
+            "children": [
+              { "type": "ELLIPSE", "w": 24, "h": 24, "fills": [{ "type": "SOLID", "color": { "r": 0.973, "g": 0.769, "b": 0.792 }, "opacity": 1 }] },
+              { "type": "ELLIPSE", "w": 24, "h": 24, "fills": [{ "type": "SOLID", "color": { "r": 0.946, "g": 0.698, "b": 1.0 }, "opacity": 1 }] },
+              { "type": "ELLIPSE", "w": 24, "h": 24, "fills": [{ "type": "SOLID", "color": { "r": 0.722, "g": 0.812, "b": 1.0 }, "opacity": 1 }] }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "Quote",
+            "characters": "나답게 사는 것이 용기다.",
+            "fontName": { "family": "Pretendard", "style": "Medium" },
+            "fontSize": 14,
+            "lineHeight": 20,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.73, "g": 0.73, "b": 0.75 }, "opacity": 1 }]
+          }
+        ]
+      },
+
+      {
+        "type": "FRAME",
+        "name": "LoginCard",
+        "x": 80,
+        "y": 440,
+        "w": 560,
+        "h": 300,
+        "cornerRadius": 8,
+        "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 0.05 }],
+        "strokes": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 0.08 }],
+        "strokeWeight": 1,
+        "padding": { "t": 32, "r": 32, "b": 32, "l": 32 },
+        "layoutMode": "VERTICAL",
+        "itemSpacing": 16,
+        "children": [
+          {
+            "type": "TEXT",
+            "name": "LoginTitle",
+            "characters": "로그인",
+            "fontName": { "family": "Pretendard", "style": "Bold" },
+            "fontSize": 20,
+            "lineHeight": 28,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.94, "g": 0.94, "b": 0.95 }, "opacity": 1 }]
+          },
+          {
+            "type": "TEXT",
+            "name": "Desc",
+            "characters": "Google 계정으로 안전하게 시작해요",
+            "fontName": { "family": "Pretendard", "style": "Regular" },
+            "fontSize": 14,
+            "lineHeight": 22,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.81, "g": 0.81, "b": 0.83 }, "opacity": 1 }]
+          },
+          {
+            "type": "FRAME",
+            "name": "Bullets",
+            "layoutMode": "VERTICAL",
+            "itemSpacing": 8,
+            "children": [
+              { "type": "TEXT", "name": "b1", "characters": "• 단일 계정으로 빠르게 시작", "fontName": { "family": "Pretendard", "style": "Regular" }, "fontSize": 14, "lineHeight": 20, "fills": [{ "type": "SOLID", "color": { "r": 0.81, "g": 0.81, "b": 0.83 }, "opacity": 1 }] },
+              { "type": "TEXT", "name": "b2", "characters": "• 기기 간 대화 동기화", "fontName": { "family": "Pretendard", "style": "Regular" }, "fontSize": 14, "lineHeight": 20, "fills": [{ "type": "SOLID", "color": { "r": 0.81, "g": 0.81, "b": 0.83 }, "opacity": 1 }] },
+              { "type": "TEXT", "name": "b3", "characters": "• 안전한 인증과 저장", "fontName": { "family": "Pretendard", "style": "Regular" }, "fontSize": 14, "lineHeight": 20, "fills": [{ "type": "SOLID", "color": { "r": 0.81, "g": 0.81, "b": 0.83 }, "opacity": 1 }] }
+            ]
+          },
+          {
+            "type": "FRAME",
+            "name": "GoogleButton",
+            "w": 320,
+            "h": 44,
+            "cornerRadius": 6,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.06, "g": 0.06, "b": 0.07 }, "opacity": 1 }],
+            "strokes": [{ "type": "SOLID", "color": { "r": 0.2, "g": 0.2, "b": 0.22 }, "opacity": 1 }],
+            "strokeWeight": 1,
+            "layoutMode": "HORIZONTAL",
+            "itemSpacing": 10,
+            "padding": { "t": 10, "r": 14, "b": 10, "l": 14 },
+            "children": [
+              { "type": "ELLIPSE", "w": 24, "h": 24, "fills": [{ "type": "SOLID", "color": { "r": 0.95, "g": 0.95, "b": 0.95 }, "opacity": 1 }] },
+              { "type": "TEXT", "name": "btnText", "characters": "Google로 로그인", "fontName": { "family": "Pretendard", "style": "Medium" }, "fontSize": 14, "lineHeight": 20, "fills": [{ "type": "SOLID", "color": { "r": 0.92, "g": 0.92, "b": 0.93 }, "opacity": 1 }] }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "Terms",
+            "characters": "계속 진행하면 서비스 이용약관 및 개인정보 처리방침에 동의하게 됩니다.",
+            "fontName": { "family": "Pretendard", "style": "Regular" },
+            "fontSize": 12,
+            "lineHeight": 18,
+            "fills": [{ "type": "SOLID", "color": { "r": 0.58, "g": 0.58, "b": 0.6 }, "opacity": 1 }]
+          }
+        ]
+      },
+
+      {
+        "type": "TEXT",
+        "name": "FooterLink",
+        "x": 80,
+        "y": 760,
+        "characters": "계정이 없나요? 도움을 원해요",
+        "fontName": { "family": "Pretendard", "style": "Regular" },
+        "fontSize": 12,
+        "lineHeight": 18,
+        "fills": [{ "type": "SOLID", "color": { "r": 0.5, "g": 0.63, "b": 0.98 }, "opacity": 1 }]
+      }
+    ]
+  }
+}

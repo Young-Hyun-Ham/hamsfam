@@ -27,10 +27,16 @@ function App() {
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
-      </p><br/><br/><br/><br/><br/><br/><br/>
+      </p>
+      <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
-      </p><br/><br/><br/><br/><br/><br/><br/>
+      </p>
+      <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+      <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>

@@ -1,0 +1,72 @@
+{
+  "type": "FRAME",
+  "name": "AppWeb Mobile",
+  "w": 480,
+  "h": 841,
+  "fills": [{ "type": "SOLID", "color": { "r": 0.07, "g": 0.08, "b": 0.10 }, "opacity": 1 }],
+  "children": [
+    { "type": "RECTANGLE", "name": "Header", "x": 0, "y": 0, "w": 480, "h": 64,
+      "fills": [{ "type": "SOLID", "color": { "r": 0.07, "g": 0.08, "b": 0.10 }, "opacity": 1 }],
+      "strokes": [{ "type": "SOLID", "color": { "r": 0.20, "g": 0.22, "b": 0.25 }, "opacity": 1 }], "strokeWeight": 1
+    },
+    { "type": "TEXT", "name": "App Title", "x": 88, "y": 20, "w": 160, "h": 24,
+      "characters": "AppWeb", "fontSize": 18, "fontName": { "family": "Inter", "style": "Bold" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.90, "g": 0.90, "b": 0.90 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Hamburger", "x": 16, "y": 18, "w": 24, "h": 24,
+      "characters": "≡", "fontSize": 20, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.90, "g": 0.90, "b": 0.90 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Logos", "x": 192, "y": 100, "w": 96, "h": 32,
+      "characters": "⚡️  ⚛️", "fontSize": 28, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.85, "g": 0.95, "b": 1.0 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Hero Title", "x": 48, "y": 150, "w": 384, "h": 48,
+      "characters": "Vite + React", "fontSize": 36, "fontName": { "family": "Inter", "style": "Bold" },
+      "lineHeight": 44,
+      "fills": [{ "type": "SOLID", "color": { "r": 0.95, "g": 0.95, "b": 0.96 }, "opacity": 1 }]
+    },
+    { "type": "RECTANGLE", "name": "Card", "x": 48, "y": 210, "w": 384, "h": 180, "cornerRadius": 16,
+      "fills": [{ "type": "SOLID", "color": { "r": 0.13, "g": 0.15, "b": 0.18 }, "opacity": 1 }],
+      "strokes": [{ "type": "SOLID", "color": { "r": 0.23, "g": 0.25, "b": 0.28 }, "opacity": 1 }], "strokeWeight": 1
+    },
+    { "type": "TEXT", "name": "Counter Button Label", "x": 80, "y": 244, "w": 120, "h": 36,
+      "characters": "count is 0", "fontSize": 16, "fontName": { "family": "Inter", "style": "Medium" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.90, "g": 0.90, "b": 0.95 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Card Caption", "x": 74, "y": 296, "w": 332, "h": 20,
+      "characters": "Edit src/App.tsx and save to test HMR", "fontSize": 14,
+      "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.75, "g": 0.78, "b": 0.82 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Learn more", "x": 40, "y": 360, "w": 400, "h": 20,
+      "characters": "Click on the Vite and React logos to learn more", "fontSize": 14,
+      "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.70, "g": 0.73, "b": 0.78 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Copyright", "x": 176, "y": 712, "w": 128, "h": 20,
+      "characters": "© 2025 AppWeb", "fontSize": 12, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.65, "g": 0.68, "b": 0.72 }, "opacity": 1 }]
+    },
+    { "type": "RECTANGLE", "name": "TabBar BG", "x": 0, "y": 745, "w": 480, "h": 96,
+      "fills": [{ "type": "SOLID", "color": { "r": 0.07, "g": 0.08, "b": 0.10 }, "opacity": 1 }],
+      "strokes": [{ "type": "SOLID", "color": { "r": 0.20, "g": 0.22, "b": 0.25 }, "opacity": 1 }], "strokeWeight": 1
+    },
+    { "type": "TEXT", "name": "Tab Home", "x": 48, "y": 796, "w": 80, "h": 20,
+      "characters": "🏠  Home", "fontSize": 12, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.50, "g": 0.80, "b": 1.0 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Tab Todos", "x": 156, "y": 796, "w": 80, "h": 20,
+      "characters": "✅  Todos", "fontSize": 12, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.80, "g": 0.85, "b": 0.90 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Tab Chat", "x": 268, "y": 796, "w": 80, "h": 20,
+      "characters": "💬  Chat", "fontSize": 12, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.80, "g": 0.85, "b": 0.90 }, "opacity": 1 }]
+    },
+    { "type": "TEXT", "name": "Tab Settings", "x": 372, "y": 796, "w": 100, "h": 20,
+      "characters": "⚙️  Settings", "fontSize": 12, "fontName": { "family": "Inter", "style": "Regular" },
+      "fills": [{ "type": "SOLID", "color": { "r": 0.80, "g": 0.85, "b": 0.90 }, "opacity": 1 }]
+    }
+  ]
+}

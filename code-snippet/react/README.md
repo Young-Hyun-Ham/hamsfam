@@ -1,4 +1,4 @@
-# React + TypeScript + Vite
+# React + TypeScript + Vite + Zustand
 
 ## 1. 프로젝트생성
 ```bash
