@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body{font:13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial}
+      textarea{width:600px;height:360px}
+      .row{margin:8px 0}
+      button{padding:8px 12px}
+      .hint{color:#666}
+    </style>
+  </head>
+  <body>
+    <h3>Import AppWeb JSON</h3>
+    <div class="row">
+      <textarea id="json" placeholder='여기에 JSON 붙여넣기'></textarea>
+    </div>
+    <div class="row">
+      <button id="import">Import</button>
+      <span class="hint">붙여넣고 Import를 누르면 현재 페이지에 프레임이 생성됩니다.</span>
+    </div>
+    <script>
+      document.getElementById('import').onclick = () => {
+        const text = document.getElementById('json').value.trim();
+        parent.postMessage({ pluginMessage: { type: 'import', text } }, '*');
+      };
+    </script>
+  </body>
+</html>

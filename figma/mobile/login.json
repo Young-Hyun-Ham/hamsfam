@@ -1,0 +1,134 @@
+{
+  "type": "FRAME",
+  "name": "LoginScreen",
+  "w": 390,
+  "h": 844,
+  "fills": [
+    { "type": "SOLID", "color": { "r": 0.98, "g": 0.985, "b": 1 }, "opacity": 1 }
+  ],
+  "children": [
+    {
+      "type": "TEXT",
+      "name": "Title",
+      "x": 32,
+      "y": 120,
+      "fontName": { "family": "Inter", "style": "Bold" },
+      "fontSize": 34,
+      "lineHeight": 42,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 0.12, "g": 0.16, "b": 0.38 }, "opacity": 1 }
+      ],
+      "characters": "안녕하세요!\n계속하려면 로그인해\n주세요."
+    },
+    {
+      "type": "RECTANGLE",
+      "name": "Card",
+      "x": 20,
+      "y": 340,
+      "w": 350,
+      "h": 300,
+      "cornerRadius": 16,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 1 }
+      ],
+      "strokes": [
+        { "type": "SOLID", "color": { "r": 0, "g": 0, "b": 0 }, "opacity": 0.06 }
+      ],
+      "strokeWeight": 1
+    },
+    {
+      "type": "RECTANGLE",
+      "name": "BtnGoogle",
+      "x": 40,
+      "y": 372,
+      "w": 310,
+      "h": 48,
+      "cornerRadius": 10,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 0.184, "g": 0.482, "b": 0.98 }, "opacity": 1 }
+      ]
+    },
+    {
+      "type": "TEXT",
+      "name": "BtnGoogleLabel",
+      "x": 40,
+      "y": 372,
+      "fontName": { "family": "Inter", "style": "Medium" },
+      "fontSize": 16,
+      "lineHeight": 20,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 1 }
+      ],
+      "characters": "Google 계정으로 로그인"
+    },
+    { "type": "RECTANGLE", "name": "DividerLeft", "x": 40, "y": 438, "w": 110, "h": 1, "fills": [ { "type": "SOLID", "color": { "r": 0.86, "g": 0.88, "b": 0.92 }, "opacity": 1 } ] },
+    {
+      "type": "TEXT",
+      "name": "Or",
+      "x": 190,
+      "y": 430,
+      "fontName": { "family": "Inter", "style": "Regular" },
+      "fontSize": 12,
+      "lineHeight": 14,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 0.5, "g": 0.52, "b": 0.56 }, "opacity": 1 }
+      ],
+      "characters": "또는"
+    },
+    { "type": "RECTANGLE", "name": "DividerRight", "x": 240, "y": 438, "w": 110, "h": 1, "fills": [ { "type": "SOLID", "color": { "r": 0.86, "g": 0.88, "b": 0.92 }, "opacity": 1 } ] },
+    {
+      "type": "RECTANGLE",
+      "name": "Input",
+      "x": 40,
+      "y": 460,
+      "w": 310,
+      "h": 48,
+      "cornerRadius": 10,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 1 }
+      ],
+      "strokes": [
+        { "type": "SOLID", "color": { "r": 0.85, "g": 0.87, "b": 0.92 }, "opacity": 1 }
+      ],
+      "strokeWeight": 1
+    },
+    {
+      "type": "TEXT",
+      "name": "InputPlaceholder",
+      "x": 56,
+      "y": 474,
+      "fontName": { "family": "Inter", "style": "Regular" },
+      "fontSize": 14,
+      "lineHeight": 18,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 0.6, "g": 0.62, "b": 0.66 }, "opacity": 1 }
+      ],
+      "characters": "테스트 ID 입력"
+    },
+    {
+      "type": "RECTANGLE",
+      "name": "BtnTestLogin",
+      "x": 40,
+      "y": 520,
+      "w": 310,
+      "h": 48,
+      "cornerRadius": 10,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 0.85, "g": 0.86, "b": 0.88 }, "opacity": 1 }
+      ]
+    },
+    {
+      "type": "TEXT",
+      "name": "BtnTestLoginLabel",
+      "x": 40,
+      "y": 520,
+      "fontName": { "family": "Inter", "style": "Medium" },
+      "fontSize": 16,
+      "lineHeight": 20,
+      "fills": [
+        { "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1 }, "opacity": 0.9 }
+      ],
+      "characters": "테스트 ID로 로그인"
+    }
+  ]
+}
