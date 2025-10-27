@@ -1,4 +1,4 @@
-# Nextjs + React + TypeScript + Zustand + Pnpm + firebase + Figma
+# Nextjs + React + TypeScript + Zustand + VITE + Pnpm + firebase + Figma
 
 ## 1. pnpm 설치
 설치확인: 
@@ -58,20 +58,6 @@ pnpm install
 ???
 </pre>
 </details>
-
-## 3. 실행 명령어
-```bash 
-pnpm dev       # 개발 모드 실행 (http://localhost:3000)
-pnpm build     # 프로덕션 빌드 생성
-pnpm start     # 빌드된 결과 실행 (production 서버 모드)
-```
-혹은
-## 3. 실행 명령어
-```bash
-npm run dev
-npm run build
-npm run start
-```
 
 🧠 참고사항
 Next.js 프로젝트에 pnpm이 좋을까?
