@@ -1,4 +1,5 @@
 // app/todos/page.tsx
+'use client';
 
 import { FC } from "react";
 import { useStore } from "@/app/store";
