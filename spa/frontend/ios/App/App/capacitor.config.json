@@ -3,10 +3,10 @@
 	"appName": "appweb",
 	"webDir": "dist",
 	"server": {
-		"url": "https://spa-opal-pi.vercel.app",
+		"url": "https://nextjs-basic-mu-one.vercel.app",
 		"cleartext": false,
 		"allowNavigation": [
-			"spa-opal-pi.vercel.app",
+			"nextjs-basic-mu-one.vercel.app",
 			"https://accounts.google.com",
 			"https://auth.googleusercontent.com",
 			"https://www.googleapis.com"
