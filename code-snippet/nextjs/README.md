@@ -34,6 +34,9 @@ pnpm create next-app [프로젝트명]
     "react-dom": "19.2.0",
     "next": "16.0.0",
     "firebase": "^12.2.1",
+    "axios": "^1.11.0",
+    "jose": "^6.0.13",
+    "jwt-decode": "^4.0.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

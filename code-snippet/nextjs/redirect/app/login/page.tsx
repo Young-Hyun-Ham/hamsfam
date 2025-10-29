@@ -1,21 +1,31 @@
-// app/login/page.tsx
 'use client';
 
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import styles from '@/app/login/Login.module.css';
 import { useStore } from '@/app/store';
+
+// 너의 번역 훅을 그대로 사용
 import { useTranslations } from '@/app/hooks/useTranslations';
 
-const Login: FC = () => {
-  const loginWithGoogle = useStore((state: any) => state.loginWithGoogle);
-  const loginWithTestId = useStore((state: any) => state.loginWithTestId);
+// 페이지 진입 시 initAuth를 꼭 호출 (리다이렉트 콜백/상태구독)
+const LoginPage: FC = () => {
   const { t } = useTranslations();
+  const initAuth = useStore(s => s.initAuth);
+  const loginWithGoogle = useStore(s => s.loginWithGoogle);
+  const handleTestLoginAction = useStore(s => s.handleTestLogin);
+  const loading = useStore(s => s.loading);
+  const error = useStore(s => s.error);
 
   const [testId, setTestId] = useState('');
 
-  const handleTestLogin = (e: any) => {
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
+  const handleTestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    loginWithTestId(testId);
+    if (!testId.trim()) return;
+    await handleTestLoginAction(testId.trim());
   };
 
   return (
@@ -29,11 +39,18 @@ const Login: FC = () => {
 
         <div className={styles.card} />
 
-        {/* Google 로그인 버튼 */}
-        <button onClick={loginWithGoogle} className={styles.btngooglePopup}>
-          {t('signInWithGoogle')}
+        {/* Google 로그인 버튼 (현재창 리다이렉트) */}
+        <button
+          onClick={async () => {
+            console.log('[AUTH] start redirect login');
+            await loginWithGoogle();
+          }}
+          className={styles.btngooglePopup}
+          disabled={loading}
+        >
+          {loading ? t('loading') : t('signInWithGoogle')}
         </button>
-        
+
         <div className={styles.dividerleft} />
         <div className={styles.or}>{t('loginMethodToggle')}</div>
         <div className={styles.dividerright} />
@@ -54,16 +71,19 @@ const Login: FC = () => {
           <button
             type="submit"
             className={styles.btntestlogin}
-            disabled={!testId.trim()}
+            disabled={!testId.trim() || loading}
           >
             <span className={styles.btntestloginlabel}>
               {t('signInWithTestId')}
             </span>
           </button>
         </form>
+
+        {/* 에러 표시(옵션) */}
+        {error ? <div className={styles.error}>{error}</div> : null}
       </div>
     </div>
   );
 };
 
-export default Login;
+export default LoginPage;
