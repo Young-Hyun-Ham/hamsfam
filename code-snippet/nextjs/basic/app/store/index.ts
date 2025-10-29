@@ -105,11 +105,12 @@ export const useStore: any = create((set: any, get: any) => ({
     const testId = urlParams.get("id");
     if (testId) {
       console.log(`Attempting auto login with test ID: ${testId}`);
+      
       // Zustand 스토어가 완전히 초기화된 후 실행되도록 setTimeout 사용
       setTimeout(() => {
         // Firebase Auth 상태 확인 전에 테스트 로그인을 시도
         if (!get().user) { // 이미 로그인된 사용자가 없는 경우에만 실행
-          // get().loginWithTestId(testId);
+          get().loginWithTestId(testId);
         } else {
           console.log("User already logged in, skipping auto test login.");
         }
