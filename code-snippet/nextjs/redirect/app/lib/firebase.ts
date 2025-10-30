@@ -45,7 +45,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 let _auth: ReturnType<typeof getAuth>;
 try {
   _auth = initializeAuth(app, {
-    persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+    persistence: [browserLocalPersistence, indexedDBLocalPersistence, inMemoryPersistence],
     popupRedirectResolver: browserPopupRedirectResolver,
   });
 } catch {
