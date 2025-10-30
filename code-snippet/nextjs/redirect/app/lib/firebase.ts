@@ -17,6 +17,7 @@ import {
   signInAnonymously,
   updateProfile,
   User,
+  setPersistence,
 } from 'firebase/auth';
 import {
   getFirestore, doc, getDoc, setDoc, serverTimestamp,
@@ -69,6 +70,8 @@ googleProvider.addScope('email');
 export async function startGoogleRedirectLogin() {
   // 시작 전 아티팩트 정리 (직전 실패 잔여물 제거)
   hardResetAuthArtifacts();
+  
+  await setPersistence(auth, browserLocalPersistence); // ✅ 명시
 
   // 계정선택 강제(이전 세션 잔상 최소화)
   googleProvider.setCustomParameters({ prompt: 'select_account' });
