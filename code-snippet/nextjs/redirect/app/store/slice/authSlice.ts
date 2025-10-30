@@ -43,7 +43,6 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
     if (get()._authInited) return;
     set({ _authInited: true, loading: true, error: null });
 
-    // 1) 먼저 구독을 건다 (가장 안정적인 패턴)
     get()._unsubAuth?.();
     const unsub = watchAuth(async (user) => {
       if (user) {
@@ -51,12 +50,12 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
           await ensureUserDoc(user);
           const settings = await getOrInitSettings(user);
           set({ user, settings, loading: false, error: null, needPopupFallback: false });
-        } catch (e: any) {
-          set({ user, settings: null, loading: false, error: e?.message ?? 'Failed to load settings', needPopupFallback: false });
+        } catch (e:any) {
+          set({ user, settings:null, loading:false, error:e?.message ?? 'Failed to load settings', needPopupFallback:false });
         }
         return;
       }
-      set({ user: null, settings: null, loading: false, error: null });
+      set({ user:null, settings:null, loading:false, error:null });
     });
     set({ _unsubAuth: unsub });
 
