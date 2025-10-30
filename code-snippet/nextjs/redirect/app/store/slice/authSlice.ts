@@ -43,10 +43,9 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
     if (get()._authInited) return;
     set({ _authInited: true, loading: true, error: null });
 
-    // 1) 먼저 onAuthStateChanged 구독
+    // 1) 먼저 구독을 건다 (가장 안정적인 패턴)
     get()._unsubAuth?.();
     const unsub = watchAuth(async (user) => {
-      // 유저가 붙었다면 그대로 종료
       if (user) {
         try {
           await ensureUserDoc(user);
@@ -57,32 +56,18 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
         }
         return;
       }
-
-      // 여기까지 왔다는 건 아직 user 없음
       set({ user: null, settings: null, loading: false, error: null });
     });
     set({ _unsubAuth: unsub });
 
-    // 2) 리다이렉트 복귀 케이스일 때만 getRedirectResult() "지연" 호출
+    // 2) 리다이렉트 복귀였다면, 짧게 기다렸다가 여전히 user 없을 때만 한 번 호출
     const redirected = sessionStorage.getItem('auth:redirecting') === '1';
     if (redirected) {
-      // 짧게 한 텀(예: 200~400ms) 기다린 뒤 여전히 user 없으면 호출
       setTimeout(async () => {
-        if (get().user) {
-          sessionStorage.removeItem('auth:redirecting');
-          return;
-        }
-        try {
-          const user = await handleRedirectCallbackOnce(); // 내부에서 getRedirectResult 호출
-          if (user) {
-            // onAuthStateChanged가 곧 들어오므로 여기선 굳이 set 안 해도 됨
-          } else {
-            // 여전히 없음 → 팝업 폴백 버튼 노출
-            set({ needPopupFallback: true });
-          }
-        } finally {
-          sessionStorage.removeItem('auth:redirecting');
-        }
+        if (get().user) { sessionStorage.removeItem('auth:redirecting'); return; }
+        const u = await handleRedirectCallbackOnce();
+        if (!u && !get().user) set({ needPopupFallback: true });
+        sessionStorage.removeItem('auth:redirecting');
       }, 500);
     }
   },
