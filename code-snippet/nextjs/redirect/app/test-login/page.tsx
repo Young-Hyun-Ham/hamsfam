@@ -14,7 +14,6 @@ export default function TestLogin() {
   const logout = useStore(s => s.logout);
 
   const uid = useStore(s => s.user?.uid ?? null);
-  const needPopupFallback = useStore(s => s.needPopupFallback);
   const loading = useStore(s => s.loading);
   const error = useStore(s => s.error);
 
@@ -61,21 +60,6 @@ export default function TestLogin() {
       <button onClick={loginWithGoogle} disabled={loading}>
         Google Redirect (store)
       </button>
-
-      {/* ⬇️ 리다이렉트 복귀 후 안붙을 때만 사용자 클릭으로 팝업 */}
-      {needPopupFallback && (
-        <>
-          <div style={{marginTop:12, padding:8, border:'1px solid #888'}}>
-            리다이렉트 세션 복구가 브라우저 설정으로 차단된 것 같아요.
-            <div style={{marginTop:8}}>
-                Google 팝업으로 로그인
-              {/* <button onClick={loginWithGooglePopup} disabled={loading}>
-                Google 팝업으로 로그인
-              </button> */}
-            </div>
-          </div>
-        </>
-      )}
 
       {uid ? (
         <>
