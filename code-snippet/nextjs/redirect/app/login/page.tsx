@@ -12,7 +12,7 @@ const LoginPage: FC = () => {
   const { t } = useTranslations();
   const initAuth = useStore(s => s.initAuth);
   const loginWithGoogle = useStore(s => s.loginWithGoogle);
-  const handleTestLoginAction = useStore(s => s.handleTestLogin);
+  // const handleTestLoginAction = useStore(s => s.handleTestLogin);
   const loading = useStore(s => s.loading);
   const error = useStore(s => s.error);
 
@@ -25,7 +25,7 @@ const LoginPage: FC = () => {
   const handleTestLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testId.trim()) return;
-    await handleTestLoginAction(testId.trim());
+    // await handleTestLoginAction(testId.trim());
   };
 
   return (
