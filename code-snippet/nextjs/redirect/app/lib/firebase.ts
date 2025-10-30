@@ -53,6 +53,13 @@ try {
   _auth = getAuth(app);
 }
 export const auth = _auth;
+(async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);   // ✅ 리턴 직후에도 항상 localStorage 우선
+  } catch (e) {
+    console.warn('[AUTH] setPersistence failed (ignored):', e);
+  }
+})();
 export const db = getFirestore(app);
 
 console.log('[AUTH] runtime config:', {
