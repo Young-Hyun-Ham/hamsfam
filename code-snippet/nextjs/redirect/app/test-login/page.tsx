@@ -44,14 +44,14 @@ export default function TestLogin() {
     runProbes();
 
     // 순수 진단용 로그 (동작 판단은 스토어가 함)
-    getRedirectResult(auth).then(res => {
-      console.log('[TEST] getRedirectResult:', res);
-    }).catch(e => console.error('[TEST] getRedirectResult error:', e));
+    // getRedirectResult(auth).then(res => {
+    //   console.log('[TEST] getRedirectResult:', res);
+    // }).catch(e => console.error('[TEST] getRedirectResult error:', e));
 
-    const unsub = onAuthStateChanged(auth, u => {
-      console.log('[TEST] onAuthStateChanged:', u?.uid, u?.email);
-    });
-    return () => unsub();
+    // const unsub = onAuthStateChanged(auth, u => {
+    //   console.log('[TEST] onAuthStateChanged:', u?.uid, u?.email);
+    // });
+    // return () => unsub();
   }, []);
 
   const onLogout = async () => {
