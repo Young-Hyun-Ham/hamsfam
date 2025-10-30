@@ -39,6 +39,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
   needPopupFallback: false,
 
   initAuth: () => {
+    if (typeof window === 'undefined') return;
     if (get()._authInited) return;
     set({ _authInited: true, loading: true, error: null });
 
