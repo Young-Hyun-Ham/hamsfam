@@ -43,36 +43,48 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
     if (get()._authInited) return;
     set({ _authInited: true, loading: true, error: null });
 
-    handleRedirectCallbackOnce()
-      .catch(() => {})
-      .finally(() => {
-        get()._unsubAuth?.();
-        const unsub = watchAuth(async (user) => {
-          if (user) {
-            try {
-              await ensureUserDoc(user);
-              const settings = await getOrInitSettings(user);
-              set({ user, settings, loading: false, error: null, needPopupFallback: false });
-            } catch (e: any) {
-              set({ user, settings: null, loading: false, error: e?.message ?? 'Failed to load settings', needPopupFallback: false });
-            }
-          } else {
-            set({ user: null, settings: null, loading: false, error: null });
-          }
-        });
-        set({ _unsubAuth: unsub });
-
-        // 리다이렉트 복귀였는데 user가 안 붙었으면 UI에 “팝업으로 로그인” 버튼 노출
-        const redirected = sessionStorage.getItem('auth:redirecting') === '1';
-        if (typeof window !== 'undefined' && redirected) {
-          // 짧게 한 텀 양보 후 still no user → 버튼 노출
-          setTimeout(() => {
-            if (!get().user) set({ needPopupFallback: true });
-            // 여기서도 자동 팝업 호출은 금지 (팝업 차단됨)
-            sessionStorage.removeItem('auth:redirecting');
-          }, 300);
+    // 1) 먼저 onAuthStateChanged 구독
+    get()._unsubAuth?.();
+    const unsub = watchAuth(async (user) => {
+      // 유저가 붙었다면 그대로 종료
+      if (user) {
+        try {
+          await ensureUserDoc(user);
+          const settings = await getOrInitSettings(user);
+          set({ user, settings, loading: false, error: null, needPopupFallback: false });
+        } catch (e: any) {
+          set({ user, settings: null, loading: false, error: e?.message ?? 'Failed to load settings', needPopupFallback: false });
         }
-      });
+        return;
+      }
+
+      // 여기까지 왔다는 건 아직 user 없음
+      set({ user: null, settings: null, loading: false, error: null });
+    });
+    set({ _unsubAuth: unsub });
+
+    // 2) 리다이렉트 복귀 케이스일 때만 getRedirectResult() "지연" 호출
+    const redirected = sessionStorage.getItem('auth:redirecting') === '1';
+    if (redirected) {
+      // 짧게 한 텀(예: 200~400ms) 기다린 뒤 여전히 user 없으면 호출
+      setTimeout(async () => {
+        if (get().user) {
+          sessionStorage.removeItem('auth:redirecting');
+          return;
+        }
+        try {
+          const user = await handleRedirectCallbackOnce(); // 내부에서 getRedirectResult 호출
+          if (user) {
+            // onAuthStateChanged가 곧 들어오므로 여기선 굳이 set 안 해도 됨
+          } else {
+            // 여전히 없음 → 팝업 폴백 버튼 노출
+            set({ needPopupFallback: true });
+          }
+        } finally {
+          sessionStorage.removeItem('auth:redirecting');
+        }
+      }, 300);
+    }
   },
 
   loginWithGoogle: async () => {
