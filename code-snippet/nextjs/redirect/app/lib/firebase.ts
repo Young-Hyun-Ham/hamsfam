@@ -1,163 +1,67 @@
 // app/lib/firebase.ts
-'use client';
-
-import { initializeApp, getApps, getApp, setLogLevel } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import {
-  initializeAuth,
-  getAuth,
-  GoogleAuthProvider,
-  indexedDBLocalPersistence,
-  browserLocalPersistence,
-  inMemoryPersistence,
-  browserPopupRedirectResolver,
-  onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
-  signOut,
-  signInAnonymously,
-  updateProfile,
-  User,
-  setPersistence,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult, onAuthStateChanged, UserCredential
 } from 'firebase/auth';
-import {
-  getFirestore, doc, getDoc, setDoc, serverTimestamp,
-} from 'firebase/firestore';
-
-function must(name: string, v: string | undefined) {
-  if (!v) throw new Error(`[ENV] ${name} is missing`);
-  return v;
-}
 
 const firebaseConfig = {
-  apiKey: must('NEXT_PUBLIC_FIREBASE_API_KEY', process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
-  authDomain: must('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN), // ex) hamsfam.firebaseapp.com
-  projectId: must('NEXT_PUBLIC_FIREBASE_PROJECT_ID', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
-  appId: must('NEXT_PUBLIC_FIREBASE_APP_ID', process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
-  storageBucket: must('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET), // ex) hamsfam.appspot.com
-  messagingSenderId: must('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!, // ⭐ 현재 배포 도메인과 일치 권장
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
-// 내부 디버그 로그
-setLogLevel('debug');
-
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-// initializeAuth 1회 + 다중 퍼시스턴스 + 리다이렉트 리졸버
-let _auth: ReturnType<typeof getAuth>;
-try {
-  _auth = initializeAuth(app, {
-    persistence: [browserLocalPersistence, indexedDBLocalPersistence, inMemoryPersistence],
-    popupRedirectResolver: browserPopupRedirectResolver,
-  });
-} catch {
-  _auth = getAuth(app);
-}
-export const auth = _auth;
-(async () => {
-  try {
-    await setPersistence(auth, browserLocalPersistence);   // ✅ 리턴 직후에도 항상 localStorage 우선
-  } catch (e) {
-    console.warn('[AUTH] setPersistence failed (ignored):', e);
-  }
-})();
-export const db = getFirestore(app);
-
-console.log('[AUTH] runtime config:', {
-  origin: typeof window !== 'undefined' ? window.location.origin : '(ssr)',
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  appId: firebaseConfig.appId,
-  storageBucket: firebaseConfig.storageBucket,
-});
-
+export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
-googleProvider.addScope('email');
 
-export async function startGoogleRedirectLogin() {
-  // 시작 전 아티팩트 정리 (직전 실패 잔여물 제거)
-  hardResetAuthArtifacts();
-  
-  await setPersistence(auth, browserLocalPersistence); // ✅ 명시
+export const watchAuth = (cb: (user: any) => void) => onAuthStateChanged(auth, cb);
 
-  // 계정선택 강제(이전 세션 잔상 최소화)
-  googleProvider.setCustomParameters({ prompt: 'select_account' });
-
-  sessionStorage.setItem('auth:redirecting', '1');
-  await signInWithRedirect(auth, googleProvider);
+// 세션 스토리지가 동작 가능한지(프라이빗/제3자쿠키 차단 체크 대용)
+export function isSessionStorageOk() {
+  try {
+    const k = '__t__';
+    sessionStorage.setItem(k, '1');
+    sessionStorage.removeItem(k);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export async function handleRedirectCallbackOnce(): Promise<User | null> {
+// 리다이렉트 결과 복구(한 번만)
+let _redirectChecked = false;
+export async function tryGetRedirectResultOnce(): Promise<UserCredential | null> {
+  if (_redirectChecked) return null;
+  _redirectChecked = true;
   try {
-    const res = await getRedirectResult(auth);
-    console.log('[AUTH] getRedirectResult:', res);
-    // sessionStorage.removeItem('auth:redirecting');
-    return res?.user ?? null;
+    const cred = await getRedirectResult(auth);
+    return cred; // 없으면 null
   } catch (e) {
-    console.error('[AUTH] getRedirectResult error:', e);
-    // sessionStorage.removeItem('auth:redirecting');
+    // 복구 자체가 막힌 경우도 여기로 떨어질 수 있음
     return null;
   }
 }
 
-export async function ensureUserDoc(user: User) {
-  const ref = doc(db, 'users', user.uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      uid: user.uid,
-      email: user.email ?? null,
-      displayName: user.displayName ?? null,
-      photoURL: user.photoURL ?? null,
-      createdAt: serverTimestamp(),
-      provider: user.providerData?.[0]?.providerId ?? 'unknown',
-    });
-  }
-}
-export async function getOrInitSettings(user: User) {
-  const sref = doc(db, 'settings', user.uid);
-  const ssnap = await getDoc(sref);
-  if (!ssnap.exists()) {
-    await setDoc(sref, { theme: 'light', language: 'ko', createdAt: serverTimestamp() });
-    return { theme: 'light', language: 'ko' };
-  }
-  return ssnap.data();
-}
-export async function testLogin(displayName: string) {
-  const cred = await signInAnonymously(auth);
-  if (auth.currentUser && displayName.trim()) {
-    await updateProfile(auth.currentUser, { displayName });
-  }
-  return cred.user;
-}
-export async function signOutAll() { await signOut(auth); }
-export function watchAuth(cb: (user: User | null) => void) {
-  console.log('[AUTH] watchAuth subscribed');
-  return onAuthStateChanged(auth, (u) => {
-    console.log('[AUTH] onAuthStateChanged user:', u?.uid, u?.email);
-    cb(u);
-  });
-}
-
-// 리다이렉트/세션 관련 잔여 키 싹 정리
-export function hardResetAuthArtifacts() {
+// 스마트 로그인: 팝업 우선 → 실패 시 리다이렉트
+export async function smartGoogleLogin() {
   try {
-    // Firebase가 쓰는 로컬/세션 키들 정리
-    const rm = (s: Storage) => {
-      const keys: string[] = [];
-      for (let i = 0; i < s.length; i++) {
-        const k = s.key(i)!;
-        if (
-          k.startsWith('firebase:') ||        // firebase:* 전반
-          k.startsWith('g_state') ||          // 구글 g_state
-          k.startsWith('gState') ||           // 변종
-          k.includes('redirect')              // redirect 관련
-        ) keys.push(k);
-      }
-      keys.forEach(k => s.removeItem(k));
-    };
-    rm(localStorage);
-    rm(sessionStorage);
-  } catch {}
+    return await signInWithPopup(auth, googleProvider);
+  } catch (err: any) {
+    // 팝업 차단/미지원 → 리다이렉트로 폴백
+    const code = err?.code || '';
+    const popupBlocked =
+      code === 'auth/popup-blocked' ||
+      code === 'auth/popup-closed-by-user' ||
+      code === 'auth/cancelled-popup-request' ||
+      code === 'auth/operation-not-supported-in-this-environment';
+    if (popupBlocked) {
+      await signInWithRedirect(auth, googleProvider);
+      return null; // 리다이렉트로 나감
+    }
+    throw err;
+  }
 }
-

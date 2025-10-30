@@ -10,7 +10,7 @@ export default function TestLogin() {
   // 🔹 스토어 액션/상태 사용 (직접 Firebase API 호출 금지!)
   const initAuth = useStore(s => s.initAuth);
   const loginWithGoogle = useStore(s => s.loginWithGoogle);               // redirect 시작 (플래그 세팅 포함)
-  const loginWithGooglePopup = useStore(s => s.loginWithGooglePopup);     // 팝업 폴백 (반드시 버튼 클릭에서)
+  // const loginWithGooglePopup = useStore(s => s.loginWithGooglePopup);     // 팝업 폴백 (반드시 버튼 클릭에서)
   const logout = useStore(s => s.logout);
 
   const uid = useStore(s => s.user?.uid ?? null);
@@ -21,7 +21,7 @@ export default function TestLogin() {
   const [probes, setProbes] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    initAuth(); // ✅ 반드시 호출
+    initAuth(); // 반드시 호출
   }, [initAuth]);
 
   useEffect(() => {
@@ -68,9 +68,10 @@ export default function TestLogin() {
           <div style={{marginTop:12, padding:8, border:'1px solid #888'}}>
             리다이렉트 세션 복구가 브라우저 설정으로 차단된 것 같아요.
             <div style={{marginTop:8}}>
-              <button onClick={loginWithGooglePopup} disabled={loading}>
                 Google 팝업으로 로그인
-              </button>
+              {/* <button onClick={loginWithGooglePopup} disabled={loading}>
+                Google 팝업으로 로그인
+              </button> */}
             </div>
           </div>
         </>
