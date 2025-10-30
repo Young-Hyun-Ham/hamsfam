@@ -83,7 +83,7 @@ export const createAuthSlice: StateCreator<AuthState, [], [], AuthState> = (set,
         } finally {
           sessionStorage.removeItem('auth:redirecting');
         }
-      }, 300);
+      }, 500);
     }
   },
 
