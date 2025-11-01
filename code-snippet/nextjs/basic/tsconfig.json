@@ -37,9 +37,9 @@
     "**/*.mts",
     ".next\\dev/types/**/*.ts",
     ".next\\dev/types/**/*.ts",
-    "app/lib/gemini.js",
-    "app/lib/llm.js",
-    "app/lib/locales.js"
+    "lib/gemini.js",
+    "lib/llm.js",
+    "lib/locales.js"
   ],
   "exclude": [
     "node_modules"

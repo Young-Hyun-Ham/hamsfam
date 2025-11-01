@@ -1,19 +1,21 @@
 // app/page.tsx
 'use client';
 
-import { useStore } from '@/app/store';
-import Login from '@/app/login/page';
-import Todos from '@/app/todos/page';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useStore } from '@/store';
+import Login from '@/app/(content)/login/page';
 
-export default function MainPage() {
-  const initAuth = useStore((s:any) => s.initAuth);
-  const user = useStore((s:any) => s.user);
+export default function RootPage() {
+  const router = useRouter();
+  const initAuth = useStore((s: any) => s.initAuth);
+  const user = useStore((s: any) => s.user);
 
   useEffect(() => { initAuth(); }, [initAuth]);
-  
-  return (
-    <> {user ? <Todos /> : <Login /> } </>
-  );
-}
 
+  useEffect(() => {
+    if (user) router.replace('/main');  // 로그인 완료시 /main으로
+  }, [user, router]);
+
+  return <Login />;           // 로그인 전에는 루트에서 로그인 화면만
+}
