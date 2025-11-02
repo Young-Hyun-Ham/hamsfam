@@ -48,14 +48,15 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   // SSR에서 받은 유저 수화. 없으면 /api/auth/me로 1회 조회
   useEffect(() => {
     if (!user) {
-       router.replace("/login");
+       router.replace("/");
     };
   }, [user]);
-
-  function handleLogout() {
-    logout().then(() => router.replace("/login"));
-  }
   
+  const handleLogout = async () => {
+    await logout();           // 로그아웃 처리
+    router.push("/");         // 메인 or 로그인 페이지로 이동
+  };
+
   // ---- menu popover ----
   const [menuOpen, setMenuOpen] = useState(false);
 

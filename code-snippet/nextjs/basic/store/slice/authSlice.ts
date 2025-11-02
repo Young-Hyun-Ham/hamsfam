@@ -1,4 +1,15 @@
-import { db, addDoc, collection, doc, GoogleAuthProvider, setDoc, signInWithPopup, signOut, serverTimestamp } from '@/lib/firebase';
+
+import { 
+  db, 
+  addDoc, 
+  collection, 
+  doc, 
+  GoogleAuthProvider, 
+  setDoc, 
+  signInWithPopup, 
+  signOut, 
+  serverTimestamp,
+} from '@/lib/firebase';
 
 export const createAuthSlice = (set: any, get: any) => ({
   user: null,

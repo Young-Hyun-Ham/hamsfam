@@ -16,8 +16,13 @@ export default function ConnectLayout({ header, children }: ContentProps) {
   const initAuth = useStore((s: any) => s.initAuth);
   const { user } = useStore();
   const logout = useStore((state: any) => state.logout);
-  
+
   useEffect(() => { initAuth(); }, [initAuth]);
+
+  const handleLogout = async () => {
+    await logout();           // 로그아웃 처리
+    router.push("/");         // 메인 or 로그인 페이지로 이동
+  };
 
   return (
     // 전체 높이 확보
@@ -31,7 +36,7 @@ export default function ConnectLayout({ header, children }: ContentProps) {
           <div className="flex items-center gap-3 text-sm">
             <span className="border-l pl-3">{user?.displayName}</span>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md hover:cursor-pointer"
             >
               로그아웃
