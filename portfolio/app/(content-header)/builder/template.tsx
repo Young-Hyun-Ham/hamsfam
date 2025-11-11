@@ -1,4 +1,5 @@
-// app/chat/template.tsx
+// app/(content-header)/builder/template.tsx
+
 import type { ReactNode } from "react";
 
 export default function Template({ children }: { children: ReactNode }) {

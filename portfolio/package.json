@@ -1,0 +1,45 @@
+{
+  "name": "basic",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@hello-pangea/dnd": "^18.0.1",
+    "@mui/icons-material": "^6.5.0",
+    "@mui/material": "^6.5.0",
+    "@rjsf/core": "^5.24.12",
+    "@rjsf/mui": "^5.24.12",
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.3",
+    "firebase": "^12.2.1",
+    "firebase-admin": "^13.5.0",
+    "jose": "^6.0.13",
+    "jwt-decode": "^4.0.0",
+    "next": "16.0.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "reactflow": "^11.11.4",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@xyflow/react": "^12.8.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.0",
+    "lucide-react": "^0.541.0",
+    "react-flow": "^1.0.3",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

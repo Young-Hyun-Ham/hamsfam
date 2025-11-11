@@ -1,0 +1,374 @@
+.nodeWrapper {
+  width: 250px;
+  background-color: white;
+  border: 1px solid #c5c5c5;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  color: black;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* 부드러운 전환 효과 */
+}
+
+/* <<< [추가] 시작 노드 스타일 >>> */
+.nodeWrapper.startNode {
+    border: 2px solid #2ecc71; /* 초록색 테두리 */
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4); /* 초록색 그림자 */
+}
+/* <<< [추가 끝] >>> */
+
+.formNodeWrapper {
+  width: 320px;
+}
+
+/* --- 💡 추가된 부분 시작 --- */
+.scenarioNodeWrapper {
+  background-color: #f0f2f5;
+  border: 1px solid #bdc3c7;
+}
+
+.scenarioDescription {
+  padding: 10px;
+  font-style: italic;
+  color: #555;
+  text-align: center;
+  margin: 0;
+  font-size: 0.85rem;
+}
+/* --- 💡 추가된 부분 끝 --- */
+
+.nodeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 12px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  color: white;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.headerTextContent {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.headerButtons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.anchorButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 1rem;
+  line-height: 1;
+}
+.anchorButton.active,
+.anchorButton:hover {
+  color: white;
+}
+.nodeWrapper.anchored {
+    border: 2px solid #e74c3c;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+/* <<< [추가] 시작 노드 설정 버튼 스타일 >>> */
+.startNodeButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc; /* 기본 색상 */
+  font-size: 1rem;
+  line-height: 1;
+}
+.startNodeButton.active,
+.startNodeButton:hover {
+  color: #2ecc71; /* 활성/호버 시 초록색 */
+}
+/* <<< [추가 끝] >>> */
+
+.playButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.playButton:hover {
+  opacity: 0.8;
+}
+
+/* .deleteButton {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 0.7rem;
+  margin-right: -10px;
+}
+
+.deleteButton:hover {
+  opacity: 1;
+} */
+
+.deleteButton {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: #555; /* 어두운 회색 글자 */
+  font-size: 0.9rem; /* 살짝 크게 */
+  font-weight: bold;
+  margin-right: -2px;
+  margin-top: 2px;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.deleteButton:hover {
+  color: #e74c3c; /* hover 시 빨간색 강조 */
+  transform: scale(1.1); /* 살짝 커지는 효과 */
+}
+
+.deleteButton:active {
+  transform: scale(0.95);
+}
+
+.nodeBody {
+  padding: 12px;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #777;
+  text-align: center;
+}
+
+.textInput {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #b4b4b4;
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.formTitleInput {
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+  border: none;
+  border-bottom: 1px solid #ddd;
+  border-radius: 0;
+}
+.formTitleInput:focus {
+  outline: none;
+  border-bottom-color: #9b59b6;
+}
+
+.quickReply {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.quickReplyInput {
+  flex-grow: 1;
+  width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  border-bottom: 1px solid transparent;
+}
+
+.quickReplyInput:focus {
+  border-bottom: 1px solid #3498db;
+}
+
+.addReplyButton {
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  background-color: #fafafa;
+  cursor: pointer;
+  color: #555;
+}
+.addReplyButton:hover {
+  background-color: #f0f0f0;
+}
+
+.deleteReplyButton {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0 4px;
+}
+.deleteReplyButton:hover {
+  color: #e74c3c;
+}
+
+.formElementsPlaceholder {
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+.formPreview {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #dddddd;
+}
+
+.previewElement {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.previewLabel {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #555;
+  text-align: center;
+}
+
+.previewInput, .previewBox {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.previewInput:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  color: #777;
+}
+
+.previewBox {
+  color: #777;
+}
+
+.previewOptionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.previewCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.previewCheckbox input {
+  margin: 0;
+  accent-color: #9b59b6;
+}
+
+.previewCheckbox label {
+  color: #333;
+}
+
+.previewGridTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.previewGridTable td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  font-size: 0.8rem;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.branchOptionsContainer {
+  background-color: #d3d3d3;
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.branchOption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 15px;
+}
+
+.branchOptionButton {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.slotBindingInfo {
+  font-size: 0.7rem;
+  color: #007aff;
+  text-align: center;
+  font-style: italic;
+  margin-top: -2px;
+  margin-bottom: 2px;
+}
