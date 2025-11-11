@@ -1,0 +1,112 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 800px;
+  height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  color: #333;
+  text-align: left;
+}
+
+.closeButton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+}
+.closeButton:hover {
+  color: #333;
+}
+
+.modalContent h1 {
+  font-size: 1.8rem;
+  margin-top: 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.modalContent h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-top: 30px;
+}
+
+.modalContent h3 {
+  font-size: 1.2rem;
+  margin-top: 25px;
+}
+
+.modalContent p, .modalContent li {
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.modalContent ul, .modalContent ol {
+  padding-left: 20px;
+}
+
+.modalContent code {
+  background-color: #f1f1f1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.modalContent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 0.9rem;
+}
+
+.modalContent th, .modalContent td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+.modalContent th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.languageSelector {
+  position: absolute;
+  top: 40px;
+  left: 670px;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+}
+
+.languageSelector label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
