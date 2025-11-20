@@ -1,4 +1,4 @@
-// app/(main)/page.tsx
+// app/(siderbar-header)/admin/page.tsx
 "use client";
 
 export default function Main() {

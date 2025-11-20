@@ -120,12 +120,18 @@
   background: none;
   border: none;
   color: white;
-  font-size: 0.7rem;
-  margin-right: -10px;
+  /* font-size: 0.7rem;
+  margin-right: -10px; */
+  /* 수정 */
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .deleteButton:hover {
   opacity: 1;
+  color: #e74c3c !important;
 }
 
 .nodeBody {

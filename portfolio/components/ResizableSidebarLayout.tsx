@@ -2,9 +2,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react";
-
 import { useRouter } from "next/navigation";
 import { useStore } from "@/store";
+import { ExpandIcon, CollapseIcon } from "./Icons";
 
 type SiderbarProps = {
   header?: React.ReactNode;
@@ -18,6 +18,8 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   const router = useRouter();
   const { user } = useStore();
   const logout = useStore((state: any) => state.logout);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   useEffect(() => {
     if (!user) {
@@ -25,14 +27,17 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
     }
    }, []);
   
-   // ---- resizable sidebar ----
   const containerRef = useRef<HTMLDivElement>(null);
   const [sidebarW, setSidebarW] = useState<number>(200);
   const [dragging, setDragging] = useState(false);
 
-  function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
+  function clamp(v: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, v)); 
+  }
 
-  useEffect(() => { localStorage.setItem("sidebar:w", String(sidebarW)); }, [sidebarW]);
+  useEffect(() => { 
+    localStorage.setItem("sidebar:w", String(sidebarW)); 
+  }, [sidebarW]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -59,9 +64,29 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   // ---- menu popover ----
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const handleGoMenu = (type: string) => {
+    switch (type) {
+      case "menu":
+        router.push("/admin/menu");
+        break;
+      case "settings":
+        router.push("/admin/settings");
+        break;
+      default:
+        break;
+    }
+    setMenuOpen(false);
+  };
+
+  const handleCollapse = () => {
+    setSidebarCollapsed(true);
+    setMenuOpen(false);
+  };
+
   return (
     // 전체 높이 확보
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    // <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="h-screen flex flex-col bg-gray-50 text-gray-900">
 
       {/* 상단 헤더 (고정) */}
       <header className="sticky top-0 z-30 h-14 bg-white/90 backdrop-blur shadow-sm">
@@ -82,47 +107,88 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
       </header>
 
       {/* 하단 바디 (좌/우 그리드) */}
-      <div ref={containerRef} className="flex min-h-[calc(100vh-3.5rem)] w-full relative">
+      {/* <div ref={containerRef} className="flex min-h-[calc(100vh-3.5rem)] w-full relative"> */}
+      <div
+        ref={containerRef}
+        className="flex flex-1 w-full relative overflow-hidden"
+      >
         {/* 좌측 메뉴(가변 폭) */}
         <aside 
-          style={{ width: `${sidebarW}px` }}
+          style={{ width: sidebarCollapsed ? '32px' : `${sidebarW}px` }}
           className="relative bg-white min-w-0 overflow-y-auto"
         >
           <div className="flex items-center justify-between px-3 py-2">
-            <div className="text-sm font-semibold">MENU</div>
-            <div className="relative">
+            {sidebarCollapsed ? (
+              // 펼치기 아이콘만 표시
               <button
+                onClick={() => setSidebarCollapsed(false)}
                 className="size-7 grid place-items-center rounded-md hover:bg-gray-100 cursor-pointer"
-                onClick={() => setMenuOpen(v => !v)}
               >
-                {/* … 아이콘 */}
-                <span className="leading-none text-xl">…</span>
+                {/* 펼치기 아이콘 */}
+                <span className="text-xl">
+                  <ExpandIcon />
+                </span>
               </button>
-              {menuOpen && (
-                <div
-                  className="absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-xl ring-1 ring-black/5 p-1 z-50"
-                  onMouseLeave={() => setMenuOpen(false)}
-                >
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50">메뉴 편집</button>
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50">사이트맵</button>
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50">메뉴 숨기기</button>
+            ) : (
+              <>
+                <div className="text-sm font-semibold">MENU</div>
+                <div className="relative">
+                  <button
+                    className="size-7 grid place-items-center rounded-md hover:bg-gray-100 cursor-pointer"
+                    onClick={() => setMenuOpen(v => !v)}
+                  >
+                    {/* … 아이콘 */}
+                    <span className="leading-none text-xl">…</span>
+                  </button>
+                  {menuOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-xl ring-1 ring-black/5 p-1 z-50"
+                      onMouseLeave={() => setMenuOpen(false)}
+                    >
+                      <button 
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50"
+                        style={{cursor:'pointer'}}
+                        onClick={() => { handleGoMenu('menu') } }
+                      >
+                        메뉴관리
+                      </button>
+                      <button 
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50"
+                        style={{cursor:'pointer'}}
+                        onClick={() => { handleGoMenu('settings') } }
+                      >
+                        설정
+                      </button>
+                      <button 
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                        style={{cursor:'pointer'}}
+                        onClick={handleCollapse}
+                      >
+                        <CollapseIcon /> 숨기기
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
-          {sidebar ?? (
+          {!sidebarCollapsed && (sidebar ?? (
             /* sidebar 메뉴가 없을 경우 초기 */
             <nav className="p-3 text-sm">
               <div className="mb-3 font-semibold">메뉴</div>
               <ul className="space-y-1">
-                <li><a className="block rounded px-2 py-1 hover:bg-gray-100" href="#">대시보드</a></li>
-                <li><a className="block rounded px-2 py-1 hover:bg-gray-100" href="#">폼 목록</a></li>
-                <li><a className="block rounded px-2 py-1 hover:bg-gray-100" href="#">시나리오</a></li>
-                <li><a className="block rounded px-2 py-1 hover:bg-gray-100" href="#">API 리스트</a></li>
+                <li>
+                  <a 
+                    className="block rounded px-2 py-1 hover:bg-gray-100" 
+                    href="/admin/user-info?path_ids=admin>user-info&depth=0"
+                  >
+                    사용자정보
+                  </a>
+                </li>
               </ul>
             </nav>
-          )}
+          ))}
         </aside>
         
         {/* 리사이저(부드러운 그라데이션 + 드래그) */}

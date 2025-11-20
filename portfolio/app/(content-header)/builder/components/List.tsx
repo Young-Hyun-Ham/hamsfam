@@ -102,6 +102,7 @@ const styles: any = {
   button: {
     padding: '3px 10px',
     fontSize: '1rem',
+    cursor: 'pointer',
   }
 };
 

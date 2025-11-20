@@ -87,10 +87,13 @@ function mergeColors(
 /* 7) 스토어 상태/액션 타입 */
 type StoreState = {
   backend: BackendKind;
-  setBackend: (kind: BackendKind) => void;
 
-  nodes: Node<any>[];          // 노드 데이터 제네릭이 다양하므로 any 유지
+  nodes: Node<any>[];
   edges: Edge<any>[];
+  
+  setNodes: (newNodes: any[]) => void;
+  setEdges: (newEdges: any[]) => void;
+
   selectedNodeId: string | null;
   anchorNodeId: string | null;
   startNodeId: string | null;
@@ -159,10 +162,20 @@ type StoreState = {
 /* 8) Zustand 제네릭으로 상태 안전화 */
 const useBuilderStore = create<StoreState>((set, get) => ({
   backend: 'firebase',
-  setBackend: (kind: BackendKind) => set({ backend: kind }),
 
   nodes: [],
   edges: [],
+
+  // 전체 노드 교체용
+  setNodes: (newNodes: any[]) => {
+    set({ nodes: newNodes });
+  },
+
+  // 전체 엣지 교체용
+  setEdges: (newEdges: any[]) => {
+    set({ edges: newEdges });
+  },
+
   selectedNodeId: null,
   anchorNodeId: null,
   startNodeId: null,

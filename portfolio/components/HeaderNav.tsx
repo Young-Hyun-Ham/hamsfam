@@ -4,6 +4,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import type { NavItem } from '@/types/nav';
+import { useStore } from "@/store";
 
 type Props = { items: NavItem[] };
 
@@ -12,6 +13,11 @@ export default function HeaderNav({ items }: Props) {
   const router = useRouter();
   const [_open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const { headerMenus } = useStore();
+
+  // 실제로 그릴 메뉴: 스토어에 값이 있으면 menus, 없으면 서버에서 온 items
+  const headerItems = headerMenus && headerMenus.length > 0 ? headerMenus : items;
 
   // 바깥 클릭 시 ... 팝오버 닫기
   useEffect(() => {
@@ -36,7 +42,7 @@ export default function HeaderNav({ items }: Props) {
   return (
     <div className="flex items-center gap-2 overflow-x-auto">
       {/* 동적 메뉴 버튼들 */}
-      {items.map(item => {
+      {headerItems.map((item: any) => {
         const active = pathname === item.href || pathname.startsWith(item.href + '/');
         return (
           <button

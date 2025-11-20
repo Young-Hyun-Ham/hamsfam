@@ -1,4 +1,4 @@
-// app/(main)/layout.tsx (서버컴포넌트)
+// app/(content-header)/layout.tsx (서버컴포넌트)
 import type { ReactNode } from "react";
 import { api } from "@/lib/axios";
 

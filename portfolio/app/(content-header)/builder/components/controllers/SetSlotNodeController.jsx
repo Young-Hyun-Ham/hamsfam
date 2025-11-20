@@ -31,7 +31,14 @@ function SetSlotNodeController({ localNode, setLocalNode }) {
       <div className={styles.formGroup}>
         <label>Slot Assignments</label>
         <p className={styles.instructionText} style={{ marginTop: 0, fontSize: '0.8rem' }}>
-          Set or update slot values. You can use existing slot values in the 'Value' field with {`{slotName}`}.
+          Set or update slot values. You can use existing slot values in the 'Value' field with {`{{slotName}}`}.
+        </p>
+        <p className={styles.instructionText} style={{marginTop: 0, fontSize: '0.8rem', textAlign:'left'}}>
+            {`ex)`}<br/>
+            {`{{object명}}`}<br/>
+            {`{{[배열]}}`}<br/>
+            {`{{[배열][배열번호].key값}}`}<br/>
+            {`{{header([배열], key값)}}`}
         </p>
         <div className={styles.repliesContainer}>
           {(data.assignments || []).map((assign, index) => (
