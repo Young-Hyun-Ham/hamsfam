@@ -13,8 +13,7 @@ function FormNode({ id, data }) {
   // (isAnchored, isStartNode 로직 제거)
 
   const renderElementPreview = (element) => {
-    // ... (기존 renderElementPreview 함수 내용은 동일)
-     switch (element.type) {
+    switch (element.type) {
       case 'input':
         return (
           <div key={element.id} className={styles.previewElement}>
@@ -27,9 +26,30 @@ function FormNode({ id, data }) {
             />
           </div>
         );
+      case 'search':
+        return (
+          <div key={element.id} className={styles.previewElement}>
+            <label className={styles.previewLabel}>{element.label || 'Search'}</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <input
+                type="text"
+                className={styles.previewInput}
+                placeholder={element.placeholder || ''}
+                readOnly
+                style={{ flexGrow: 1 }}
+              />
+              <span style={{ padding: '0 4px', fontSize: '1.2rem' }}>🔍</span>
+            </div>
+            {element.resultSlot && (
+              <div className={styles.slotBindingInfo}>
+                Result Slot: {`{${element.resultSlot}}`}
+              </div>
+            )}
+          </div>
+        );
       case 'date':
         return (
-           <div key={element.id} className={styles.previewElement}>
+          <div key={element.id} className={styles.previewElement}>
             <label className={styles.previewLabel}>{element.label || 'Date'}</label>
             <input type="text" className={styles.previewInput} placeholder="YYYY-MM-DD" readOnly />
           </div>
@@ -43,9 +63,9 @@ function FormNode({ id, data }) {
             )}
             {/* --- 💡 수정된 부분 시작 (formatDisplayKeys 헬퍼 사용) --- */}
             {element.optionsSlot && element.displayKeys && element.displayKeys.length > 0 && (
-                <div className={styles.slotBindingInfo} style={{ fontStyle: 'normal', color: '#555', fontSize: '0.7rem' }}>
-                    Displaying: {formatDisplayKeys(element.displayKeys)}
-                </div>
+              <div className={styles.slotBindingInfo} style={{ fontStyle: 'normal', color: '#555', fontSize: '0.7rem' }}>
+                Displaying: {formatDisplayKeys(element.displayKeys)}
+              </div>
             )}
             {/* --- 💡 수정된 부분 끝 --- */}
             <table className={styles.previewGridTable}>
@@ -83,10 +103,10 @@ function FormNode({ id, data }) {
           </div>
         );
       case 'dropbox':
-         // optionsSlot이 있고, fallback 옵션이 없으면 기본 옵션 표시
-         const displayOptions = element.optionsSlot && (!element.options || element.options.length === 0)
-             ? ['Option 1', 'Option 2']
-             : (element.options || ['Option 1', 'Option 2']);
+        // optionsSlot이 있고, fallback 옵션이 없으면 기본 옵션 표시
+        const displayOptions = element.optionsSlot && (!element.options || element.options.length === 0)
+          ? ['Option 1', 'Option 2']
+          : (element.options || ['Option 1', 'Option 2']);
 
         return (
           <div key={element.id} className={styles.previewElement}>
@@ -95,11 +115,11 @@ function FormNode({ id, data }) {
               <div className={styles.slotBindingInfo}>Bound to: {`{${element.optionsSlot}}`}</div>
             )}
             <select className={styles.previewInput} disabled>
-               {displayOptions.map((opt, i) => {
-                   const value = typeof opt === 'object' ? opt.value : opt;
-                   const label = typeof opt === 'object' ? opt.label : opt;
-                   return <option key={value || i} value={value}>{label}</option>;
-               })}
+              {displayOptions.map((opt, i) => {
+                const value = typeof opt === 'object' ? opt.value : opt;
+                const label = typeof opt === 'object' ? opt.label : opt;
+                return <option key={value || i} value={value}>{label}</option>;
+              })}
             </select>
           </div>
         );

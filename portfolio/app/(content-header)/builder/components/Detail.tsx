@@ -30,6 +30,7 @@ import SlotDisplay from './SlotDisplay';
 import NodeController from './NodeController';
 import ChatbotSimulator from './ChatbotSimulator';
 import { SettingsIcon } from './icons/Icons';
+import LogPreview from './modals/LogPreview';
 
 const nodeTypes = {
   message: MessageNode,
@@ -75,7 +76,7 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
     setSelectedNodeId, duplicateNode, deleteSelectedEdges,
     nodeColors, setNodeColor, nodeTextColors, setNodeTextColor,
     exportSelectedNodes, importNodes, addScenarioAsGroup,
-    visibleNodeTypes // 💡 [추가] visibleNodeTypes 가져오기
+    visibleNodeTypes, setNodes, setEdges,
   } = useBuilderStore();
 
   const { getNodes, project } = useReactFlow();
@@ -87,6 +88,8 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
   const [isColorSettingsVisible, setIsColorSettingsVisible] = useState(false);
   const [isSimulatorExpanded, setIsSimulatorExpanded] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+
+  const [isLogVisible, setIsLogVisible] = useState(false);
 
   useEffect(() => {
     if (scenario) {
@@ -191,6 +194,8 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
     .filter((type: any) => type !== 'fixedmenu' && type !== 'scenario')
     .map((type: any) => ({ type, label: nodeLabels[type] || `+ ${type}` }));
 
+  // 관리자 인지 확인
+  const isAdmin = user.roles.some((t: string) => t.includes('admin'));
 
   return (
     <div className={styles.flowContainer}>
@@ -288,6 +293,11 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
           <div onClick={() => setIsSimulatorVisible(!isSimulatorVisible)}>
             <img src="/images/chat_simulator.png" alt="Simulator Icon" className={!isSimulatorVisible ? styles.botButtonHidden : styles.botButton} />
           </div>
+          {isAdmin ? (
+            <div onClick={() => setIsLogVisible(true)}>
+              <img src="/images/log.png" alt="log Icon" className={!isLogVisible ? styles.botButtonHidden : styles.botButton} />
+            </div>
+          ) : null}
         </div>
         <ReactFlow
           nodes={visibleNodes}
@@ -301,7 +311,8 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
           onKeyDown={handleKeyDown}
           onDragOver={onDragOver}
           onDrop={onDrop}
-          fitView
+          defaultViewport={{ x: 0, y: 0, zoom: 0.1 }}
+          fitView={false}
           style={{ backgroundColor: '#ffffff' }}
         >
           <Controls />
@@ -309,11 +320,9 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
         </ReactFlow>
       </div>
 
-      {/* --- 👇 [수정] backend prop 전달 --- */}
       <div className={`${styles.controllerPanel} ${selectedNodeId ? styles.visible : ''}`}>
         <NodeController backend={backend} />
       </div>
-      {/* --- 👆 [수정 끝] --- */}
 
       <div className={`${styles.resizerV} ${isSimulatorVisible && !isSimulatorExpanded ? styles.visible : ''}`} onMouseDown={handleMainResize} />
 
@@ -329,6 +338,36 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
             isExpanded={isSimulatorExpanded}
             setIsExpanded={setIsSimulatorExpanded}
           />
+        </div>
+      </div>
+
+      {/* isLogVisible 로 hidden / flex 전환 */}
+      <div
+        className={`${isLogVisible ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/40`}
+        onClick={() => setIsLogVisible(false)}
+      >
+        <div
+          className="bg-white w-[800px] max-w-[95vw] max-h-[80vh] rounded-lg shadow-lg flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-4 py-2 border-b">
+            <h2 className="text-sm font-semibold">Log (DB JSON 편집)</h2>
+            <button
+              onClick={() => setIsLogVisible(false)}
+              className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
+            >
+              닫기
+            </button>
+          </div>
+
+          <div className="p-4 overflow-y-auto">
+            <LogPreview
+              nodes={nodes}
+              edges={edges}
+              setNodes={setNodes}
+              setEdges={setEdges}
+            />
+          </div>
         </div>
       </div>
     </div>

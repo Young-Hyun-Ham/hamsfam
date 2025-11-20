@@ -5,7 +5,20 @@ import MessageRenderer from './MessageRenderer';
 import styles from '../ChatbotSimulator.module.css';
 
 // 💡 [수정된 부분] handleGridRowClick, onExcelUpload 프롭 추가
-const MessageHistory = ({ history, nodes, onOptionClick, handleFormSubmit, handleFormDefault, formData, handleFormInputChange, handleFormMultiInputChange, handleGridRowClick, onExcelUpload }) => {
+// 💡 [수정] handleFormElementApiCall prop 받기
+const MessageHistory = ({
+  history,
+  nodes,
+  onOptionClick,
+  handleFormSubmit,
+  handleFormDefault,
+  formData,
+  handleFormInputChange,
+  handleFormMultiInputChange,
+  handleGridRowClick,
+  onExcelUpload,
+  handleFormElementApiCall // 💡 [수정]
+}) => {
   const historyRef = useRef(null);
 
   useEffect(() => {
@@ -27,8 +40,9 @@ const MessageHistory = ({ history, nodes, onOptionClick, handleFormSubmit, handl
           formData={formData}
           handleFormInputChange={handleFormInputChange}
           handleFormMultiInputChange={handleFormMultiInputChange}
-          handleGridRowClick={handleGridRowClick} // 💡 [수정된 부분]
-          onExcelUpload={onExcelUpload} // <<< [추가]
+          handleGridRowClick={handleGridRowClick}
+          onExcelUpload={onExcelUpload}
+          handleFormElementApiCall={handleFormElementApiCall} // 💡 [수정] prop 전달
         />
       ))}
     </div>

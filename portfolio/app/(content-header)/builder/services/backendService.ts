@@ -3,7 +3,7 @@
 import * as firebaseApi from '@/app/api/builder/firebaseApi';
 import * as fastApi from '@/app/api/builder/fastApi';
 import { interpolateMessage, getNestedValue } from '../utils/simulatorUtils';
-import { useBuilderStore } from '../store/index-bak';
+import useBuilderStore from '../store/index';
 
 const services: any = {
   firebase: firebaseApi,

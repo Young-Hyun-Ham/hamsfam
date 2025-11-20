@@ -76,53 +76,69 @@ export const createNodeData = (type) => {
         chainNext: false // --- 👈 [추가] ---
       };
     case 'scenario':
-        return { ...baseData, label: 'Imported Scenario', scenarioId: null };
+      return { ...baseData, label: 'Imported Scenario', scenarioId: null };
     case 'setSlot':
-        // --- 👇 [수정] chainNext 추가 ---
-        return { ...baseData, assignments: [{ key: 'newSlot', value: 'someValue' }], chainNext: false };
+      // --- 👇 [수정] chainNext 추가 ---
+      return { ...baseData, assignments: [{ key: 'newSlot', value: 'someValue' }], chainNext: false };
     case 'delay':
-        // --- 👇 [수정] chainNext 추가 ---
-        return { ...baseData, duration: 1000, chainNext: false };
+      // --- 👇 [수정] chainNext 추가 ---
+      return { ...baseData, duration: 1000, chainNext: false };
     default:
       return baseData;
   }
 };
 
 export const createFormElement = (elementType) => {
-    // ... (변경 없음)
-    const newId = `${elementType}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    let newElement;
+  // ... (변경 없음)
+  const newId = `${elementType}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  let newElement;
 
-    switch (elementType) {
-        case 'input':
-            // --- 💡 수정: defaultValueSlot 제거, defaultValue 추가 ---
-            newElement = { id: newId, type: 'input', name: '', label: 'New Input', placeholder: '', validation: { type: 'text' }, defaultValue: '' };
-            break;
-        case 'date':
-            newElement = { id: newId, type: 'date', name: '', label: 'New Date', defaultValue: '' };
-            break;
-        case 'grid':
-            const rows = 2;
-            const columns = 2;
-            newElement = {
-                id: newId,
-                type: 'grid',
-                name: '',
-                label: 'New Grid',
-                rows: rows,
-                columns: columns,
-                data: Array(rows * columns).fill(''),
-                displayKeys: [], // --- 💡 수정된 부분 ---
-            };
-            break;
-        case 'checkbox':
-            newElement = { id: newId, type: 'checkbox', name: '', label: 'New Checkbox', options: [], defaultValue: [] };
-            break;
-        case 'dropbox':
-            newElement = { id: newId, type: 'dropbox', name: '', label: 'New Dropbox', options: [], optionsSlot: '', defaultValue: '' };
-            break;
-        default:
-            newElement = { id: newId, type: elementType };
-    }
-    return newElement;
+  switch (elementType) {
+    case 'input':
+      newElement = { id: newId, type: 'input', name: '', label: 'New Input', placeholder: '', validation: { type: 'text' }, defaultValue: '' };
+      break;
+    case 'search':
+      newElement = {
+        id: newId,
+        type: 'search',
+        name: 'search_term', // 검색어 값이 저장될 키 (formData용)
+        label: 'New Search',
+        placeholder: 'Enter search term...',
+        apiConfig: { // API 호출 설정
+          url: '',
+          method: 'POST',
+          headers: '{}', // 💡 [추가] headers 필드 추가
+          bodyTemplate: '{"query": "{{value}}"}' // {{value}}가 검색어로 치환됨
+        },
+        resultSlot: 'search_results', // API 결과가 저장될 슬롯 이름
+        inputFillKey: null // 💡 [추가] 그리드 행 클릭 시 검색 입력창에 채울 키
+      };
+      break;
+    case 'date':
+      newElement = { id: newId, type: 'date', name: '', label: 'New Date', defaultValue: '' };
+      break;
+    case 'grid':
+      const rows = 2;
+      const columns = 2;
+      newElement = {
+        id: newId,
+        type: 'grid',
+        name: '',
+        label: 'New Grid',
+        rows: rows,
+        columns: columns,
+        data: Array(rows * columns).fill(''),
+        displayKeys: [],
+      };
+      break;
+    case 'checkbox':
+      newElement = { id: newId, type: 'checkbox', name: '', label: 'New Checkbox', options: [], defaultValue: [] };
+      break;
+    case 'dropbox':
+      newElement = { id: newId, type: 'dropbox', name: '', label: 'New Dropbox', options: [], optionsSlot: '', defaultValue: '' };
+      break;
+    default:
+      newElement = { id: newId, type: elementType };
+  }
+  return newElement;
 }

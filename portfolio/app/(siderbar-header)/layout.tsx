@@ -1,8 +1,9 @@
-// app/(content-header)/layout.tsx
+// app/(sidebar-header)/layout.tsx
+
 import type { ReactNode } from "react";
 import ResizableSidebarLayout from "@/components/ResizableSidebarLayout";
 import HeaderNav from "@/components/HeaderNav";
-import SidebarMenus from "@/components/SidebarNav";
+import SidebarNav from "@/components/SidebarNav";
 import type { NavItem, SidebarMenu } from "@/types/nav";
 import { api } from "@/lib/axios";
 import { headers } from "next/headers";
@@ -43,7 +44,7 @@ export default async function SidebarSectionLayout({ children }: { children: Rea
   return (
       <ResizableSidebarLayout
         header={<HeaderNav items={menus} />}
-        sidebar={<SidebarMenus items={sidebarMenus} />}
+        sidebar={<SidebarNav items={sidebarMenus} />}
       >
       {children}
     </ResizableSidebarLayout>

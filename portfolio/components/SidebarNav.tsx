@@ -5,6 +5,7 @@ import { useMemo, useState, useCallback, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import type { SidebarMenu } from '@/types/nav';
+import { useStore } from '@/store'; 
 
 type Props = { items: SidebarMenu[] };
 
@@ -16,7 +17,6 @@ function byOrder<T extends { order?: number }>(a: T, b: T) {
 // 트리 노드 타입
 type Node = SidebarMenu & { children: Node[] };
 
-
 // path_ids로부터 URL 경로 생성
 function urlFromPathIds(pathIds?: string) {
   if (!pathIds) return '#';
@@ -24,37 +24,43 @@ function urlFromPathIds(pathIds?: string) {
     .split('>')
     .map(s => s.trim())
     .filter(Boolean)
-    .map(encodeURIComponent); // 공백/한글 대비
+    .map(encodeURIComponent);
   return '/' + segs.join('/');
 }
 
-export default function SidebarMenus({ items }: Props) {
+export default function SidebarNav({ items }: Props) {
   const pathname = usePathname();
+  const { sidebarMenus } = useStore();
+
+  // 실제로 사용할 데이터: store에 있으면 그걸 우선 사용
+  const sourceItems: SidebarMenu[] = (sidebarMenus && sidebarMenus.length > 0)
+    ? sidebarMenus
+    : items;
 
   // id -> 항목 인덱스
   const idIndex = useMemo(() => {
     const map = new Map<string, SidebarMenu>();
-    for (const it of items) map.set(it.id, it);
+    for (const it of sourceItems) map.set(it.id, it);
     return map;
-  }, [items]);
+  }, [sourceItems]);
 
   const parentIndex = useMemo(() => {
     const map = new Map<string, string | undefined>();
-    for (const it of items) map.set(it.id, it.up_id);
+    for (const it of sourceItems) map.set(it.id, it.up_id);
     return map;
-  }, [items]);
+  }, [sourceItems]);
 
   // parentId -> children 목록 인덱스
   const byParent = useMemo(() => {
     const m = new Map<string, SidebarMenu[]>();
-    for (const it of items) {
+    for (const it of sourceItems) {
       const key = it.up_id ?? '';
       if (!m.has(key)) m.set(key, []);
       m.get(key)!.push(it);
     }
     for (const v of m.values()) v.sort(byOrder);
     return m;
-  }, [items]);
+  }, [sourceItems]);
 
   const buildChildren = useCallback(
     (parentId: string): Node[] =>
@@ -65,32 +71,29 @@ export default function SidebarMenus({ items }: Props) {
     [byParent]
   );
 
-  // 루트 섹션은 lev === 2 (요구사항 유지)
+  // 루트 섹션은 lev === 2
   const roots = useMemo(
     () =>
-      items
+      sourceItems
         .filter((i) => i.lev === 2)
         .sort(byOrder)
         .map<Node>((g) => ({ ...g, children: buildChildren(g.id) })),
-    [items, buildChildren]
+    [sourceItems, buildChildren]
   );
 
-  // 토글 상태 (모든 id에 대해 관리)
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
   const toggle = useCallback((id: string) => {
     setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  // 현재 경로에 해당하는 노드를 찾아 조상들을 자동으로 펼침(초기 UX 개선)
+  // 현재 경로에 해당하는 노드를 찾아 조상들을 자동으로 펼침
   useEffect(() => {
     if (!pathname) return;
 
-    // href === pathname인 아이템 찾기
-    const current = items.find((it) => it.href === pathname);
+    const current = sourceItems.find((it: any) => it.href === pathname);
     if (!current) return;
 
-    // 조상 id들을 수집해서 open 처리
     const toOpen: string[] = [];
     let pid = current.up_id;
     while (pid) {
@@ -104,20 +107,19 @@ export default function SidebarMenus({ items }: Props) {
         return next;
       });
     }
-  }, [items, pathname, parentIndex]);
+  }, [sourceItems, pathname, parentIndex]);
 
   return (
     <nav className="p-3 text-sm select-none">
-      {roots.map((group) => {
+      {roots.map((group: any) => {
         const hasChildren = group.children && group.children.length > 0;
         const isOpen = !!open[group.id];
 
-        // path_ids 기반 URL 생성 헬퍼
         const computedPath = group.path_ids
           ? '/' +
             group.path_ids
               .split('>')
-              .map((s) => s.trim())
+              .map((s: any) => s.trim())
               .filter(Boolean)
               .map(encodeURIComponent)
               .join('/')
@@ -130,7 +132,6 @@ export default function SidebarMenus({ items }: Props) {
               aria-expanded={isOpen}
             >
               {hasChildren ? (
-                // 자식이 있으면 토글 버튼
                 <button
                   type="button"
                   onClick={() => toggle(group.id)}
@@ -142,7 +143,6 @@ export default function SidebarMenus({ items }: Props) {
                   </span>
                 </button>
               ) : (
-                // 자식이 없으면 링크로 이동
                 <Link
                   href={{
                     pathname: computedPath,
@@ -170,7 +170,6 @@ export default function SidebarMenus({ items }: Props) {
               )}
             </div>
 
-            {/* 하위 트리 */}
             {hasChildren && (
               <ul
                 id={`sec-${group.id}`}

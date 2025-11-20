@@ -38,6 +38,7 @@ function MessageNodeController({ localNode, setLocalNode }) {
         </div>
       </div>
       {/* 2. 기존 UI를 공통 컴포넌트로 대체 */}
+      {/* 채팅 대화 다음것과 묶기 */}
       <ChainNextCheckbox
         checked={data.chainNext}
         onChange={(value) => handleLocalDataChange('chainNext', value)}

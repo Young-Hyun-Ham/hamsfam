@@ -1,9 +1,11 @@
 // app/components/AppShell.tsx
 "use client"
 
+import { useEffect, useState } from "react"; 
 import { useRouter } from "next/navigation";
+
 import { useStore } from "@/store";
-import { useEffect } from "react"; 
+import { api } from "@/lib/axios";
 
 type ContentProps = {
   header?: React.ReactNode;
@@ -15,6 +17,8 @@ export default function ConnectLayout({ header, children }: ContentProps) {
   const { user } = useStore();
   const logout = useStore((state: any) => state.logout);
   
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (!user) {
       router.push('/');
@@ -24,6 +28,23 @@ export default function ConnectLayout({ header, children }: ContentProps) {
   async function handleLogout() {
     await logout();
     router.push('/');
+  }
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      // axios 인스턴스에 이미 withCredentials:true 설정되어 있으면 옵션 생략 가능
+      const r = await api.post("/api/auth/refresh", {});
+      // console.log("refresh result:", r.status, r.data);
+
+      // (선택) 새 토큰으로 사용자 정보 재조회
+      // const me = await api.get("/api/auth/me");
+      // setAuth(me.data.user)
+    } catch (e) {
+      console.error("refresh failed:", e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -36,7 +57,15 @@ export default function ConnectLayout({ header, children }: ContentProps) {
           {header}
           {/* 우측: 사용자/세션 영역 */}
           <div className="flex items-center gap-3 text-sm">
-            <span className="border-l pl-3">{user?.displayName}</span>
+            
+            <button 
+              onClick={handleRefresh}
+              disabled={loading}
+              style={{ cursor: "pointer" }}
+            >
+              {loading ? "refreshing..." : "[ refresh token ]"}
+            </button>
+            <span className="border-l pl-3">{user?.displayName ?? user?.username}</span>
             <button
               onClick={handleLogout}
               className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md hover:cursor-pointer"

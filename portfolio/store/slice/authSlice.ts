@@ -1,3 +1,4 @@
+// store/slice/authSlice.ts
 import { db, addDoc, collection, doc, GoogleAuthProvider, setDoc, signInWithPopup, signOut, serverTimestamp } from '@/lib/firebase';
 
 export const createAuthSlice = (set: any, get: any) => ({
