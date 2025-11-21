@@ -14,7 +14,7 @@ export async function GET(_req: Request, { params }: Params) {
     const result = await db.query(
       `
       SELECT id, menu_id, label, href, "order", lev, up_id,
-             "createdAt", "updatedAt"
+             "created_at", "updated_at"
       FROM public.menu
       WHERE id = $1
       `,
@@ -77,10 +77,10 @@ export async function PATCH(req: Request, { params }: Params) {
           "order" = $5,
           lev     = $6,
           up_id   = $7,
-          "updatedAt" = NOW()
+          "updated_at" = NOW()
       WHERE id = $1
       RETURNING id, menu_id, label, href, "order", lev, up_id,
-                "createdAt", "updatedAt"
+                "created_at", "updated_at"
       `,
       [id, newMenuId, newLabel, newHref, newOrder, newLev, newUpId],
     );

@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nextjs + React + TypeScript + Zustand + VITE + Pnpm + firebase + Figma
 
-## Getting Started
-
-First, run the development server:
-
+## 1. pnpm 설치
+설치확인: 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm -v
+```
+설치가 되어 있지 않다면 아래 명령어 실행
+```bash
+npm install -g pnpm
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 2. 프로젝트 생성 
+```bash
+pnpm create next-app [프로젝트명]
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 1. 의존성설치 (package.json) 및 기본 css 적용
+```json
+{
+  "name": "basic",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@hello-pangea/dnd": "^18.0.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "next": "16.0.0",
+    "firebase": "^12.2.1",
+    "axios": "^1.11.0",
+    "jose": "^6.0.13",
+    "jwt-decode": "^4.0.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.0"
+  }
+}
+```
+```bash 
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+<details>
+<summary>공통 css(index.css)</summary>
+<pre>
+???
+</pre>
+</details>
 
-## Learn More
+🧠 참고사항
+Next.js 프로젝트에 pnpm이 좋을까?
+Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 때문에 pnpm이 특히 유리합니다.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+✅ 이점 정리:
+빌드 속도 향상 — npm보다 2~3배 빠름
+저장공간 절약 — 패키지 캐시를 재활용
+워크스페이스 관리 쉬움 — frontend, backend 등 여러 패키지 한 번에 관리
+CI/CD 속도 향상 — GitHub Actions 등에서 설치 시간 단축
+의존성 충돌 방지 — 각 모듈이 자기 버전을 명확히 가짐

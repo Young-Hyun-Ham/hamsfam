@@ -14,6 +14,19 @@ CREATE TABLE public.users (
 	CONSTRAINT users_sub_key UNIQUE (sub)
 );
 
+CREATE TABLE public.refresh_session (
+	id uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"token_hash" text NOT NULL,
+	"expires_at" timestamp(3) NOT NULL,
+	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"revoked_at" timestamp(3) NULL,
+	"user_agent" text NULL,
+	ip text NULL,
+	CONSTRAINT refresh_session_pkey PRIMARY KEY (id)
+);
+CREATE INDEX "refresh_session_userId_expiresAt_idx" ON nextjs.refresh_session USING btree ("user_id", "expires_at");
+
 
 CREATE TABLE public.scenarios (
 	id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -23,11 +36,10 @@ CREATE TABLE public.scenarios (
 	edges jsonb NOT NULL,
 	start_node_id text not null,
 	last_used_at timestamp(6) DEFAULT CURRENT_TIMESTAMP NULL,
-	create_id varchar(50) NOT NULL,
-	create_date timestamp(6) DEFAULT CURRENT_TIMESTAMP NULL,
-	modify_id varchar(50) NULL,
-	modify_date timestamp(6) NULL,
-	user_id uuid NULL,
+	created_id varchar(50) NOT NULL,
+	created_at timestamp(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	updated_id varchar(50) NULL,
+	updated_at timestamp(6) NULL,
 	CONSTRAINT scenario_pkey PRIMARY KEY (id)
 );
 
@@ -40,8 +52,8 @@ CREATE TABLE public.menu (
 	"order" int4 NULL,
 	lev int4 NOT NULL,
 	up_id uuid NULL,
-	"createdAt" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updatedAt" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"created_at" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"updated_at" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	CONSTRAINT menu_pkey PRIMARY KEY (id),
 	CONSTRAINT menu_parent_fkey FOREIGN KEY (up_id) REFERENCES nextjs.menu(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -68,7 +80,7 @@ CREATE TABLE public.settings (
 	  "slotfilling": "#3498db",
 	  "toast": "#95a5a6"
 	}'::jsonb,
-	nodeTextColors jsonb DEFAULT '{
+	node_text_colors jsonb DEFAULT '{
 	  "api": "#ffffff",
 	  "branch": "#ffffff",
 	  "fixedmenu": "#ffffff",
@@ -82,7 +94,7 @@ CREATE TABLE public.settings (
 	  "slotfilling": "#ffffff",
 	  "toast": "#ffffff"
 	}'::jsonb,
-	nodeVisibility jsonb DEFAULT '[
+	node_visibility jsonb DEFAULT '[
 	  "message",
 	  "form",
 	  "branch",
@@ -96,7 +108,7 @@ CREATE TABLE public.settings (
 	  "scenario",
 	  "llm"
 	]'::jsonb,
-	"createdAt" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updatedAt" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT null
+	"created_at" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"updated_at" timestamptz(6) DEFAULT CURRENT_TIMESTAMP NOT null
 )
 

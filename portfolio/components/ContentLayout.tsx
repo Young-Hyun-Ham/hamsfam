@@ -1,4 +1,4 @@
-// app/components/AppShell.tsx
+// app/components/ContentLayout.tsx
 "use client"
 
 import { useEffect, useState } from "react"; 
@@ -14,16 +14,20 @@ type ContentProps = {
 
 export default function ConnectLayout({ header, children }: ContentProps) {
   const router = useRouter();
-  const { user } = useStore();
-  const logout = useStore((state: any) => state.logout);
+  const user = useStore((s: any) => s.user);
+  const authChecked = useStore((s: any) => s.authChecked);
+  const logout = useStore((s: any) => s.logout);
+  const backend = useStore((s: any) => s.backend);
   
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!authChecked) return;
+
     if (!user) {
       router.push('/');
     }
-   }, []);
+   }, [authChecked, user, router]);
 
   async function handleLogout() {
     await logout();
@@ -47,6 +51,15 @@ export default function ConnectLayout({ header, children }: ContentProps) {
     }
   }
 
+  if (!authChecked) {
+    // 아직 로그인 확인 중일 때 간단한 로딩 표시
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <span className="text-sm text-gray-500">로그인 상태 확인 중...</span>
+      </div>
+    );
+  }
+
   return (
     // 전체 높이 확보
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -65,7 +78,7 @@ export default function ConnectLayout({ header, children }: ContentProps) {
             >
               {loading ? "refreshing..." : "[ refresh token ]"}
             </button>
-            <span className="border-l pl-3">{user?.displayName ?? user?.username}</span>
+            <span className="border-l pl-3">{user?.displayName ?? user?.name}&nbsp;({backend})</span>
             <button
               onClick={handleLogout}
               className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md hover:cursor-pointer"

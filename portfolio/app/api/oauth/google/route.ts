@@ -12,7 +12,8 @@ import { setTokenCookie } from "@/lib/cookies";
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const redirectPath = url.searchParams.get("redirect") || "/";
+  const redirectPath = url.searchParams.get("redirect") || "/main";
+  const flow = url.searchParams.get("flow") || "redirect";
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
   const redirectUri = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!;
@@ -38,6 +39,7 @@ export async function GET(req: Request) {
   // CSRF/Replay 방지용 state/nonce를 쿠키에 잠깐 저장
   setTokenCookie(req, res, "g_state", state, {maxAgeSec: 60 * 5});
   setTokenCookie(req, res, "g_nonce", nonce, {maxAgeSec: 60 * 5});
+  setTokenCookie(req, res, "g_flow", flow, { path: "/" });
   
   // 리다이렉트 목적지도 저장
   setTokenCookie(req, res, "post_login_redirect", redirectPath, {maxAgeSec: 60 * Number(process.env.JWT_EXPIRES_IN ?? 10)});

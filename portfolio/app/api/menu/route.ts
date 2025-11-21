@@ -15,10 +15,10 @@ export async function GET(req: Request) {
       const result = await db.query(
         `
         SELECT id, menu_id, label, href, "order", lev, up_id,
-               "createdAt", "updatedAt"
+               "created_at", "updated_at"
         FROM public.menu
         WHERE menu_id ILIKE $1 OR label ILIKE $1
-        ORDER BY lev ASC, "order" ASC NULLS LAST, "createdAt" ASC
+        ORDER BY lev ASC, "order" ASC NULLS LAST, "created_at" ASC
         `,
         [like],
       );
@@ -27,9 +27,9 @@ export async function GET(req: Request) {
       const result = await db.query(
         `
         SELECT id, menu_id, label, href, "order", lev, up_id,
-               "createdAt", "updatedAt"
+               "created_at", "updated_at"
         FROM public.menu
-        ORDER BY lev ASC, "order" ASC NULLS LAST, "createdAt" ASC
+        ORDER BY lev ASC, "order" ASC NULLS LAST, "created_at" ASC
         `,
       );
       rows = result.rows;
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       INSERT INTO public.menu (menu_id, label, href, "order", lev, up_id)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, menu_id, label, href, "order", lev, up_id,
-                "createdAt", "updatedAt"
+                "created_at", "updated_at"
       `,
       [
         menu_id,

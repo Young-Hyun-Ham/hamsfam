@@ -6,10 +6,10 @@ import { MenuType } from "@/app/api/types/types";
 async function getMenusFromPostgres(): Promise<MenuType[]> {
   const result = await db.query(`
     SELECT id, menu_id, label, href, "order", lev, up_id,
-           "createdAt", "updatedAt"
+           "created_at", "updated_at"
     FROM public.menu
     WHERE lev = 1
-    ORDER BY "order" ASC NULLS LAST, "createdAt" ASC
+    ORDER BY "order" ASC NULLS LAST, "created_at" ASC
   `);
 
   return result.rows as MenuType[];

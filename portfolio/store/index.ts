@@ -31,12 +31,13 @@ export const useStore: any = create((set: any, get: any) => ({
   db,
   auth,
   user: null,
+  authChecked: false,
+  backend: BACKEND,
 
   headerMenus: [],
   setHeaderMMenus: (data: NavItem) => { set({ headerMenus: data }) },
   sidebarMenus: [],
   setSidebarMenus: (data: SidebarMenu) => { set({ sidebarMenus: data }) },
-
 
   setUser: (user: any) => { set({ user }); },
   setRoles: (role: string) => {
@@ -66,7 +67,6 @@ export const useStore: any = create((set: any, get: any) => ({
       }
     });
   },
-  backend: BACKEND,
 
   ...(BACKEND === 'postgres'
     ? createPostgresAuthSlice(set, get)
@@ -194,6 +194,7 @@ export const useStore: any = create((set: any, get: any) => ({
 
     set({
       user: null,
+      authChecked: true,
       theme,
       fontSize,
       language,
@@ -213,21 +214,21 @@ export const useStore: any = create((set: any, get: any) => ({
 
       // 2) 저장된 토큰 있으면 백엔드에서 me 조회
       const savedToken =
-        typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
       const restoreUserFromToken = async () => {
-        if (!savedToken) {
-          get().clearUserAndData();
-          return;
-        }
+        // if (!savedToken) {
+        //   get().clearUserAndData();
+        //   return;
+        // }
 
         try {
-          const me = await getMeApi(savedToken);
-          set({ user: me, token: savedToken });
+          const me = await getMeApi(savedToken ?? "");
+          set({ user: me, token: savedToken, authChecked: true });
           await get().setUserAndLoadData(me);
         } catch (e) {
           console.error('initAuth: token invalid, clearing...', e);
-          localStorage.removeItem('accessToken');
+          localStorage.removeItem('access_token');
           get().clearUserAndData();
         }
       };
@@ -266,11 +267,13 @@ export const useStore: any = create((set: any, get: any) => ({
         // 이미 테스트 사용자로 로그인되어 있으면 Firebase Auth 상태 변경 무시
         if (get().user?.isTestUser) {
           console.log("Already logged in as test user, ignoring Firebase Auth state change.");
+          set({ authChecked: true });
           return;
         }
 
         if (user) {
           console.log("User logged in via Firebase Auth:========= > ", user);
+          set({ authChecked: true });
           get().setUserAndLoadData(user);
         } else {
           // 로그아웃 시에도 URL 파라미터 체크 로직을 다시 타지 않도록 clearUserAndData만 호출
