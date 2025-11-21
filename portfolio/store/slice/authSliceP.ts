@@ -19,7 +19,7 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
     try {
       // 팝업 방식: window.open 사용 (원하면 리다이렉트 방식으로 바꿔도 됨)
       const popup = window.open(
-        '/api/auth/google/start',
+        '/api/oauth/google?flow=popup&redirect=/main',
         'googleLogin',
         'width=500,height=650'
       );
@@ -33,13 +33,14 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
       const handleMessage = async (event: MessageEvent) => {
         if (!event.data || event.data.type !== 'google-auth') return;
 
-        const { accessToken, user } = event.data;
+        const { accessToken, user, refresh_token } = event.data;
 
         if (typeof window !== 'undefined') {
-          localStorage.setItem('accessToken', accessToken);
+          // localStorage.setItem('access_token', accessToken);
+          // localStorage.setItem('refresh_token', refresh_token);
         }
 
-        set({ user, token: accessToken });
+        set({ user, token: accessToken, authChecked: true });
 
         await get().setUserAndLoadData(user);
 
@@ -60,7 +61,7 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
       const { user, accessToken } = await loginApi(email, password);
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('access_token', accessToken);
       }
 
       set({ user, token: accessToken });
@@ -84,7 +85,7 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
       const { user, accessToken } = await loginWithTestIdApi(userId.trim());
 
       if (typeof window !== 'undefined') {
-        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('access_token', accessToken);
       }
 
       set({ user, token: accessToken });
@@ -101,16 +102,15 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
 
   logout: async () => {
     try {
-      const token = get().token;
-
-      if (token) {
-        await logoutApi(token).catch(() => {
-          // 서버 로그아웃 실패해도 프론트 쪽은 정리
-        });
-      }
+      // const token = localStorage.getItem('access_token');
+      // if (token) {
+      //   await logoutApi(token).catch(() => {
+      //     // 서버 로그아웃 실패해도 프론트 쪽은 정리
+      //   });
+      // }
 
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken');
+        localStorage.removeItem('access_token');
       }
 
       get().clearUserAndData();

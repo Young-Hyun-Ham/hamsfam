@@ -24,7 +24,7 @@ export async function loginApi(email: string, password: string): Promise<LoginRe
   if (!res.ok) {
     throw new Error('Login failed');
   }
-
+  console.log("fhrmdls : ", res.json())
   return res.json();
 }
 

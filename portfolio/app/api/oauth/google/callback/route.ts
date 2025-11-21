@@ -9,7 +9,6 @@ import { isCrossSite, setAccessTokenCookie, setRefreshTokenCookie } from '@/lib/
 
 import { jwtVerify, createRemoteJWKSet, type JWTPayload } from 'jose';
 import bcrypt from 'bcryptjs';
-import { User } from '@/types/user';
 
 const GOOGLE_JWKS = createRemoteJWKSet(
   new URL('https://www.googleapis.com/oauth2/v3/certs')
@@ -50,10 +49,11 @@ export async function GET(req: Request) {
     );
   }
   // next/headers 의 cookies() 사용 (any 제거)
-  const cookieStore = getCookies();
-  const savedState = (await cookieStore).get('g_state')?.value;
-  const savedNonce = (await cookieStore).get('g_nonce')?.value;
-  const redirectPath = (await cookieStore).get('post_login_redirect')?.value ?? '/main';
+  const cookieStore = await getCookies();
+  const savedState = cookieStore.get('g_state')?.value;
+  const savedNonce = cookieStore.get('g_nonce')?.value;
+  const redirectPath = cookieStore.get('post_login_redirect')?.value ?? '/main';
+  const loginFlow = cookieStore.get('g_flow')?.value ?? 'redirect';
 
   if (!savedState || savedState !== state) {
     return NextResponse.redirect(
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
     );
   const user = users.rows[0] ?? {};
   if (!user || Object.keys(user).length === 0) {
-    throw new Error('유저 정보가 없다.');
+    throw new Error('유저 정보가 없습니다.');
   }
 
   const roles: string[] =
@@ -141,8 +141,65 @@ export async function GET(req: Request) {
       req.headers.get('x-forwarded-for') ?? undefined,
     ]
   );
-  const res = NextResponse.redirect(`${process.env.NEXT_PUBLIC_ORIGIN}${redirectPath}`);
+
+  const origin = process.env.NEXT_PUBLIC_ORIGIN ?? "http://localhost:3000";
+
+  // 5) popup/redirect 방식 분기
+  let res: NextResponse;
+
+  if (loginFlow === "popup") {
+    // -------------------------------
+    // 팝업 로그인: 부모창으로 postMessage
+    // -------------------------------
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles,
+      provider: user.provider,
+      sub: user.sub,
+    };
+
+    const html = `
+<!doctype html>
+<html>
+  <body>
+    <script>
+      (function() {
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(
+              {
+                type: "google-auth",
+                accessToken: ${JSON.stringify(access)},
+                user: ${JSON.stringify(safeUser)}
+              },
+              ${JSON.stringify(origin)}
+            );
+          }
+        } catch (e) {
+          console.error("postMessage error:", e);
+        }
+        window.close();
+      })();
+    </script>
+  </body>
+</html>
+`;
+
+    res = new NextResponse(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+
+  } else {
+    // -------------------------------
+    // 기존 redirect 로그인
+    // -------------------------------
+    res = NextResponse.redirect(`${origin}${redirectPath}`);
+  }
   
+  // cookie helper 로 쿠키 세팅
   setAccessTokenCookie(req, res, access, {
     crossSite: isCrossSite(req),
     maxAgeSec: 60 * Number(process.env.JWT_EXPIRES_IN ?? 10), // 디폴트 10분

@@ -10,6 +10,7 @@ type JwtUserPayload = JWTPayload & User;
 export async function getUserServer(): Promise<User | null> { 
   const store = await cookies();
   const token = store.get("access_token")?.value;
+  // console.log("token 확인 : ", token);
   if (!token) return null;
 
   try {
