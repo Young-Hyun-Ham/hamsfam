@@ -172,6 +172,7 @@ export async function GET(req: Request) {
               {
                 type: "google-auth",
                 accessToken: ${JSON.stringify(access)},
+                refershToken: ${JSON.stringify(refresh)},
                 user: ${JSON.stringify(safeUser)}
               },
               ${JSON.stringify(origin)}

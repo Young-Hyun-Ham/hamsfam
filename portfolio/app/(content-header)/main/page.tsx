@@ -10,6 +10,7 @@ import { useStore } from "@/store";
 const Main: FC = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useStore();
+  // console.log("Main user:", user);
 
   const handleRefresh = async () => {
     try {
@@ -17,10 +18,6 @@ const Main: FC = () => {
       // axios 인스턴스에 이미 withCredentials:true 설정되어 있으면 옵션 생략 가능
       const r = await api.post("/api/auth/refresh", {});
       // console.log("refresh result:", r.status, r.data);
-
-      // (선택) 새 토큰으로 사용자 정보 재조회
-      // const me = await api.get("/api/auth/me");
-      // setAuth(me.data.user)
     } catch (e) {
       console.error("refresh failed:", e);
     } finally {

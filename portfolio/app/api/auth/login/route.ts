@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPassword } from "@/lib/utils/password";
+import { hashPassword, verifyPassword } from "@/lib/utils/password";
 import { signJwt } from "@/lib/utils/jwt";
 import { db } from "@/lib/postgresql";
+import { isCrossSite, setAccessTokenCookie, setRefreshTokenCookie } from "@/lib/cookies";
+import { signAccessToken, signRefreshToken } from "@/lib/oauth";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     // DB에서 유저 조회
     const result = await db.query(
-      "SELECT id, email, name, password_hash, avatar_url FROM users WHERE email = $1",
+      "SELECT id, sub, email, name, password, avatar_url, roles, provider FROM users WHERE email = $1",
       [email]
     );
 
@@ -24,22 +27,61 @@ export async function POST(req: NextRequest) {
     const user = result.rows[0];
 
     // 비밀번호 검증
-    const isValid = await verifyPassword(password, user.password_hash);
+    const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 
-    const accessToken = signJwt({ id: user.id });
-
-    return NextResponse.json({
+    const accessToken = signAccessToken({
+      uid: user.id,
+      email: user.email,
+      username: user.name,
+      roles: user.roles,
+      provider: user.provider,
+      provider_id: user.sub,
+    });
+    
+    const jti = crypto.randomUUID();
+    const refreshToken = signRefreshToken({ sub: user.id, jti });
+    await db.query(
+      `
+        INSERT INTO refresh_session (user_id, token_hash, expires_at, user_agent, ip)
+        VALUES ($1, $2, $3, $4, $5) RETURNING *
+      `,
+      [
+        user.id, 
+        await bcrypt.hash(refreshToken, 10), 
+        new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+        req.headers.get('user-agent') ?? undefined,
+        req.headers.get('x-forwarded-for') ?? undefined,
+      ]
+    );
+      
+    // 응답 생성 + 쿠키 세팅
+    const res = NextResponse.json({
       user: {
         id: user.id,
+        sub: user.sub,
         email: user.email,
         name: user.name,
-        avatarUrl: user.avatar_url,
+        avatar_url: user.avatar_url,
+        roles: user.roles,
+        provider: user.provider,
       },
-      accessToken,
+      accessToken: accessToken,
     });
+
+    // cookie helper 로 쿠키 세팅
+    setAccessTokenCookie(req, res, accessToken, {
+      crossSite: isCrossSite(req),
+      maxAgeSec: 60 * Number(process.env.JWT_EXPIRES_IN ?? 10), // 디폴트 10분
+    });
+    setRefreshTokenCookie(req, res, refreshToken, {
+      crossSite: isCrossSite(req),
+      maxAgeSec: 60 * 60 * 24 * 30, // 30d
+    });
+
+    return res;
   } catch (e) {
     console.error("Login API error:", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

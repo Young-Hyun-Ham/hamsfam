@@ -5,6 +5,7 @@ const ROUNDS = parseInt(process.env.BCRYPT_ROUNDS ?? "12", 10);
 
 // Python: pwd_context.hash(plain)과 동일
 export async function hashPassword(plain: string) {
+  console.log("ROUNDS:", ROUNDS);
   return bcrypt.hash(plain, ROUNDS);
 }
 

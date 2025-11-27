@@ -97,7 +97,6 @@ export const useStore: any = create((set: any, get: any) => ({
 
     if (BACKEND === 'postgres') {
       try {
-        console.log("Checking for conversation migration...");
         // const batch = writeBatch(get().db);
         let updatesNeeded = 0;
         if (updatesNeeded > 0) {
@@ -134,7 +133,6 @@ export const useStore: any = create((set: any, get: any) => ({
       }
     } else {
       try {
-        console.log("Checking for conversation migration...");
         const batch = writeBatch(get().db);
         let updatesNeeded = 0;
         if (updatesNeeded > 0) {
@@ -213,18 +211,12 @@ export const useStore: any = create((set: any, get: any) => ({
       const testId = urlParams.get("id");
 
       // 2) 저장된 토큰 있으면 백엔드에서 me 조회
-      const savedToken =
-        typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const savedToken = typeof window !== 'undefined' ? get().token : null;
 
       const restoreUserFromToken = async () => {
-        // if (!savedToken) {
-        //   get().clearUserAndData();
-        //   return;
-        // }
-
         try {
           const me = await getMeApi(savedToken ?? "");
-          set({ user: me, token: savedToken, authChecked: true });
+          set({ user: me, token: me.accessToken, authChecked: true });
           await get().setUserAndLoadData(me);
         } catch (e) {
           console.error('initAuth: token invalid, clearing...', e);
@@ -272,7 +264,7 @@ export const useStore: any = create((set: any, get: any) => ({
         }
 
         if (user) {
-          console.log("User logged in via Firebase Auth:========= > ", user);
+          // console.log("User logged in via Firebase Auth:========= > ", user);
           set({ authChecked: true });
           get().setUserAndLoadData(user);
         } else {

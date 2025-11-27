@@ -293,11 +293,15 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
           <div onClick={() => setIsSimulatorVisible(!isSimulatorVisible)}>
             <img src="/images/chat_simulator.png" alt="Simulator Icon" className={!isSimulatorVisible ? styles.botButtonHidden : styles.botButton} />
           </div>
-          {isAdmin ? (
+          
+          <div onClick={() => setIsLogVisible(true)}>
+            <img src="/images/log.png" alt="log Icon" className={!isLogVisible ? styles.botButtonHidden : styles.botButton} />
+          </div>
+          {/* {isAdmin ? (
             <div onClick={() => setIsLogVisible(true)}>
               <img src="/images/log.png" alt="log Icon" className={!isLogVisible ? styles.botButtonHidden : styles.botButton} />
             </div>
-          ) : null}
+          ) : null} */}
         </div>
         <ReactFlow
           nodes={visibleNodes}

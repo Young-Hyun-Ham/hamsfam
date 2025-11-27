@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "256011811073",
+    "project_id": "hamsfam",
+    "storage_bucket": "hamsfam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:256011811073:android:dab9fc52dfa312587f0300",
+        "android_client_info": {
+          "package_name": "co.kr.hamsfam.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "256011811073-2kh18gu42m8bnlt5v4kh0vff1t7m49aj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_rKeofUj8ILNLSgrorSXxhmgP6kiAGI0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "256011811073-2kh18gu42m8bnlt5v4kh0vff1t7m49aj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,10 @@
 // store/slice/authSliceP.ts
 import { AppUser, loginApi, loginWithTestIdApi, logoutApi } from '@/lib/api/auth';
+import { api } from '@/lib/axios';
 
 type AuthState = {
+  token: string | null;
+  setAuth: (user: any, token: string) => void;
   // Google OAuth 시작 (A안 – 팝업/리다이렉트용)
   loginWithGoogle: () => Promise<void>;
   // 일반 아이디/비밀번호 로그인
@@ -13,6 +16,12 @@ type AuthState = {
 };
 
 export const createAuthSlice = (set: any, get: any): AuthState => ({
+  token: null,
+
+  setAuth(user, token) {
+    // 원하면 여기서 localStorage도 같이 업데이트
+    set({ user, token });
+  },
 
   // 백엔드의 /api/auth/google/start 로 리다이렉트(또는 팝업)한다고 가정
   loginWithGoogle: async () => {
@@ -33,7 +42,7 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
       const handleMessage = async (event: MessageEvent) => {
         if (!event.data || event.data.type !== 'google-auth') return;
 
-        const { accessToken, user, refresh_token } = event.data;
+        const { accessToken, user, refreshToken } = event.data;
 
         if (typeof window !== 'undefined') {
           // localStorage.setItem('access_token', accessToken);
@@ -58,15 +67,9 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
   // 이메일/비밀번호 로그인 예시
   loginWithEmail: async (email: string, password: string) => {
     try {
-      const { user, accessToken } = await loginApi(email, password);
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('access_token', accessToken);
-      }
-
-      set({ user, token: accessToken });
-
-      // 기존 setUserAndLoadData 재사용
+      const { user, accessToken }  = await loginApi(email, password);
+      // 일단 현재 세션에만 바로 세팅
+      set({ user, token: accessToken, authChecked: true });
       await get().setUserAndLoadData(user);
     } catch (error) {
       console.error('Login with email failed:', error);
@@ -88,7 +91,7 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
         localStorage.setItem('access_token', accessToken);
       }
 
-      set({ user, token: accessToken });
+      set({ user, token: accessToken, authChecked: true });
 
       await get().setUserAndLoadData({
         ...user,
@@ -102,16 +105,11 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
 
   logout: async () => {
     try {
-      // const token = localStorage.getItem('access_token');
-      // if (token) {
-      //   await logoutApi(token).catch(() => {
-      //     // 서버 로그아웃 실패해도 프론트 쪽은 정리
-      //   });
-      // }
-
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('access_token');
-      }
+      // 서버 로그아웃 호출 + 스토어에서 데이터 제거 등
+      await api.get("/api/auth/logout").catch(() => {
+        // 서버 로그아웃 실패해도 프론트 쪽은 정리
+      });
+      set({ user: null, token: null });
 
       get().clearUserAndData();
     } catch (error) {

@@ -2,6 +2,8 @@
 import { db, addDoc, collection, doc, GoogleAuthProvider, setDoc, signInWithPopup, signOut, serverTimestamp, getDoc } from '@/lib/firebase';
 
 export const createAuthSlice = (set: any, get: any) => ({
+  token: null,
+  setToken: (token: string) => set({ token }),
 
   loginWithGoogle: async () => {
     try {

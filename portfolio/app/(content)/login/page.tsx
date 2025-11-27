@@ -22,8 +22,8 @@ const Login: FC = () => {
 
 
   const loginWithEmail = useStore((state: any) => state.loginWithEmail);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("hyh8414@gmail.com");
+  const [password, setPassword] = useState("1234");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const onSubmit = async (e: React.FormEvent) => {
