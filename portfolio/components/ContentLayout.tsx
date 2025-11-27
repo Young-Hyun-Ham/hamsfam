@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 
 import { useStore } from "@/store";
 import { api } from "@/lib/axios";
+import RefreshTokenIcon from "./Icons";
+import TokenTimer from "./TokenTimer";
 
 type ContentProps = {
   header?: React.ReactNode;
@@ -18,6 +20,7 @@ export default function ConnectLayout({ header, children }: ContentProps) {
   const authChecked = useStore((s: any) => s.authChecked);
   const logout = useStore((s: any) => s.logout);
   const backend = useStore((s: any) => s.backend);
+  const token = useStore((s: any) => s.token);
   
   const [loading, setLoading] = useState(false);
 
@@ -38,12 +41,11 @@ export default function ConnectLayout({ header, children }: ContentProps) {
     try {
       setLoading(true);
       // axios 인스턴스에 이미 withCredentials:true 설정되어 있으면 옵션 생략 가능
-      const r = await api.post("/api/auth/refresh", {});
-      // console.log("refresh result:", r.status, r.data);
-
-      // (선택) 새 토큰으로 사용자 정보 재조회
-      // const me = await api.get("/api/auth/me");
-      // setAuth(me.data.user)
+      const r = await api.post("/api/auth/refresh", {data: {userId: user.id}});
+      // console.log("refresh result:", r.status, r.data, r);
+      // 토큰 수정
+      const { accessToken, ...nextUser } = r.data;
+      useStore.getState().setAuth(nextUser, accessToken);
     } catch (e) {
       console.error("refresh failed:", e);
     } finally {
@@ -70,14 +72,18 @@ export default function ConnectLayout({ header, children }: ContentProps) {
           {header}
           {/* 우측: 사용자/세션 영역 */}
           <div className="flex items-center gap-3 text-sm">
-            
-            <button 
-              onClick={handleRefresh}
-              disabled={loading}
-              style={{ cursor: "pointer" }}
-            >
-              {loading ? "refreshing..." : "[ refresh token ]"}
-            </button>
+            {backend === 'postgres' ? (
+              <>
+                <TokenTimer />
+                <button 
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  style={{ cursor: "pointer" }}
+                >
+                  {loading ? "refreshing..." : <RefreshTokenIcon className="w-4 h-4 text-gray-700" />}
+                </button>
+              </>
+            ) : null}
             <span className="border-l pl-3">{user?.displayName ?? user?.name}&nbsp;({backend})</span>
             <button
               onClick={handleLogout}

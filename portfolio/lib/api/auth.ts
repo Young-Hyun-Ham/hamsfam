@@ -6,6 +6,7 @@ export type AppUser = {
   name: string;
   avatarUrl?: string;
   isTestUser?: boolean;
+  accessToken: string;
 };
 
 type LoginResponse = {
@@ -20,12 +21,13 @@ export async function loginApi(email: string, password: string): Promise<LoginRe
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
+  console.log("loginApi response:", res);
 
   if (!res.ok) {
     throw new Error('Login failed');
   }
-  console.log("fhrmdls : ", res.json())
   return res.json();
+  // return await api.post('/api/auth/login', { email, password }, { withCredentials: true, });
 }
 
 // 테스트 로그인 (id=xxx 로 들어오는 케이스)

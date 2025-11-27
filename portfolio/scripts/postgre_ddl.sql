@@ -26,7 +26,8 @@ CREATE TABLE public.refresh_session (
 	CONSTRAINT refresh_session_pkey PRIMARY KEY (id)
 );
 CREATE INDEX "refresh_session_userId_expiresAt_idx" ON nextjs.refresh_session USING btree ("user_id", "expires_at");
-
+ALTER TABLE refresh_session
+ADD CONSTRAINT refresh_session_user_id_key UNIQUE (user_id);
 
 CREATE TABLE public.scenarios (
 	id uuid DEFAULT gen_random_uuid() NOT NULL,

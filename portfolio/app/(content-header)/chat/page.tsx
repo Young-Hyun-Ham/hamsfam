@@ -212,7 +212,7 @@ export default function ChatPage() {
         <CardHeader
           title={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <Typography variant="h6" fontWeight={700}>챗봇</Typography>
+              <Typography variant="h6" fontWeight={700}>Chat</Typography>
               <Button
                 size="small"
                 variant="outlined"

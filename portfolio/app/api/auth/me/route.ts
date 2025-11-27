@@ -7,13 +7,13 @@ export async function GET(req: NextRequest, res: NextResponse) {
   try {
     // 요청 쿠키 스토어 가져오기
     const cookieStore = await cookies();
-    let auth = cookieStore.get("access_token")?.value ?? req.headers.get("Authorization");
-    // console.log("token 값은? ", auth)
-    if (!auth) {
+    let auth = req.headers.get("Authorization") ?? "";
+    const token = cookieStore.get("access_token")?.value ?? auth.trim().replace("Bearer ", "");
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const token = auth.replace("Bearer ", "");
+    // const token = auth.replace("Bearer ", "");
     const payload = verifyJwt(token);
     // console.log("payload 데이터 : ", payload)
     if (!payload || !payload.uid) {
@@ -29,7 +29,10 @@ export async function GET(req: NextRequest, res: NextResponse) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(result.rows[0]);
+    return NextResponse.json({
+      ...result.rows[0],
+      accessToken: token,
+    });
   } catch (e) {
     console.error("ME API error:", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
