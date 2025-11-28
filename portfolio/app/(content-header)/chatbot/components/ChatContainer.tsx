@@ -488,17 +488,13 @@ export default function ChatContainer() {
             setScenarioData({
               title: preset.primary,
               content: (
-                <div className="space-y-4 text-sm text-gray-800">
-                  <p>
-                    선택한 프리셋: <strong>{preset.primary}</strong>
-                  </p>
-                  <p>
-                    이 자리에 React-Flow 시나리오 노드 내용을 렌더링하면 됨.
-                  </p>
-                </div>
+                <ScenarioEmulator
+                  nodes={todoScenarioNodes}
+                  edges={todoScenarioEdges}
+                />
               ),
             });
-            setScenarioOpen(true);
+            setScenarioOpen(true);       // 여기서만 패널 열림
           }}
         />
 
@@ -510,30 +506,13 @@ export default function ChatContainer() {
       </div>
 
       {/* 우측 시나리오 패널 */}
-      {/*
       <ScenarioPanel
         open={scenarioOpen}
         scenarioTitle={scenarioData.title}
         nodeContent={scenarioData.content}
         onClose={() => setScenarioOpen(false)}
       />
-      */}
-      <ScenarioMenuPanel
-        onSelectPreset={(preset) => {
-          setScenarioData({
-            title: preset.primary,
-            content: (
-              <ScenarioEmulator
-                nodes={todoScenarioNodes}
-                edges={todoScenarioEdges}
-              />
-            ),
-          });
-          setScenarioOpen(true);
-        }}
-      />
-
-
+      
       {/* ===== 세션 컨텍스트 메뉴 (ChatGPT 사이드바 스타일) ===== */}
       {sessionMenuOpenId &&
         sessionMenuPos &&
