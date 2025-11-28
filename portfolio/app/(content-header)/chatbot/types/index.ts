@@ -12,7 +12,7 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   title: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   messages: ChatMessage[];
 }
