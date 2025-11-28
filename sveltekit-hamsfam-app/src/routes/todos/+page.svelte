@@ -108,7 +108,7 @@
       if (Capacitor.isNativePlatform()) {
         // 🔹 ANDROID / iOS: Credential Manager 끄고, 예전 방식으로 Google Sign-In
         const result = await FirebaseAuthentication.signInWithGoogle({
-          useCredentialManager: false,   // ✅ 핵심: 이 줄 추가
+          useCredentialManager: false,
         });
 
         const idToken = result.credential?.idToken;
