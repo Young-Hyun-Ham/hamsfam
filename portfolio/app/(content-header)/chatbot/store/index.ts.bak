@@ -6,7 +6,7 @@ import { ChatMessage, ChatSession } from "../types";
 import {
   subscribeChatbotSessions,
   saveChatbotSessions,
-} from "../services/backendService";
+} from "../services/chatbotFirebaseService";
 
 // 클라이언트에서 쓸 거라면 NEXT_PUBLIC_ 접두사를 쓰는 게 안전함
 export const DEFAULT_SYSTEM_PROMPT =
@@ -19,7 +19,7 @@ type ChatbotState = {
   activeSessionId: string | null;
   systemPrompt: string;
 
-  // 액션들
+  // 기존 액션들
   createSession: (title: string, messages?: ChatMessage[]) => string;
   setActiveSession: (id: string) => void;
   addMessageToActive: (message: ChatMessage) => void;
@@ -34,13 +34,12 @@ type ChatbotState = {
   // system prompt 설정
   setSystemPrompt: (prompt: string) => void;
 
-  // 백엔드(Firebase/Postgres 등) 연동
-  initBackendSync: (userKey: string) => void;
-  stopBackendSync: () => void;
+  // Firebase 연동
+  initFirebaseSync: (userKey: string) => void;
+  stopFirebaseSync: () => void;
 };
 
-// 공용 unsubscribe 핸들
-let unsubscribeBackend: (() => void) | null = null;
+let unsubscribeFirestore: (() => void) | null = null;
 
 const useChatbotStore = create<ChatbotState>((set, get) => ({
   userKey: null,
@@ -48,15 +47,15 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
   activeSessionId: null,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
 
-  // ---------- 백엔드 연동 초기화 ----------
-  initBackendSync: (userKey: string) => {
+  // ---------- Firebase 연동 ----------
+  initFirebaseSync: (userKey: string) => {
     // 기존 구독 있으면 정리
-    if (unsubscribeBackend) {
-      unsubscribeBackend();
-      unsubscribeBackend = null;
+    if (unsubscribeFirestore) {
+      unsubscribeFirestore();
+      unsubscribeFirestore = null;
     }
 
-    unsubscribeBackend = subscribeChatbotSessions(userKey, (data: any) => {
+    unsubscribeFirestore = subscribeChatbotSessions(userKey, (data) => {
       if (!data) {
         // 문서가 아직 없으면 localStorage or 기본값 사용
         let sp = DEFAULT_SYSTEM_PROMPT;
@@ -95,10 +94,10 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
     });
   },
 
-  stopBackendSync: () => {
-    if (unsubscribeBackend) {
-      unsubscribeBackend();
-      unsubscribeBackend = null;
+  stopFirebaseSync: () => {
+    if (unsubscribeFirestore) {
+      unsubscribeFirestore();
+      unsubscribeFirestore = null;
     }
     set({
       userKey: null,

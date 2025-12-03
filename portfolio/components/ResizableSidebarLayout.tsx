@@ -76,6 +76,9 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
       case "settings":
         router.push("/admin/settings");
         break;
+      case "shortcut":
+        router.push("/admin/chatbot-shortcut-menu");
+        break;
       default:
         break;
     }
@@ -164,6 +167,13 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
                         onClick={() => { handleGoMenu('menu') } }
                       >
                         메뉴관리
+                      </button>
+                      <button 
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50"
+                        style={{cursor:'pointer'}}
+                        onClick={() => { handleGoMenu('shortcut') } }
+                      >
+                        Shortcut 메뉴관리
                       </button>
                       <button 
                         className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50"

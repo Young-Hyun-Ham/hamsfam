@@ -149,7 +149,6 @@ const ScenarioList = ({ backend, onSelect, onAddScenario, onEditScenario, scenar
       setLoading(true);
       try {
         let scenarioList = await backendService.fetchScenarios(backend);
-        
         scenarioList = scenarioList.map((scenario: any) => ({
           ...scenario,
           job: scenario.job || 'Process',
