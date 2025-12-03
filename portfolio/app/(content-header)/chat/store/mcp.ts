@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { McpToolSpec } from '@/types/mcp';
+import { McpToolSpec } from '../types/mcp';
 
 type State = {
   connected: boolean;

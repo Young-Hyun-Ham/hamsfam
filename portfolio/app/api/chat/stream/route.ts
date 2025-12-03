@@ -2,14 +2,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+// import { prisma } from "@/lib/db";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { corsHeaders } from "@/lib/cors";
-import { pickContent, searchSimilarDocs } from "@/lib/chat/utils";
-import { ChatStreamRequest, GDriveSearchOpts, Role } from "@/app/types/types";
-import { runAgentWithMcps } from "@/lib/mcp/agent/agentExec";
-import { requireUserId } from "@/lib/authServer";
-import { ollamaStreamChat, openaiStreamChat } from "@/lib/chat/stream";
+import { corsHeaders } from "@/app/api/chat/cors";
+import { pickContent, searchSimilarDocs } from "@/app/api/chat/utils";
+import { ChatStreamRequest, GDriveSearchOpts, Role } from "@/app/api/chat/types";
+import { runAgentWithMcps } from "@/app/api/chat/mcp/agent/agentExec";
+import { requireUserId } from "@/app/api/chat/authServer";
+import { ollamaStreamChat, openaiStreamChat } from "@/app/api/chat/stream";
 
 // Prisma를 쓰므로 Edge가 아닌 Node 런타임 사용
 export const runtime = "nodejs";
@@ -58,13 +58,13 @@ export async function POST(req: Request) {
   try {
     // 1) 유저/시스템 메시지 저장 (여러 개면 트랜잭션)
     if (messages?.length) {
-      await prisma.$transaction(
-        messages.map((m) =>
-          prisma.conversations.create({
-            data: { role: m.role, content: m.content },
-          })
-        )
-      );
+      // await prisma.$transaction(
+      //   messages.map((m) =>
+      //     prisma.conversations.create({
+      //       data: { role: m.role, content: m.content },
+      //     })
+      //   )
+      // );
     }
 
     // 2) 최근 user 질문

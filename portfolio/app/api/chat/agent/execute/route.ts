@@ -1,8 +1,8 @@
 // app/api/chat/agent/execute/route.ts
 import { NextResponse } from "next/server";
-import { buildRegistryFromUser, withTimeout } from "@/lib/mcp/agent/shared";
-import { openaiStreamChat } from "@/lib/chat/stream";
-import { corsHeaders } from "@/lib/cors";
+import { buildRegistryFromUser, withTimeout } from "@/app/api/chat/mcp/agent/shared";
+import { openaiStreamChat } from "@/app/api/chat/stream";
+import { corsHeaders } from "@/app/api/chat/cors";
 
 export const runtime = "nodejs";
 
