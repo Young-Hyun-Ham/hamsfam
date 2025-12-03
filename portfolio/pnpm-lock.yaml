@@ -83,9 +83,6 @@ importers:
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
-      ws:
-        specifier: ^8.18.3
-        version: 8.18.3
       zustand:
         specifier: ^5.0.8
         version: 5.0.8(@types/react@19.2.2)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
@@ -7484,7 +7481,8 @@ snapshots:
   wrappy@1.0.2:
     optional: true
 
-  ws@8.18.3: {}
+  ws@8.18.3:
+    optional: true
 
   xtend@4.0.2: {}
 
