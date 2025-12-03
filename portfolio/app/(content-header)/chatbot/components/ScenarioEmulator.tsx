@@ -1,7 +1,10 @@
 // app/(content-header)/chatbot/components/ScenarioEmulator.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useStore } from "@/store";
+import * as builderBackendService from "../../builder/services/backendService";
+import ScenarioNodeControls from "./ScenarioNodeControls";
 
 type AnyNode = {
   id: string;
@@ -17,22 +20,29 @@ type AnyEdge = {
   targetHandle?: string | null;
 };
 
-type ChatStep = {
+export type ChatStep = {
   id: string;
   role: "bot" | "user";
   text: string;
 };
 
 type ScenarioEmulatorProps = {
-  nodes: AnyNode[];
-  edges: AnyEdge[];
+  scenarioKey: string;
+  scenarioTitle?: string;
+  onHistoryAppend?: (payload: {
+    scenarioKey: string;
+    scenarioTitle?: string;
+    steps: ChatStep[];
+  }) => void;
 };
 
+// 루트 노드 찾기
 function findRootNode(nodes: AnyNode[], edges: AnyEdge[]): AnyNode | null {
   const targets = new Set(edges.map((e) => e.target));
   return nodes.find((n) => !targets.has(n.id)) ?? null;
 }
 
+// 다음 노드 찾기
 function findNextNode(
   nodes: AnyNode[],
   edges: AnyEdge[],
@@ -53,18 +63,68 @@ function findNextNode(
   return nodes.find((n) => n.id === first.target) ?? null;
 }
 
-export default function ScenarioEmulator({ nodes, edges }: ScenarioEmulatorProps) {
+export default function ScenarioEmulator({
+  scenarioKey,
+  scenarioTitle,
+  onHistoryAppend,
+}: ScenarioEmulatorProps) {
+  const user = useStore((s: any) => s.user);
+  const backend = useStore((s: any) => s.backend);
+
+  const [nodes, setNodes] = useState<AnyNode[]>([]);
+  const [edges, setEdges] = useState<AnyEdge[]>([]);
+  const historyPushedRef = useRef(false);
+
+  useEffect(() => {
+    const fetchScenarioData = async (key: string) => {
+      const data = await builderBackendService.fetchScenarioData(backend, {
+        scenarioId: key,
+      });
+      setNodes(data.nodes);
+      setEdges(data.edges);
+    };
+    fetchScenarioData(scenarioKey);
+  }, [backend, scenarioKey]);
+
   const rootNode = useMemo(() => findRootNode(nodes, edges), [nodes, edges]);
 
-  const [currentNode, setCurrentNode] = useState<AnyNode | null>(rootNode);
+  const [currentNode, setCurrentNode] = useState<AnyNode | null>(null);
   const [steps, setSteps] = useState<ChatStep[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [finished, setFinished] = useState(false);
 
-  // 시나리오 처음부터 다시 시작
+  useEffect(() => {
+    if (!rootNode) {
+      setCurrentNode(null);
+      setSteps([]);
+      setFinished(false);
+      historyPushedRef.current = false;
+      return;
+    }
+
+    setCurrentNode(rootNode);
+
+    if (rootNode.type === "message") {
+      setSteps([
+        {
+          id: rootNode.id,
+          role: "bot",
+          text: rootNode.data?.content ?? "",
+        },
+      ]);
+    } else {
+      setSteps([]);
+    }
+    setFinished(false);
+    setFormValues({});
+    historyPushedRef.current = false;
+  }, [rootNode]);
+
   const resetScenario = () => {
     setFinished(false);
     setFormValues({});
+    historyPushedRef.current = false;
+
     if (!rootNode) {
       setCurrentNode(null);
       setSteps([]);
@@ -84,21 +144,16 @@ export default function ScenarioEmulator({ nodes, edges }: ScenarioEmulatorProps
     }
   };
 
-  // 최초 진입 시 자동 시작
-  // (패널 열릴 때 부모에서 한 번만 resetScenario 호출해도 됨)
-  if (!steps.length && rootNode && !finished && !currentNode) {
-    // 혹시 currentNode가 초기화된 경우를 대비
-    setCurrentNode(rootNode);
-    if (rootNode.type === "message") {
-      setSteps([
-        {
-          id: rootNode.id,
-          role: "bot",
-          text: rootNode.data?.content ?? "",
-        },
-      ]);
-    }
-  }
+  // 👇 끝났을 때 한 번만 부모에게 실행 결과 전달
+  useEffect(() => {
+    if (!finished) return;
+    if (!steps.length) return;
+    if (!onHistoryAppend) return;
+    if (historyPushedRef.current) return;
+
+    historyPushedRef.current = true;
+    onHistoryAppend({ scenarioKey, scenarioTitle, steps });
+  }, [finished, steps, onHistoryAppend, scenarioKey, scenarioTitle]);
 
   const handleContinueFromMessage = () => {
     if (!currentNode) return;
@@ -154,7 +209,6 @@ export default function ScenarioEmulator({ nodes, edges }: ScenarioEmulatorProps
   const handleBranchClick = (reply: { display: string; value: string }) => {
     if (!currentNode) return;
 
-    // 유저가 버튼 선택한 내용
     setSteps((prev) => [
       ...prev,
       {
@@ -281,119 +335,6 @@ export default function ScenarioEmulator({ nodes, edges }: ScenarioEmulatorProps
     }
   };
 
-  // 현재 노드 타입별 UI
-  const renderCurrentControls = () => {
-    if (!currentNode || finished) {
-      return (
-        <div className="mt-3 flex justify-end gap-2">
-          <button
-            className="rounded-md border border-emerald-200 bg-white px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
-            onClick={resetScenario}
-          >
-            시나리오 다시 실행
-          </button>
-        </div>
-      );
-    }
-
-    if (currentNode.type === "message") {
-      return (
-        <div className="mt-3 flex justify-end">
-          <button
-            onClick={handleContinueFromMessage}
-            className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-          >
-            계속
-          </button>
-        </div>
-      );
-    }
-
-    if (currentNode.type === "branch") {
-      const replies: { display: string; value: string }[] =
-        currentNode.data?.replies ?? [];
-      return (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {replies.map((r) => (
-            <button
-              key={r.value}
-              onClick={() => handleBranchClick(r)}
-              className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
-            >
-              {r.display}
-            </button>
-          ))}
-        </div>
-      );
-    }
-
-    if (currentNode.type === "form") {
-      const elements: any[] = currentNode.data?.elements ?? [];
-      return (
-        <form onSubmit={handleSubmitForm} className="mt-3 space-y-3 text-xs">
-          {elements.map((el) => (
-            <div key={el.id} className="flex flex-col gap-1">
-              <label className="font-medium text-gray-700">
-                {el.label || el.name}
-              </label>
-              <input
-                type="text"
-                className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                placeholder={el.placeholder || ""}
-                value={formValues[el.name] ?? ""}
-                onChange={(e) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    [el.name]: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          ))}
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="submit"
-              className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-            >
-              제출 & 다음
-            </button>
-          </div>
-        </form>
-      );
-    }
-
-    if (currentNode.type === "link") {
-      const url = currentNode.data?.content ?? "";
-      const label = currentNode.data?.display || "열기";
-      return (
-        <div className="mt-3 flex flex-col gap-2 text-xs">
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-emerald-700 hover:underline"
-            >
-              <span>{label}</span>
-              <span className="text-[10px]">↗</span>
-            </a>
-          )}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleNextFromLink}
-              className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-            >
-              다음
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <div className="flex h-full flex-col rounded-xl border border-emerald-100 bg-white/80 p-3 shadow-sm">
       <div className="mb-2 flex items-center justify-between">
@@ -419,9 +360,7 @@ export default function ScenarioEmulator({ nodes, edges }: ScenarioEmulatorProps
               <div
                 key={s.id}
                 className={
-                  s.role === "bot"
-                    ? "flex justify-start"
-                    : "flex justify-end"
+                  s.role === "bot" ? "flex justify-start" : "flex justify-end"
                 }
               >
                 <div
@@ -439,7 +378,17 @@ export default function ScenarioEmulator({ nodes, edges }: ScenarioEmulatorProps
         )}
       </div>
 
-      {renderCurrentControls()}
+      <ScenarioNodeControls
+        currentNode={currentNode}
+        finished={finished}
+        formValues={formValues}
+        setFormValues={setFormValues}
+        onReset={resetScenario}
+        onContinueFromMessage={handleContinueFromMessage}
+        onBranchClick={handleBranchClick}
+        onSubmitForm={handleSubmitForm}
+        onNextFromLink={handleNextFromLink}
+      />
     </div>
   );
 }

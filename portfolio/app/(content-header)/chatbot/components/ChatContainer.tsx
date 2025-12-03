@@ -15,7 +15,7 @@ import {
   SmallChevronRightIcon,
   DotsHorizontalIcon,
 } from "./Icons";
-import { ChatMessage, ChatSession } from "../types";
+import { ChatMessage, ChatSession, ScenarioStep } from "../types";
 import useChatbotStore, { DEFAULT_SYSTEM_PROMPT } from "../store";
 import ScenarioPanel from "./ScenarioPanel";
 import {
@@ -31,7 +31,6 @@ import {
 import { SettingsIcon } from "lucide-react";
 
 import ScenarioEmulator from "./ScenarioEmulator";
-import { todoScenarioNodes, todoScenarioEdges } from "./scenarioSamples";
 
 type ScenarioPanelData = {
   title: string;
@@ -55,7 +54,7 @@ export default function ChatContainer() {
     patchMessage,
     updateSessionTitle,
     deleteSession,
-    initFirebaseSync,
+    initBackendSync: initFirebaseSync,
     systemPrompt,
     setSystemPrompt,
   } = useChatbotStore();
@@ -74,8 +73,7 @@ export default function ChatContainer() {
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const editingInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [scenarioOpen, setScenarioOpen] = useState(false);
+  // ▶ 시나리오 패널 상태
   const [scenarioData, setScenarioData] = useState<ScenarioPanelData>({
     title: "",
     content: null,
@@ -107,9 +105,52 @@ export default function ChatContainer() {
   };
   // ==================== 설정 Popover end ====================
 
-  const activeSession =
-    sessions.find((s) => s.id === activeSessionId) || null;
+  const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
   const messages = activeSession?.messages ?? [];
+  const [scenarioOpen, setScenarioOpen] = useState(false);
+  const [scenarioKey, setScenarioKey] = useState<string | null>(null);
+  const [scenarioTitle, setScenarioTitle] = useState<string>("");
+
+  // shortcut 메뉴에서 시나리오 선택 시 호출하는 기존 로직
+  const openScenarioPanel = (key: string, title: string) => {
+    setScenarioKey(key);
+    setScenarioTitle(title);
+    setScenarioOpen(true);
+  };
+
+  const handleScenarioHistoryAppend = ({
+    scenarioKey,
+    scenarioTitle,
+    steps,
+  }: {
+    scenarioKey: string;
+    scenarioTitle?: string;
+    steps: ScenarioStep[];
+  }) => {
+    const now = new Date().toISOString();
+
+    // steps를 요약해서 content에 보여줄 문자열로 만들기 (간단 버전)
+    const summaryText =
+      steps
+        .map((s) => (s.role === "bot" ? `봇: ${s.text}` : `사용자: ${s.text}`))
+        .join("\n")
+        .slice(0, 500) + (steps.length > 0 ? "..." : "");
+
+    const scenarioMessage: ChatMessage = {
+      id: `scenario-${scenarioKey}-${Date.now()}`,
+      role: "assistant",
+      content:
+        `🔁 시나리오 실행: ${scenarioTitle || scenarioKey}\n\n` + summaryText,
+      createdAt: now,
+      kind: "scenario",
+      scenarioKey,
+      scenarioTitle,
+      scenarioSteps: steps,
+    };
+
+    addMessageToActive(scenarioMessage);
+    // LLM 히스토리는 기존대로 addMessageToActive로 쌓이는 구조 유지
+  };
 
   // 최초 세션 생성
   useEffect(() => {
@@ -477,7 +518,24 @@ export default function ChatContainer() {
               </div>
             ) : (
               messages.map((m) => (
-                <ChatMessageItem key={m.id} message={m} />
+                <ChatMessageItem
+                  key={m.id}
+                  message={m}
+                  onScenarioClick={(scenarioKey, scenarioTitle) => {
+                    // 시나리오 메시지 클릭 시 우측 패널로 다시 실행
+                    setScenarioData({
+                      title: scenarioTitle || "Scenario",
+                      content: (
+                        <ScenarioEmulator
+                          scenarioKey={scenarioKey}
+                          scenarioTitle={scenarioTitle}
+                          onHistoryAppend={handleScenarioHistoryAppend}
+                        />
+                      ),
+                    });
+                    setScenarioOpen(true);
+                  }}
+                />
               ))
             )}
           </div>
@@ -489,8 +547,8 @@ export default function ChatContainer() {
               title: preset.primary,
               content: (
                 <ScenarioEmulator
-                  nodes={todoScenarioNodes}
-                  edges={todoScenarioEdges}
+                  scenarioKey={preset.scenarioKey ?? ""}
+                  onHistoryAppend={handleScenarioHistoryAppend}
                 />
               ),
             });

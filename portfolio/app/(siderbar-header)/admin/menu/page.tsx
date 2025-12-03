@@ -409,28 +409,32 @@ export default function MenuManagement() {
 
         {/* 데이터 테이블 */}
         <div className="overflow-x-auto border border-gray-200 rounded-md">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <table className="min-w-full divide-y divide-gray-200 text-sm table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                {[
-                  'Menu ID',
-                  'Label',
-                  'Href',
-                  'Level',
-                  'Order',
-                  'Parent ID',
-                  // 'Created At',
-                  // 'Updated At',
-                  // 'Actions',
-                ].map(header => (
-                  <th
-                    key={header}
-                    scope="col"
-                    className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"
-                  >
-                    {header}
-                  </th>
-                ))}
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-40">
+                  Menu ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-40">
+                  Label
+                </th>
+                {/* Href 폭 줄이기 */}
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-56">
+                  Href
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
+                  Level
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
+                  Order
+                </th>
+                {/* Parent ID 폭 줄이기 */}
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Parent ID
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">
+                  {/* 액션 영역 */}
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -448,8 +452,14 @@ export default function MenuManagement() {
                   <td className="px-4 py-2 whitespace-nowrap text-gray-800">
                     {menu.label}
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-800">
-                    {menu.href ?? ''}
+                  {/* Href: 폭 제한 + ... + hover 시 전체 보기 */}
+                  <td className="px-4 py-2 text-gray-800">
+                    <span
+                      className="block max-w-[220px] truncate"
+                      title={menu.href ?? ""}
+                    >
+                      {menu.href ?? ""}
+                    </span>
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap text-gray-800 text-center">
                     {menu.lev}
@@ -457,19 +467,14 @@ export default function MenuManagement() {
                   <td className="px-4 py-2 whitespace-nowrap text-gray-800 text-center">
                     {menu.order ?? ''}
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-800">
-                    {menu.path_labels ?? ''}
+                  <td className="px-4 py-2 text-gray-800">
+                    <span
+                      className="block w-full truncate"
+                      title={menu.path_labels ?? ''}
+                    >
+                      {menu.path_labels ?? ''}
+                    </span>
                   </td>
-                  {/* <td className="px-4 py-2 whitespace-nowrap text-gray-500 text-xs text-center">
-                    {menu?.createdAt
-                      ? new Date(menu.createdAt).toLocaleString()
-                      : ''}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-500 text-xs text-center">
-                    {menu?.updatedAt
-                      ? new Date(menu.updatedAt).toLocaleString()
-                      : ''}
-                  </td> */}
                   {/* 이 셀은 기본 내용 없음 (오버레이 전용 공간 느낌으로 둠) */}
                   <td className="px-4 py-2 whitespace-nowrap text-xs">
                     {/* 비워두거나, 아이콘 등 넣고 싶으면 여기에 */}
@@ -519,7 +524,7 @@ export default function MenuManagement() {
           </table>
         </div>
 
-        {/* 🔹 페이지네이션 바 */}
+        {/* 페이지네이션 바 */}
         {menus.length > 0 && (
           <div className="flex items-center justify-between mt-3 text-xs text-gray-600">
             <div>
