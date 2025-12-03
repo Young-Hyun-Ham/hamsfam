@@ -83,7 +83,7 @@ export default function ConnectLayout({ header, children }: ContentProps) {
                   {loading ? "refreshing..." : <RefreshTokenIcon className="w-4 h-4 text-gray-700" />}
                 </button>
               </>
-            ) : null}
+            ) : user?.email}
             <span className="border-l pl-3">{user?.displayName ?? user?.name}&nbsp;({backend})</span>
             <button
               onClick={handleLogout}
