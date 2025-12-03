@@ -1,14 +1,14 @@
 // app/api/menus/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from "@/lib/postgresql";
 
-type Params = {
-  params: { id: string };
+type ParamsContext = {
+  params: Promise<{ id: string }>;
 };
 
 // GET /api/menus/:id
-export async function GET(_req: Request, { params }: Params) {
-  const { id } = params;
+export async function GET(_req: NextRequest, { params }: ParamsContext) {
+  const { id } = await params;
 
   try {
     const result = await db.query(
@@ -22,25 +22,24 @@ export async function GET(_req: Request, { params }: Params) {
     );
 
     if (result.rowCount === 0) {
-      return new NextResponse('Not Found', { status: 404 });
+      return new NextResponse("Not Found", { status: 404 });
     }
 
     return NextResponse.json(result.rows[0]);
   } catch (err) {
-    console.error('GET /api/menus/[id] error', err);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error("GET /api/menus/[id] error", err);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
 // PATCH /api/menus/:id
-export async function PATCH(req: Request, { params }: Params) {
-  const { id } = params;
+export async function PATCH(req: NextRequest, { params }: ParamsContext) {
+  const { id } = await params;
 
   try {
     const body = await req.json();
     const { menu_id, label, href, order, lev, up_id } = body;
 
-    // 현재 값 조회
     const currentRes = await db.query(
       `
       SELECT id, menu_id, label, href, "order", lev, up_id
@@ -51,7 +50,7 @@ export async function PATCH(req: Request, { params }: Params) {
     );
 
     if (currentRes.rowCount === 0) {
-      return new NextResponse('Not Found', { status: 404 });
+      return new NextResponse("Not Found", { status: 404 });
     }
 
     const current = currentRes.rows[0];
@@ -87,14 +86,14 @@ export async function PATCH(req: Request, { params }: Params) {
 
     return NextResponse.json(updateRes.rows[0]);
   } catch (err) {
-    console.error('PATCH /api/menus/[id] error', err);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error("PATCH /api/menus/[id] error", err);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
 // DELETE /api/menus/:id
-export async function DELETE(_req: Request, { params }: Params) {
-  const { id } = params;
+export async function DELETE(_req: NextRequest, { params }: ParamsContext) {
+  const { id } = await params;
 
   try {
     await db.query(
@@ -105,10 +104,9 @@ export async function DELETE(_req: Request, { params }: Params) {
       [id],
     );
 
-    // 204 No Content
     return new NextResponse(null, { status: 204 });
   } catch (err) {
-    console.error('DELETE /api/menus/[id] error', err);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error("DELETE /api/menus/[id] error", err);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

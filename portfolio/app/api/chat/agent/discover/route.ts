@@ -1,7 +1,7 @@
 // app/api/chat/agent/discover/route.ts
 import { NextResponse } from "next/server";
-import { buildRegistryFromUser, recommendTools } from "@/lib/mcp/agent/shared";
-import { corsHeaders } from "@/lib/cors";
+import { buildRegistryFromUser, recommendTools } from "@/app/api/chat/mcp/agent/shared";
+import { corsHeaders } from "@/app/api/chat/cors";
 
 export const runtime = "nodejs";
 

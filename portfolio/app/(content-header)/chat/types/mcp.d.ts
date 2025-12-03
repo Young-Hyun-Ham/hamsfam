@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// frontend/src/types/mcp.ts
+// app/(content-header)/chat/types/mcp.d.ts
 
 /** JSON Schema(필요한 부분만 경량화) */
 export type JsonSchema =

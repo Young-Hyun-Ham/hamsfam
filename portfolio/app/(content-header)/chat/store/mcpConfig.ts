@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { Mcp, McpConfig } from '@/types/mcp';
+import { Mcp, McpConfig } from '../types/mcp';
 import { api } from '@/lib/axios';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';

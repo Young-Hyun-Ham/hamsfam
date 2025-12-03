@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyJwt } from "@/lib/utils/jwt";
 import { db } from "@/lib/postgresql";
 
-export async function GET(req: NextRequest, res: NextResponse) {
+export async function GET(req: NextRequest) {
   try {
     // 요청 쿠키 스토어 가져오기
     const cookieStore = await cookies();
