@@ -4,7 +4,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/store";
-import { ExpandIcon, CollapseIcon } from "./Icons";
+import RefreshTokenIcon, { ExpandIcon, CollapseIcon } from "./Icons";
+import TokenTimer from "./TokenTimer";
+import { api } from "@/lib/axios";
 
 type SiderbarProps = {
   header?: React.ReactNode;
@@ -34,6 +36,8 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   const containerRef = useRef<HTMLDivElement>(null);
   const [sidebarW, setSidebarW] = useState<number>(200);
   const [dragging, setDragging] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
 
   function clamp(v: number, min: number, max: number) {
     return Math.max(min, Math.min(max, v)); 
@@ -63,6 +67,22 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   async function handleLogout() {
     await logout();
     router.push('/');
+  }
+  
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      // axios 인스턴스에 이미 withCredentials:true 설정되어 있으면 옵션 생략 가능
+      const r = await api.post("/api/auth/refresh", {data: {userId: user.id}});
+      // console.log("refresh result:", r.status, r.data, r);
+      // 토큰 수정
+      const { accessToken, ...nextUser } = r.data;
+      useStore.getState().setAuth(nextUser, accessToken);
+    } catch (e) {
+      console.error("refresh failed:", e);
+    } finally {
+      setLoading(false);
+    }
   }
   
   // ---- menu popover ----
@@ -111,6 +131,18 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
           {header}
           {/* 우측: 사용자/세션 영역 */}
           <div className="flex items-center gap-3 text-sm">
+            {backend === 'postgres' ? (
+              <>
+                <TokenTimer />
+                <button 
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  style={{ cursor: "pointer" }}
+                >
+                  {loading ? "refreshing..." : <RefreshTokenIcon className="w-4 h-4 text-gray-700" />}
+                </button>
+              </>
+            ) : user?.email}
             <span className="border-l pl-3">{user?.displayName ?? user?.name}&nbsp;({backend})</span>
             <button
               onClick={handleLogout}

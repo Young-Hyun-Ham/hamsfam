@@ -1,3 +1,4 @@
+// app/(siderbar-header)/admin/menu/store/index.ts
 import { create } from "zustand";
 
 import * as backendService from '../services/backendService';

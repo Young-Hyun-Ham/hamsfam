@@ -1,8 +1,6 @@
 // app/api/submenus/route.ts
 import { NextResponse } from "next/server";
 
-import { adminDb } from "@/lib/firebaseAdmin";
-import type { MenuType } from "../types/types";
 import { getSubMenusByBackend } from "@/lib/services";
 
 /**

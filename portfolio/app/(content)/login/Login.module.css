@@ -1,152 +1,194 @@
+/* 전체 배경 */
 .login {
+  min-height: 100vh;
   width: 100vw;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #000;
-  color: white;
-  font-family: Inter, sans-serif;
+  padding: 16px;
+  box-sizing: border-box;
+
+  /* 나중에 다크/라이트 모드에서 이 변수들만 갈아끼우면 됨 */
+  background-color: var(--login-bg, #000000);
+  color: var(--login-text, #ffffff);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
 }
 
+/* 테마용 기본 값 (원하면 글로벌 CSS로 빼도 됨) */
+:root {
+  --login-bg: #000000;
+  --login-text: #ffffff;
+  --login-card-bg: #ffffff;
+  --login-card-text: #0f172a;
+  --login-accent: #2f7bfa;
+  --login-accent-hover: #1d5fd8;
+  --login-border: rgba(15, 23, 42, 0.08);
+  --login-input-bg: #ffffff;
+  --login-input-border: #d9deeb;
+  --login-input-placeholder: #9ca3af;
+  --login-muted: #6b7280;
+}
+
+/* 전체 카드 컨테이너 */
 .titleParent {
-  position: relative;
-  width: 390px;
-  min-height: 640px;
+  width: 100%;
+  max-width: 390px;
 }
 
+/* 상단 타이틀 */
 .title {
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-size: 34px;
-  line-height: 42px;
+  font-size: 32px;
+  line-height: 1.3;
+  margin: 0 0 16px;
 }
 
 .p {
   margin: 0;
 }
 
-:root {
-  --btngoogle-counter: 1; /* Google 버튼 개수에 따라 height, top 조정 */
-  --card-height: calc(calc(var(--btngoogle-counter) * 50px) + 200px);
-  --card-top: calc(calc(var(--btngoogle-counter) * 50px) + 120px);
-  --card-left: 10px;
-  --card-top-down: 50px;
-}
-/* 카드 */
+/* 카드 영역 */
 .card {
-  position: absolute;
-  top: calc(calc(var(--btngoogle-counter) * 50px) + 170px);
-  left: var(--card-left);
+  margin-top: 32px;
+  background-color: var(--login-card-bg);
+  color: var(--login-card-text);
   border-radius: 16px;
-  background-color: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  width: 350px;
-  height: var(--card-height);
+  padding: 24px 20px 20px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--login-border);
+  box-sizing: border-box;
 }
-/* Google 버튼 */
-.btngoogle {
-  position: absolute;
-  top: calc(var(--card-top) + 32px);
-  left: calc(var(--card-left) + 20px);
-  border-radius: 10px;
-  background-color: #2f7bfa;
-  width: 310px;
-  height: 48px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
+
+/* Google 로그인 버튼 */
 .btngooglePopup {
-  position: absolute;
-  top: calc(var(--card-top) + var(--card-top-down) + 32px);
-  left: calc(var(--card-left) + 20px);
-  border-radius: 10px;
-  background-color: #2f7bfa;
-  width: 310px;
+  width: 100%;
   height: 48px;
+  border-radius: 10px;
+  background-color: var(--login-accent);
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-.btngoogle:hover {
-  background-color: #1d5fd8;
-}
-.btngooglelabel {
+  transition: background-color 0.2s ease, transform 0.1s ease;
   font-weight: 500;
-  color: #fff;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 구분선 */
-.dividerleft {
-  position: absolute;
-  top: calc(var(--card-top) + var(--card-top-down) + 96px);
-  left: calc(var(--card-left) + 20px);
-  background-color: #dbe0eb;
-  width: 110px;
-  height: 1px;
+.btngooglePopup:hover {
+  background-color: var(--login-accent-hover);
+  transform: translateY(-1px);
 }
-.or {
-  position: absolute;
-  top: calc(var(--card-top) + var(--card-top-down) + 88px);
-  left: calc(var(--card-left) + 160px);
+
+.btngooglePopup:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* OR 구분선 */
+.dividerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0;
+  color: var(--login-muted);
   font-size: 12px;
-  color: #80858f;
-}
-.dividerright {
-  position: absolute;
-  top: calc(var(--card-top) + var(--card-top-down) + 96px);
-  left: calc(var(--card-left) + 215px);
-  background-color: #dbe0eb;
-  width: 110px;
-  height: 1px;
 }
 
-/* 입력 필드 */
-.inputWrapper {
-  position: absolute;
-  top: calc(var(--card-top) + var(--card-top-down) + 118px);
-  left: calc(var(--card-left) + 20px);
-  width: 310px;
-  height: 48px;
+.divider {
+  flex: 1;
+  height: 1px;
+  background-color: #dbe0eb;
 }
+
+.or {
+  white-space: nowrap;
+}
+
+/* 입력 영역 공통 래퍼 (테스트 로그인 / 이메일 로그인 구분용) */
+.formBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* 인풋 래퍼 */
+.inputWrapper {
+  width: 100%;
+}
+
+/* 인풋 */
 .input {
   width: 100%;
-  height: 100%;
+  height: 44px;
   border-radius: 10px;
-  background-color: #fff;
-  border: 1px solid #d9deeb;
+  background-color: var(--login-input-bg);
+  border: 1px solid var(--login-input-border);
   box-sizing: border-box;
   padding: 0 14px;
   font-size: 14px;
-  color: #333;
-}
-.input::placeholder {
-  color: #999ea8;
+  color: var(--login-card-text);
 }
 
-/* 테스트 로그인 버튼 */
-.btntestlogin {
-  position: absolute;
-  top: calc(var(--card-top) + var(--card-top-down) + 178px);
-  left: calc(var(--card-left) + 20px);
+.input::placeholder {
+  color: var(--login-input-placeholder);
+}
+
+/* 테스트 로그인 / 이메일 로그인 버튼 공통 */
+.btntestlogin,
+.btnEmailLogin {
+  width: 100%;
+  height: 44px;
   border-radius: 10px;
-  background-color: #d9dbe0;
-  width: 310px;
-  height: 48px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+/* 테스트 ID 로그인 버튼 */
+.btntestlogin {
+  background-color: #d9dbe0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .btntestlogin:enabled:hover {
   background-color: #c1c3c9;
+  transform: translateY(-1px);
 }
+
 .btntestlogin:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* 이메일 로그인 버튼 */
+.btnEmailLogin {
+  background-color: #4b5563;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.btnEmailLogin:hover {
+  background-color: #374151;
+  transform: translateY(-1px);
+}
+
+.btnEmailLogin:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btntestloginlabel {
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 에러 메시지 */
+.error {
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 4px;
 }

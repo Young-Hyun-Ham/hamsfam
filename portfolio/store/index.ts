@@ -11,6 +11,7 @@ import {
   writeBatch,
   serverTimestamp,
   addDoc,
+  setDoc,
 } from "@/lib/firebase";
 import { locales } from "@/lib/locales";
 import { createAuthSlice as createFirebaseAuthSlice } from "@/store/slice/authSliceF";
@@ -33,6 +34,7 @@ export const useStore: any = create((set: any, get: any) => ({
   user: null,
   authChecked: false,
   backend: BACKEND,
+  loginType: 'google', // 'google' | 'email' | 'test'
 
   headerMenus: [],
   setHeaderMMenus: (data: NavItem) => { set({ headerMenus: data }) },
@@ -78,8 +80,46 @@ export const useStore: any = create((set: any, get: any) => ({
 
   setUserAndLoadData: async (user: any) => {
     set({ user });
-
     const includeAdminAccount = process.env.NEXT_PUBLIC_ADMIN_ACCOUNT ?? [''];
+
+    /* ---------------------------------------------------
+   * Firebase 로그인 사용자 Firestore upsert 처리
+   * ---------------------------------------------------*/
+    if (BACKEND === "firebase" && user?.uid && user.loginType === "google") {
+      try {
+        const usersRef = collection(get().db, "users");
+        const userRef = doc(usersRef, user.uid);
+        const snap = await getDoc(userRef);
+
+        const baseData = {
+          sub: user.uid,
+          email: user.email ?? null,
+          name: user.displayName ?? "",
+          avatar_url: user.photoURL ?? null,
+          provider: "google",
+          roles: user.roles ?? ["user"],
+        };
+
+        if (!snap.exists()) {
+          // 신규 사용자 → 자동 등록
+          await setDoc(userRef, {
+            ...baseData,
+            createdAt: serverTimestamp(),
+            lastLoginAt: serverTimestamp(),
+          });
+        } else {
+          // 기존 사용자 → 마지막 접속시간만 업데이트
+          await setDoc(
+            userRef,
+            { lastLoginAt: serverTimestamp() },
+            { merge: true }
+          );
+        }
+      } catch (err) {
+        console.error("🔥 Firestore 사용자 upsert 실패:", err);
+      }
+    }
+
     if (!Array.isArray(user.roles)) {
       // 기본 user role
       get().setRoles('user');
@@ -148,7 +188,7 @@ export const useStore: any = create((set: any, get: any) => ({
       }
 
       try {
-        const userSettingsRef = doc(get().db, "settings", user.uid);
+        const userSettingsRef = doc(get().db, "settings", user.uid ?? user?.sub);
         const docSnap = await getDoc(userSettingsRef);
         const settings = docSnap.exists() ? docSnap.data() : {};
 
