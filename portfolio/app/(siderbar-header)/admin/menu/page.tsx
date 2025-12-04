@@ -1,3 +1,4 @@
+// app/(siderbar-header)/admin/menu/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';

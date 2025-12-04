@@ -1,5 +1,5 @@
 // store/slice/authSliceP.ts
-import { AppUser, loginApi, loginWithTestIdApi, logoutApi } from '@/lib/api/auth';
+import { AppUser, postgresLoginApi, loginWithTestIdApi, logoutApi } from '@/lib/api/auth';
 import { api } from '@/lib/axios';
 
 type AuthState = {
@@ -64,10 +64,10 @@ export const createAuthSlice = (set: any, get: any): AuthState => ({
     }
   },
   
-  // 이메일/비밀번호 로그인 예시
+  // 이메일/비밀번호 로그인
   loginWithEmail: async (email: string, password: string) => {
     try {
-      const { user, accessToken }  = await loginApi(email, password);
+      const { user, accessToken }  = await postgresLoginApi(email, password);
       // 일단 현재 세션에만 바로 세팅
       set({ user, token: accessToken, authChecked: true });
       await get().setUserAndLoadData(user);

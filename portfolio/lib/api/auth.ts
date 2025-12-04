@@ -15,8 +15,24 @@ type LoginResponse = {
 };
 
 // 이메일/패스워드 로그인 예시
-export async function loginApi(email: string, password: string): Promise<LoginResponse> {
-  const res = await fetch('/api/auth/login', {
+export async function postgresLoginApi(email: string, password: string): Promise<LoginResponse> {
+  const res = await fetch('/api/auth/login/postgres', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  console.log("loginApi response:", res);
+
+  if (!res.ok) {
+    throw new Error('Login failed');
+  }
+  return res.json();
+  // return await api.post('/api/auth/login', { email, password }, { withCredentials: true, });
+}
+
+// 이메일/패스워드 로그인 예시
+export async function firebaseLoginApi(email: string, password: string): Promise<LoginResponse> {
+  const res = await fetch('/api/auth/login/firebase', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
