@@ -5,10 +5,12 @@ import { db } from "@/lib/postgresql";
 type Params = { params: { id: string } };
 
 // 단건 조회
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const key = params.id;
-
+    const { id } = await params;
     const result = await db.query(
       `
       SELECT
@@ -23,7 +25,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       FROM public.users
       WHERE id = $1::uuid OR sub = $1
       `,
-      [key]
+      [id]
     );
 
     if (result.rowCount === 0) {
@@ -55,9 +57,12 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // 수정
-export async function PATCH(req: NextRequest, { params }: Params) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const key = params.id;
+    const { id } = await params;
     const body = await req.json();
 
     const {
@@ -91,7 +96,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         created_at
       `,
       [
-        key,
+        id,
         sub ?? null,
         email ?? null,
         name ?? null,
@@ -130,16 +135,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 // 삭제
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const key = params.id;
-
+    const { id } = await params;
     await db.query(
       `
       DELETE FROM public.users
       WHERE id = $1::uuid OR sub = $1
       `,
-      [key]
+      [id]
     );
 
     return NextResponse.json({ ok: true });
