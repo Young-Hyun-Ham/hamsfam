@@ -2,7 +2,7 @@
 "use client";
 
 import { create } from "zustand";
-import { ChatMessage, ChatSession } from "../types";
+import { ChatMessage, ChatSession, ScenarioRunState } from "../types";
 import {
   subscribeChatbotSessions,
   saveChatbotSessions,
@@ -20,6 +20,11 @@ type ChatbotState = {
   sessions: ChatSession[];
   activeSessionId: string | null;
   systemPrompt: string;
+  
+  scenarioRuns: Record<string, ScenarioRunState>;
+
+  saveScenarioRun: (runId: string, patch: Partial<ScenarioRunState>) => void;
+  clearScenarioRun: (runId: string) => void;
 
   // 액션들
   createSession: (title: string, messages?: ChatMessage[]) => string;
@@ -50,6 +55,38 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
   sessions: [],
   activeSessionId: null,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
+
+  scenarioRuns: {},
+
+  saveScenarioRun: (runId, patch) =>
+    set((state) => {
+      const prev = state.scenarioRuns[runId] ?? {
+        scenarioKey: patch.scenarioKey ?? "",
+        scenarioTitle: patch.scenarioTitle,
+        steps: [],
+        slotValues: {},
+        formValues: {},
+        currentNodeId: null,
+        finished: false,
+      };
+
+      return {
+        scenarioRuns: {
+          ...state.scenarioRuns,
+          [runId]: {
+            ...prev,
+            ...patch,
+          },
+        },
+      };
+    }),
+
+  clearScenarioRun: (runId) =>
+    set((state) => {
+      const next = { ...state.scenarioRuns };
+      delete next[runId];
+      return { scenarioRuns: next };
+    }),
 
   // ---------- 백엔드 연동 초기화 ----------
   initBackendSync: (userKey: string) => {

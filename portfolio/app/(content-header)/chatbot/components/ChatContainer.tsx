@@ -126,14 +126,17 @@ export default function ChatContainer() {
     setScenarioOpen(true);
   };
 
+  // 실행 결과 수신 함수
   const handleScenarioHistoryAppend = ({
     scenarioKey,
     scenarioTitle,
     steps,
+    runId,
   }: {
     scenarioKey: string;
     scenarioTitle?: string;
     steps: ScenarioStep[];
+    runId?: string;
   }) => {
     const now = new Date().toISOString();
 
@@ -144,8 +147,7 @@ export default function ChatContainer() {
         .join("\n")
         .slice(0, 500) + (steps.length > 0 ? "..." : "");
 
-    const scenarioMessage: ChatMessage = {
-      id: `scenario-${scenarioKey}-${Date.now()}`,
+    const base: Partial<ChatMessage> = {
       role: "assistant",
       content:
         `🔁 시나리오 실행: ${scenarioTitle || scenarioKey}\n\n` + summaryText,
@@ -154,10 +156,103 @@ export default function ChatContainer() {
       scenarioKey,
       scenarioTitle,
       scenarioSteps: steps,
+      scenarioStatus: "done", // ✅ 완료 표시
+    };
+
+    // ✅ 이미 존재하는 시나리오 메시지가 있으면 거기에 덮어쓰기
+    if (runId && activeSessionId) {
+      patchMessage(activeSessionId, runId, (prev) => ({
+        ...prev,
+        ...base,
+        id: prev.id, // id는 유지
+      }));
+      return;
+    }
+
+    // 🔙 runId 없는 경우(구버전/예외)엔 기존처럼 새 메시지 생성
+    const scenarioMessage: ChatMessage = {
+      ...(base as ChatMessage),
+      id: `scenario-${scenarioKey}-${Date.now()}`,
     };
 
     addMessageToActive(scenarioMessage);
-    // LLM 히스토리는 기존대로 addMessageToActive로 쌓이는 구조 유지
+  };
+
+
+  // 1) 새 실행 (shortcut 메뉴에서만 사용)
+  const startNewScenarioRun = ({ scenarioKey, scenarioTitle }: {
+    scenarioKey: string;
+    scenarioTitle: string;
+  }) => {
+    const now = new Date().toISOString();
+    const runId = `scenario-${scenarioKey}-${Date.now()}`;
+
+    const scenarioMessage: ChatMessage = {
+      id: runId,
+      role: "assistant",
+      content: `시나리오 실행을 시작합니다: ${scenarioTitle}`,
+      createdAt: now,
+      kind: "scenario",
+      scenarioKey,
+      scenarioTitle,
+      scenarioSteps: [],
+      scenarioStatus: "running",
+    };
+    addMessageToActive(scenarioMessage);
+
+    setScenarioData({
+      title: scenarioTitle,
+      content: (
+        <ScenarioEmulator
+          scenarioKey={scenarioKey}
+          scenarioTitle={scenarioTitle}
+          scenarioRunId={runId}
+          onHistoryAppend={handleScenarioHistoryAppend}
+          onProgress={({ runId, steps, finished }) => {
+            if (!activeSessionId) return;
+            patchMessage(activeSessionId, runId, (prev) => ({
+              ...prev,
+              scenarioSteps: steps,
+              scenarioStatus: finished ? "done" : "running",
+            }));
+          }}
+        />
+      ),
+    });
+    setScenarioOpen(true);
+  };
+
+  // 2) 기존 실행 보기 (채팅 버블 버튼에서 사용)
+  const openExistingScenarioRun = ({
+    scenarioKey,
+    scenarioTitle,
+    runId,
+  }: {
+    scenarioKey: string;
+    scenarioTitle?: string;
+    runId: string;
+  }) => {
+    // ❗여기서는 상태를 "running" 으로 바꾸거나 clear 하지 않는다
+    setScenarioData({
+      title: scenarioTitle || "시나리오 실행",
+      content: (
+        <ScenarioEmulator
+          scenarioKey={scenarioKey}
+          scenarioTitle={scenarioTitle}
+          scenarioRunId={runId}
+          onHistoryAppend={handleScenarioHistoryAppend}
+          onProgress={({ runId, steps, finished }) => {
+            if (!activeSessionId) return;
+            patchMessage(activeSessionId, runId, (prev) => ({
+              ...prev,
+              scenarioSteps: steps,
+              scenarioStatus: finished ? "done" : "running",
+            }));
+          }}
+        />
+      ),
+    });
+    setScenarioOpen(true);
   };
 
   // 최초 세션 생성
@@ -529,19 +624,14 @@ export default function ChatContainer() {
                 <ChatMessageItem
                   key={m.id}
                   message={m}
-                  onScenarioClick={(scenarioKey, scenarioTitle) => {
-                    // 시나리오 메시지 클릭 시 우측 패널로 다시 실행
-                    setScenarioData({
-                      title: scenarioTitle || "Scenario",
-                      content: (
-                        <ScenarioEmulator
-                          scenarioKey={scenarioKey}
-                          scenarioTitle={scenarioTitle}
-                          onHistoryAppend={handleScenarioHistoryAppend}
-                        />
-                      ),
+                  onScenarioClick={(scenarioKey, scenarioTitle, messageId) => {
+                    if (!scenarioKey || !messageId) return;
+                    // 같은 messageId = 같은 runId 로 시나리오 패널 오픈
+                    openExistingScenarioRun({
+                      scenarioKey,
+                      scenarioTitle: scenarioTitle || "시나리오 실행",
+                      runId: messageId ?? "",
                     });
-                    setScenarioOpen(true);
                   }}
                 />
               ))
@@ -556,16 +646,13 @@ export default function ChatContainer() {
         {/* shortcut 메뉴 패널 */}
         <ScenarioMenuPanel
           onSelectPreset={(preset) => {
-            setScenarioData({
-              title: preset.primary,
-              content: (
-                <ScenarioEmulator
-                  scenarioKey={preset.scenarioKey ?? ""}
-                  onHistoryAppend={handleScenarioHistoryAppend}
-                />
-              ),
+            const key = preset.scenarioKey ?? "";
+            if (!key) return;
+
+            startNewScenarioRun({
+              scenarioKey: key,
+              scenarioTitle: preset.primary,
             });
-            setScenarioOpen(true);       // 여기서만 패널 열림
           }}
         />
 
@@ -581,6 +668,7 @@ export default function ChatContainer() {
         open={scenarioOpen}
         scenarioTitle={scenarioData.title}
         nodeContent={scenarioData.content}
+        status={"done"}
         onClose={() => setScenarioOpen(false)}
       />
       
