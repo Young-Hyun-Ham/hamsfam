@@ -6,11 +6,12 @@ import { ChatMessage, ScenarioStep } from "../types";
 
 type Props = {
   message: ChatMessage;
-  onScenarioClick?: (scenarioKey: string, scenarioTitle?: string) => void;
+  onScenarioClick?: (scenarioKey: string, scenarioTitle?: string, messageId?: string) => void;
 };
 
 export default function ChatMessageItem({ message, onScenarioClick }: Props) {
   const isAssistant = message.role === "assistant";
+
   // === 시나리오 실행 메시지 전용 UI ==========================
   if (message.kind === "scenario" && message.scenarioKey) {
     const [open, setOpen] = useState(false);
@@ -28,10 +29,21 @@ export default function ChatMessageItem({ message, onScenarioClick }: Props) {
             .join("\n")
         : message.content; // 혹시 scenarioSteps 없으면 content fallback
 
+    // 상태값: 없으면 steps 유무로 추정
+    const status: "running" | "done" =
+      message.scenarioStatus ??
+      (steps && steps.length > 0 ? "done" : "running");
+    
+    const statusLabel = status === "done" ? "완료" : "진행중";
+    const statusClass =
+      status === "done"
+        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+        : "border-amber-300 bg-amber-50 text-amber-700";
+
     return (
       <div className="flex justify-start mb-2">
         <div className="max-w-[80%] rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900 shadow">
-          {/* 상단 헤더 (항상 보이는 영역) */}
+          {/* 상단 헤더 */}
           <div className="flex items-start gap-2">
             <div className="flex-1">
               <div className="text-[11px] font-semibold text-emerald-600">
@@ -42,16 +54,23 @@ export default function ChatMessageItem({ message, onScenarioClick }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {/* 재실행 버튼 → 우측 패널에서 에뮬레이터 다시 실행 */}
+              {/* 🔄 상태 표시 버튼 (진행중 / 완료) */}
               <button
                 type="button"
-                className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-[2px] text-[11px] text-emerald-700 hover:bg-emerald-100"
+                className={
+                  "rounded-full border px-2 py-[2px] text-[11px] " + statusClass
+                }
                 onClick={() =>
-                  onScenarioClick?.(message.scenarioKey!, message.scenarioTitle)
+                  onScenarioClick?.(
+                    message.scenarioKey!,
+                    message.scenarioTitle,
+                    message.id, // 어느 메시지인지 같이 전달
+                  )
                 }
               >
-                재실행
+                {statusLabel}
               </button>
+
               {/* 상세 토글 버튼 */}
               <button
                 type="button"
@@ -63,7 +82,6 @@ export default function ChatMessageItem({ message, onScenarioClick }: Props) {
             </div>
           </div>
 
-          {/* 아래 실행 영역 (기본 숨김, 토글로 열기/닫기) */}
           {open && (
             <div className="mt-2 rounded-md bg-emerald-100/70 px-2 py-1.5 text-[11px] text-emerald-900 whitespace-pre-wrap">
               {detailText}

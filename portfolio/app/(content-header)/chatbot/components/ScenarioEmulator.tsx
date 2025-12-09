@@ -35,6 +35,16 @@ type ScenarioEmulatorProps = {
     scenarioKey: string;
     scenarioTitle?: string;
     steps: ChatStep[];
+    runId?: string;
+  }) => void;
+
+  // 어떤 실행/채팅 메시지와 연결된 에뮬레이터인지 구분하는 key
+  scenarioRunId: string;
+  // 진행 상황을 채팅으로 올려보내기 위한 콜백 추가
+  onProgress?: (payload: {
+    runId: string;
+    steps: ChatStep[];
+    finished: boolean;
   }) => void;
 };
 
@@ -68,7 +78,9 @@ function findNextNode(
 export default function ScenarioEmulator({
   scenarioKey,
   scenarioTitle,
+  scenarioRunId,
   onHistoryAppend,
+  onProgress,
 }: ScenarioEmulatorProps) {
   const user = useStore((s: any) => s.user);
   const backend = useStore((s: any) => s.backend);
@@ -77,6 +89,12 @@ export default function ScenarioEmulator({
   const [edges, setEdges] = useState<AnyEdge[]>([]);
   const historyPushedRef = useRef(false);
   const [llmDone, setLlmDone] = useState(false); // llm 완료 상태
+
+  const persistedRun = useChatbotStore((s) =>
+    scenarioRunId ? s.scenarioRuns[scenarioRunId] : undefined,
+  );
+  const saveScenarioRun = useChatbotStore((s) => s.saveScenarioRun);
+  const clearScenarioRun = useChatbotStore((s) => s.clearScenarioRun);
 
   useEffect(() => {
     const fetchScenarioData = async (key: string) => {
@@ -97,58 +115,89 @@ export default function ScenarioEmulator({
   const [slotValues, setSlotValues] = useState<Record<string, any>>({});
   const [finished, setFinished] = useState(false);
 
+  // 한 번만 store 에서 복원했는지 여부
+  const [hydratedFromStore, setHydratedFromStore] = useState(false);
+
+  // nodes / rootNode 는 기존 코드에 이미 있음
   useEffect(() => {
-    if (!rootNode) {
-      setCurrentNode(null);
-      setSteps([]);
-      setFinished(false);
-      historyPushedRef.current = false;
-      return;
-    }
+    if (!scenarioRunId) return;
+    if (hydratedFromStore) return;
+    if (!persistedRun) return;
+    // 빌더 노드 로딩이 아직 안 끝났으면 rootNode 가 null 일 수 있으니 그때는 대기
+    if (!nodes || !nodes.length) return;
 
-    setCurrentNode(rootNode);
-    setLlmDone(false);
+    setHydratedFromStore(true);
 
-    if (rootNode.type === "message") {
-      setSteps([
-        {
-          id: rootNode.id,
-          role: "bot",
-          text: rootNode.data?.content ?? "",
-        },
-      ]);
+    setSteps(persistedRun.steps || []);
+    setFormValues(persistedRun.formValues || {});
+    setSlotValues(persistedRun.slotValues || {});
+    setFinished(persistedRun.finished ?? false);
+
+    if (persistedRun.currentNodeId) {
+      const found = nodes.find((n) => n.id === persistedRun.currentNodeId);
+      setCurrentNode(found ?? rootNode);
     } else {
-      setSteps([]);
+      setCurrentNode(rootNode);
     }
-    setFinished(false);
-    setFormValues({});
-    historyPushedRef.current = false;
-  }, [rootNode]);
+  }, [scenarioRunId, hydratedFromStore, persistedRun, nodes, rootNode]);
 
-  const resetScenario = () => {
-    setFinished(false);
-    setFormValues({});
-    historyPushedRef.current = false;
-    setLlmDone(false);
+  useEffect(() => {
+    if (!scenarioRunId || !onProgress) return;
 
-    if (!rootNode) {
-      setCurrentNode(null);
-      setSteps([]);
-      return;
-    }
+    // ✅ 기존 실행(persistedRun)이 있는데 아직 복원 전이면,
+    //    잘못된 running/빈 steps 상태를 부모에게 보내지 않도록 잠깐 스킵
+    if (persistedRun && !hydratedFromStore) return;
+
+    onProgress({
+      runId: scenarioRunId,
+      steps,
+      finished,
+    });
+  }, [
+    scenarioRunId,
+    steps,
+    finished,
+    onProgress,
+    persistedRun,
+    hydratedFromStore,
+  ]);
+  
+  useEffect(() => {
+    if (!scenarioRunId) return;
+
+    saveScenarioRun(scenarioRunId, {
+      scenarioKey,
+      scenarioTitle,
+      steps,
+      formValues,
+      slotValues,
+      currentNodeId: currentNode?.id ?? null,
+      finished,
+    });
+  }, [
+    scenarioRunId,
+    scenarioKey,
+    scenarioTitle,
+    steps,
+    formValues,
+    slotValues,
+    currentNode,
+    finished,
+    saveScenarioRun,
+  ]);
+
+  function resetScenario() {
     setCurrentNode(rootNode);
-    if (rootNode.type === "message") {
-      setSteps([
-        {
-          id: rootNode.id,
-          role: "bot",
-          text: rootNode.data?.content ?? "",
-        },
-      ]);
-    } else {
-      setSteps([]);
+    setSteps([]);
+    setFormValues({});
+    setSlotValues({});
+    setFinished(false);
+    historyPushedRef.current = false;
+
+    if (scenarioRunId) {
+      clearScenarioRun(scenarioRunId);
     }
-  };
+  }
 
   // 👇 끝났을 때 한 번만 부모에게 실행 결과 전달
   useEffect(() => {
@@ -172,12 +221,13 @@ export default function ScenarioEmulator({
       scenarioKey,
       scenarioTitle,
       steps: resolvedSteps,
+      runId: scenarioRunId,
     });
-  }, [finished, steps, onHistoryAppend, scenarioKey, scenarioTitle]);
+  }, [finished, steps, onHistoryAppend, scenarioKey, scenarioTitle, scenarioRunId, slotValues]);
 
   useEffect(() => {
     if (!currentNode) return;
-
+    if (finished) return;
     let cancelled = false;
 
     // 1) API 노드 자동 실행

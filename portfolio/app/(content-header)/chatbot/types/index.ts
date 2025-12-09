@@ -14,6 +14,17 @@ export type ScenarioStep = {
   text: string;
 };
 
+// 시나리오 실행 상태(에뮬레이터에서 관리하는 것)
+export type ScenarioRunState = {
+  scenarioKey: string;
+  scenarioTitle?: string;
+  steps: ScenarioStep[];
+  slotValues: Record<string, any>;
+  formValues: Record<string, any>;
+  currentNodeId: string | null;
+  finished: boolean;
+};
+
 export type ChatMessage = {
   id: string;
   role: ChatRole;
@@ -24,6 +35,8 @@ export type ChatMessage = {
   scenarioTitle?: string;
   /** 에뮬레이터에서 실제로 돌린 로그 */
   scenarioSteps?: ScenarioStep[];
+  
+  scenarioStatus?: "running" | "done";
 };
 
 export interface ChatSession {
