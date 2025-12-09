@@ -6,10 +6,15 @@ import {
   onSnapshot,
   setDoc,
   DocumentData,
+  collection,
+  orderBy,
+  query,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ChatbotDoc, ChatSession } from "../types";
 import { removeUndefinedDeep } from "../utils";
+import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
 
 const COLLECTION = "chatbot";
 
@@ -57,4 +62,31 @@ export async function saveChatbotSessions(
   };
   const safeDoc = removeUndefinedDeep(payload);
   await setDoc(ref, safeDoc, { merge: true });
+}
+
+// 목록 조회할 때 id 필드 덮어쓰지 않게 주의
+export async function fetchShortcutMenuListFromFirebase(
+  params: ShortcutMenuSearchParams = {},
+): Promise<ShortcutMenu[]> {
+  const colRef = collection(db, "chatbot-shortcut-menus");
+  const q = query(colRef, orderBy("order", "asc"));
+  const snap = await getDocs(q);
+
+  let list: ShortcutMenu[] = snap.docs.map((d) => {
+    const data = d.data() as ShortcutMenu;
+    // data 안에 id 필드가 있어도 Firestore의 문서 id로 강제 통일
+    const { id: _ignored, ...rest } = data;
+    return { id: d.id, ...rest };
+  });
+  if (params.searchText) {
+    const keyword = params.searchText.toLowerCase();
+    list = list.filter((item) =>
+      [item.section, item.label, item.scenarioKey ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(keyword),
+    );
+  }
+
+  return list;
 }

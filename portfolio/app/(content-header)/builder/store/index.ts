@@ -69,7 +69,7 @@ export const ALL_NODE_TYPES = Object.keys(defaultColors) as NodeType[];
 const defaultVisibleNodeTypes: NodeType[] = [
   'message','form','branch','slotfilling','api','setSlot','delay',
   'fixedmenu','link','iframe','scenario',
-  // 'llm','toast',
+  'llm','toast',
 ];
 
 /* 6) 공통 유틸: 색상 병합 */

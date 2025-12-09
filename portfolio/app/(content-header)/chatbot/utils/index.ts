@@ -19,7 +19,39 @@ function removeUndefinedDeep(value: any): any {
   return value;
 }
 
+// {{slotKey}} 를 slotValues[slotKey] 값으로 치환하는 헬퍼
+function resolveTemplate(text: string, slots: Record<string, any>): string {
+  if (!text) return "";
+
+  return text.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, rawKey) => {
+    const key = rawKey.trim(); // 공백 제거
+    const value = slots[key];
+
+    if (value === undefined || value === null) {
+      // 슬롯에 없으면 그냥 빈 문자열로 치환 (원하면 {{key}} 그대로 남겨도 됨)
+      return "";
+    }
+
+    // 문자열/숫자/불리언이면 그대로
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      return String(value);
+    }
+
+    // 객체/배열이면 JSON 문자열로 표시 (보기 좋게 하려면 여기에서 포맷 더 다듬어도 됨)
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  });
+}
+
 export {
   cn,
   removeUndefinedDeep,
+  resolveTemplate,
 };

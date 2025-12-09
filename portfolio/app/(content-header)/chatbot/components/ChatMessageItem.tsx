@@ -11,7 +11,7 @@ type Props = {
 
 export default function ChatMessageItem({ message, onScenarioClick }: Props) {
   const isAssistant = message.role === "assistant";
-// === 시나리오 실행 메시지 전용 UI ==========================
+  // === 시나리오 실행 메시지 전용 UI ==========================
   if (message.kind === "scenario" && message.scenarioKey) {
     const [open, setOpen] = useState(false);
 

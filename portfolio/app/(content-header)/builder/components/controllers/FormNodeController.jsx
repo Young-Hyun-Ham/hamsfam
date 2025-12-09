@@ -491,6 +491,20 @@ function FormNodeController({ localNode, setLocalNode, backend }) {
         <label>Form Title</label>
         <input type="text" value={data.title || ''} onChange={(e) => handleLocalDataChange('title', e.target.value)} />
       </div>
+      <div className={styles.formGroup}>
+        <label>Form Slot Key</label>
+        <input
+          type="text"
+          placeholder="예: customerInfo, orderInfo"
+          value={data.slotKey || ''}
+          onChange={(e) => handleLocalDataChange('slotKey', e.target.value)}
+        />
+        <p className={styles.instructionText} style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+          이 폼의 모든 필드 값을 저장할 슬롯 이름입니다.
+          <br />
+          예: <code>customerInfo</code> → 나중에 <code>{"{{customerInfo.name}}"}</code> 처럼 사용할 수 있게 확장 예정.
+        </p>
+      </div>
 
       <div className={styles.formGroup} style={{ paddingTop: 5, paddingBottom: 5 }}>
         <label

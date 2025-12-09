@@ -14,7 +14,6 @@ const streamingModel = genAI.getGenerativeModel({
 
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json();
-
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

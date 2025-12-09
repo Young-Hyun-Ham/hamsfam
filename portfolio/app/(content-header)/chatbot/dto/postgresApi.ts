@@ -1,7 +1,9 @@
 // app/(content-header)/chatbot/dto/postgresApi.ts
 "use client";
 
+import { api } from "@/lib/axios";
 import { ChatbotDoc, ChatSession } from "../types";
+import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
 
 const API_BASE = process.env.NEXT_PUBLIC_CHATBOT_API_BASE ?? "/api/chatbot";
 
@@ -77,4 +79,13 @@ export async function saveChatbotSessions(
   if (!res.ok) {
     console.error("Postgres chatbot sessions save failed:", res.status);
   }
+}
+
+export async function fetchShortcutMenuListFromPostgres(
+  params: ShortcutMenuSearchParams = {},
+): Promise<ShortcutMenu[]> {
+  const res = await api.get<ShortcutMenu[]>("/api/chatbot-shortcut-menus", {
+    params,
+  });
+  return res.data;
 }

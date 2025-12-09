@@ -6,7 +6,9 @@ import { ChatMessage, ChatSession } from "../types";
 import {
   subscribeChatbotSessions,
   saveChatbotSessions,
+  fetchShortcutMenuList,
 } from "../services/backendService";
+import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
 
 // 클라이언트에서 쓸 거라면 NEXT_PUBLIC_ 접두사를 쓰는 게 안전함
 export const DEFAULT_SYSTEM_PROMPT =
@@ -37,6 +39,7 @@ type ChatbotState = {
   // 백엔드(Firebase/Postgres 등) 연동
   initBackendSync: (userKey: string) => void;
   stopBackendSync: () => void;
+  fetchShortcutMenuList: (params: ShortcutMenuSearchParams) => Promise<ShortcutMenu[]>;
 };
 
 // 공용 unsubscribe 핸들
@@ -224,6 +227,11 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
     if (userKey) {
       saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
     }
+  },
+
+  // ---------- shortcut-menu 목록 불러오기 ----------
+  fetchShortcutMenuList: async (params: ShortcutMenuSearchParams = {}) => {
+    return await fetchShortcutMenuList(params);
   },
 }));
 
