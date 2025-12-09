@@ -1,12 +1,12 @@
 // app/(content-header)/chatbot/components/ScenarioMenuPanel.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../utils";
 
 // admin/chatbot-shortcut-menu 쪽 store 재사용
-import useShortcutMenuStore from "@/app/(siderbar-header)/admin/chatbot-shortcut-menu/store";
-import type { ShortcutMenu } from "@/app/(siderbar-header)/admin/chatbot-shortcut-menu/types/types";
+import useChatbotStore from "../store";
+import type { ShortcutMenu } from "../types/shortcutMenu";
 
 type PanelId = "process" | "search" | "execution";
 
@@ -37,12 +37,14 @@ const PANEL_LABELS: Record<PanelId, string> = {
 };
 
 export default function ScenarioMenuPanel({ onSelectPreset }: Props) {
-  const { fetchShortcutMenuList } = useShortcutMenuStore();
+  const { fetchShortcutMenuList } = useChatbotStore();
 
   // 어떤 패널이 선택됐는지
   const [activePanelId, setActivePanelId] = useState<PanelId>("process");
   // 드롭카드 열림 여부
   const [open, setOpen] = useState(false);
+  // shortcut 전체 영역 ref
+  const rootRef = useRef<HTMLDivElement | null>(null);
   // 패널 데이터 (백엔드에서 로딩)
   const [panelConfigs, setPanelConfigs] = useState<PanelConfig[]>([
     { id: "process", label: PANEL_LABELS.process, items: [] },
@@ -51,6 +53,30 @@ export default function ScenarioMenuPanel({ onSelectPreset }: Props) {
   ]);
 
   const [loading, setLoading] = useState(false);
+
+  // 외부 클릭 시 드롭카드 닫기
+  useEffect(() => {
+    if (!open) return; // 닫혀 있을 땐 리스너 안 건다
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const root = rootRef.current;
+      if (!root) return;
+
+      const target = e.target as Node | null;
+      // root 영역을 벗어난 클릭이면 닫기
+      if (target && !root.contains(target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [open]);
 
   // group 문자열을 PanelId 로 변환
   function mapGroupToPanelId(group?: string | null): PanelId {
@@ -75,7 +101,7 @@ export default function ScenarioMenuPanel({ onSelectPreset }: Props) {
     const load = async () => {
       try {
         setLoading(true);
-        const list: ShortcutMenu[] = await fetchShortcutMenuList({});
+        const list: ShortcutMenu[] = await fetchShortcutMenuList();
 
         const grouped: Record<PanelId, PresetItem[]> = {
           process: [],
@@ -140,7 +166,7 @@ export default function ScenarioMenuPanel({ onSelectPreset }: Props) {
   };
 
   return (
-    <div className="bg-white px-[20px] pt-3">
+    <div ref={rootRef} className="bg-white px-[20px] pt-3">
       <div className="relative max-w-4xl mx-auto">
         {/* 드롭다운 카드 */}
         {open && activePanel && (

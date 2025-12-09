@@ -78,7 +78,6 @@ export default function ChatContainer() {
     title: "",
     content: null,
   });
-
   // ==================== 설정 Popover start ====================
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(
     null
@@ -110,6 +109,15 @@ export default function ChatContainer() {
   const [scenarioOpen, setScenarioOpen] = useState(false);
   const [scenarioKey, setScenarioKey] = useState<string | null>(null);
   const [scenarioTitle, setScenarioTitle] = useState<string>("");
+
+  // ▶ 시나리오 패널 열림 여부
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    // 메시지가 추가되면 스크롤을 맨 아래로 이동
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   // shortcut 메뉴에서 시나리오 선택 시 호출하는 기존 로직
   const openScenarioPanel = (key: string, title: string) => {
@@ -538,9 +546,14 @@ export default function ChatContainer() {
                 />
               ))
             )}
+            
+            {/* ▼ 스크롤 anchor */}
+            <div ref={messagesEndRef} />
+            <div className="h-[10px]" />
           </div>
         </main>
 
+        {/* shortcut 메뉴 패널 */}
         <ScenarioMenuPanel
           onSelectPreset={(preset) => {
             setScenarioData({

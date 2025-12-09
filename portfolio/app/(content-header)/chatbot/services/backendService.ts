@@ -4,6 +4,9 @@
 import { ChatbotDoc, ChatSession } from "../types";
 import * as firebaseApi from "../dto/firebaseApi";
 import * as fastApi from "../dto/postgresApi";
+import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
+import { fetchShortcutMenuListFromPostgres } from "../dto/postgresApi";
+import { fetchShortcutMenuListFromFirebase } from "../dto/firebaseApi";
 // import * as firebaseApi from '@/app/api/builder/firebaseApi';
 // import * as fastApi from '@/app/api/builder/fastApi';
 
@@ -47,4 +50,13 @@ export async function saveChatbotSessions(
       activeSessionId,
       systemPrompt
   );
+}
+
+export async function fetchShortcutMenuList(
+  params: ShortcutMenuSearchParams = {},
+): Promise<ShortcutMenu[]> {
+  if (BACKEND === "postgres") {
+    return fetchShortcutMenuListFromPostgres(params);
+  }
+  return fetchShortcutMenuListFromFirebase(params);
 }

@@ -23,7 +23,7 @@ const Login: FC = () => {
   };
 
   // 이메일/비밀번호 로그인 상태 (공통)
-  const [email, setEmail] = useState('hyh8414@gmail.com');
+  const [email, setEmail] = useState('sodlfmagka2@gmail.com');
   const [password, setPassword] = useState('12345678');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -9,12 +9,9 @@ import { adminDb } from "@/lib/firebaseAdmin";
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
-console.log("Firebase Login API called with email:", email)
-console.log("Firebase Login API called with password:", password)
     if (!email || !password) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
-console.log("================================> 1.")
 
     // ================================
     // 1) Firestore users 컬렉션에서 이메일로 유저 조회
@@ -31,7 +28,6 @@ console.log("================================> 1.")
 
     const doc = snap.docs[0];
     const data = doc.data() as any;
-console.log("================================> 2.", data)
 
     const userId = doc.id;
     const userSub = data.sub ?? userId;
@@ -57,7 +53,6 @@ console.log("================================> 2.", data)
     if (!isValid) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
-console.log("================================> 3.", isValid)
 
     // ================================
     // 3) Access / Refresh 토큰 생성
@@ -84,7 +79,6 @@ console.log("================================> 3.", isValid)
       created_at: new Date(),
     });
 
-console.log("================================> 4.", userRoles)
     // ================================
     // 4) 응답 + 쿠키 세팅
     // ================================
@@ -100,7 +94,6 @@ console.log("================================> 4.", userRoles)
       },
       accessToken,
     });
-console.log("================================> 5.", res)
 
     // Postgres 버전이랑 동일한 쿠키 전략 유지
     setAccessTokenCookie(req, res, accessToken, {

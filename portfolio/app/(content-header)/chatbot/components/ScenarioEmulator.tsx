@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/store";
 import * as builderBackendService from "../../builder/services/backendService";
 import ScenarioNodeControls from "./ScenarioNodeControls";
+import { resolveTemplate } from "../utils";
+import useChatbotStore from "../store";
 
 type AnyNode = {
   id: string;
@@ -74,6 +76,7 @@ export default function ScenarioEmulator({
   const [nodes, setNodes] = useState<AnyNode[]>([]);
   const [edges, setEdges] = useState<AnyEdge[]>([]);
   const historyPushedRef = useRef(false);
+  const [llmDone, setLlmDone] = useState(false); // llm 완료 상태
 
   useEffect(() => {
     const fetchScenarioData = async (key: string) => {
@@ -90,7 +93,8 @@ export default function ScenarioEmulator({
 
   const [currentNode, setCurrentNode] = useState<AnyNode | null>(null);
   const [steps, setSteps] = useState<ChatStep[]>([]);
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [slotValues, setSlotValues] = useState<Record<string, any>>({});
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
@@ -103,6 +107,7 @@ export default function ScenarioEmulator({
     }
 
     setCurrentNode(rootNode);
+    setLlmDone(false);
 
     if (rootNode.type === "message") {
       setSteps([
@@ -124,6 +129,7 @@ export default function ScenarioEmulator({
     setFinished(false);
     setFormValues({});
     historyPushedRef.current = false;
+    setLlmDone(false);
 
     if (!rootNode) {
       setCurrentNode(null);
@@ -152,9 +158,311 @@ export default function ScenarioEmulator({
     if (historyPushedRef.current) return;
 
     historyPushedRef.current = true;
-    onHistoryAppend({ scenarioKey, scenarioTitle, steps });
+    
+    // 현재 시점의 slotValues 스냅샷
+    const slotSnapshot = slotValues;
+
+    // 각 step의 text 에 {{key}} -> slotValues[key] 치환
+    const resolvedSteps: ChatStep[] = steps.map((s) => ({
+      ...s,
+      text: resolveTemplate(s.text, slotSnapshot),
+    }));
+    
+    onHistoryAppend({
+      scenarioKey,
+      scenarioTitle,
+      steps: resolvedSteps,
+    });
   }, [finished, steps, onHistoryAppend, scenarioKey, scenarioTitle]);
 
+  useEffect(() => {
+    if (!currentNode) return;
+
+    let cancelled = false;
+
+    // 1) API 노드 자동 실행
+    if (currentNode.type === "api") {
+      (async () => {
+        const ok = await runApiNode(currentNode);
+        if (cancelled) return;
+
+        const next = findNextNode(nodes, edges, currentNode.id, "onSuccess");
+        if (!next) {
+          setFinished(true);
+          return;
+        }
+        setCurrentNode(next);
+
+        if (next.type === "message") {
+          setSteps(prev => [
+            ...prev,
+            { id: next.id, role: "bot", text: next.data?.content ?? "" },
+          ]);
+        }
+      })();
+    }
+
+    // 2) setSlot 노드 자동 실행
+    if (currentNode.type === "setSlot") {
+      runSetSlotNode(currentNode);
+      const next = findNextNode(nodes, edges, currentNode.id);
+      if (!next) {
+        setFinished(true);
+      } else {
+        setCurrentNode(next);
+
+        if (next.type === "message") {
+          setSteps(prev => [
+            ...prev,
+            { id: next.id, role: "bot", text: next.data?.content ?? "" },
+          ]);
+        }
+      }
+    }
+
+    // 3) LLM 노드 자동 실행
+    if (currentNode.type === "llm") {
+      // 이 시점의 slotValues 스냅샷 (프롬프트 템플릿용)
+      const slotSnapshot = slotValues;
+      setLlmDone(false);
+
+      (async () => {
+        try {
+          await runLlmNode(currentNode, slotSnapshot);
+        } catch (e) {
+          console.error("LLM 노드 effect 오류:", e);
+          if (!cancelled) {
+            setLlmDone(true); // 에러여도 사용자가 계속 눌러서 흐름 진행할 수 있게
+          }
+        } finally {
+          if (cancelled) return;
+          setLlmDone(true);
+        }
+      })();
+    }
+
+    // 4) delay 노드 자동 실행
+    if (currentNode.type === "delay") {
+      const duration = Number(currentNode.data?.duration ?? 1000); // 기본 1초
+
+      (async () => {
+        await new Promise((resolve) => setTimeout(resolve, duration));
+
+        if (cancelled) return;
+
+        const next =
+          findNextNode(nodes, edges, currentNode.id, "default") ??
+          findNextNode(nodes, edges, currentNode.id, null);
+
+        if (!next) {
+          setFinished(true);
+          return;
+        }
+
+        setCurrentNode(next);
+
+        if (next.type === "message") {
+          setSteps((prev) => [
+            ...prev,
+            {
+              id: next.id,
+              role: "bot",
+              text: next.data?.content ?? "",
+            },
+          ]);
+        }
+      })();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentNode, nodes, edges]);
+
+  // setSlot 노드 실행 함수
+  function runSetSlotNode(node: AnyNode) {
+    const assignments: any[] = node.data?.assignments ?? [];
+
+    if (!assignments.length) return;
+
+    setSlotValues(prev => {
+      const next = { ...prev };
+
+      for (const a of assignments) {
+        if (!a) continue;
+
+        // 신규 포맷: { key, value } 만 있는 경우
+        if (a.key && a.value !== undefined && !a.slot && !a.from) {
+          next[a.key] = a.value;
+          continue;
+        }
+
+        // 기존 포맷: { slot, from, key, value }
+        if (!a.slot) continue;
+
+        // 1) 고정 문자열
+        if (a.from === "literal") {
+          next[a.slot] = a.value ?? "";
+        }
+
+        // 2) form 값 복사
+        if (a.from === "form" && a.key) {
+          next[a.slot] = formValues[a.key];
+        }
+
+        // 3) 다른 slot 값 복사
+        if (a.from === "slot" && a.key) {
+          next[a.slot] = prev[a.key];
+        }
+      }
+
+      return next;
+    });
+  }
+
+  // API 노드 실행 함수
+  async function runApiNode(node: AnyNode) {
+    try {
+      const { url, method, headers, body, responseMapping } = node.data;
+
+      // Header JSON 파싱
+      let parsedHeaders = {};
+      try {
+        parsedHeaders = headers ? JSON.parse(headers) : {};
+      } catch (e) {
+        console.error("Header JSON parsing error:", e);
+      }
+
+      // Fetch 옵션 구성
+      const options: any = { method, headers: parsedHeaders };
+
+      if (method !== "GET" && body) {
+        options.body = body;
+      }
+
+      // API 호출
+      const res = await fetch(url, options);
+      const json = await res.json();
+
+      // 슬롯 매핑
+      if (Array.isArray(responseMapping)) {
+        setSlotValues((prev: any) => {
+          const next = { ...prev };
+          responseMapping.forEach((m) => {
+            const path = m.path;
+            const slot = m.slot;
+
+            // json[path] 데이터를 slot 에 저장
+            next[slot] = json[path];
+          });
+          return next;
+        });
+      }
+
+      return true;
+    } catch (e) {
+      console.error("API 실행 오류:", e);
+      return false;
+    }
+  }
+
+  const systemPrompt = useChatbotStore((s: any)=> s.systemPrompt);
+  // LLM 노드 실행 함수
+  async function runLlmNode(
+    node: AnyNode,
+    slotSnapshot: Record<string, any>
+  ) {
+    try {
+      const rawPrompt: string = node.data?.prompt ?? "";
+      // {{formdatas}} 같은 템플릿 치환은 "LLM 실행 시작 시점의" slotSnapshot 기준
+      const prompt = resolveTemplate(rawPrompt, slotSnapshot);
+
+      const outputVar: string = node.data?.outputVar || "llm_output";
+
+      const res = await fetch("/api/chat/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          systemPrompt,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        console.error("LLM API 호출 실패:", res.status, res.statusText);
+        setSteps((prev) => [
+          ...prev,
+          {
+            id: `${node.id}-error`,
+            role: "bot",
+            text: `[LLM 오류] 상태 코드: ${res.status}`,
+          },
+        ]);
+        return false;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let accumulated = "";
+
+      // 🔹 우선 빈 버블 하나 추가해두고, 그걸 계속 업데이트
+      const stepId = node.id;
+      setSteps((prev) => [
+        ...prev,
+        {
+          id: stepId,
+          role: "bot",
+          text: "",
+        },
+      ]);
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        if (value) {
+          const chunkText = decoder.decode(value, { stream: true });
+          if (!chunkText) continue;
+
+          accumulated += chunkText;
+
+          // 🔹 마지막 LLM 말풍선을 누적 텍스트로 계속 갱신
+          setSteps((prev) =>
+            prev.map((s) =>
+              s.id === stepId
+                ? {
+                    ...s,
+                    text: accumulated,
+                  }
+                : s,
+            ),
+          );
+        }
+      }
+
+      // 🔹 스트림이 전부 끝난 시점에 slotValues에 최종 결과 저장
+      setSlotValues((prev) => ({
+        ...prev,
+        [outputVar]: accumulated,
+      }));
+
+      return true;
+    } catch (e) {
+      console.error("LLM 노드 실행 오류:", e);
+      setSteps(prev => [
+        ...prev,
+        {
+          id: `${node.id}-error`,
+          role: "bot",
+          text: "[LLM 실행 오류가 발생했습니다.]",
+        },
+      ]);
+      return false;
+    }
+  }
+
+  // 메세지 노드 후 대화 계속하기 핸들러
   const handleContinueFromMessage = () => {
     if (!currentNode) return;
     const next = findNextNode(nodes, edges, currentNode.id, null);
@@ -206,6 +514,33 @@ export default function ScenarioEmulator({
     }
   };
 
+  // llm 노드 후 대화 계속하기 핸들러들
+  const handleContinueFromLlm = () => {
+    if (!currentNode) return;
+    let next =
+      findNextNode(nodes, edges, currentNode.id, "default") ||
+      findNextNode(nodes, edges, currentNode.id, null);
+
+    if (!next) {
+      setFinished(true);
+      return;
+    }
+
+    setCurrentNode(next);
+
+    if (next.type === "message") {
+      setSteps((prev) => [
+        ...prev,
+        {
+          id: next.id,
+          role: "bot",
+          text: next.data?.content ?? "",
+        },
+      ]);
+    }
+  };
+
+  // branch 노드 후 분기 선택 핸들러
   const handleBranchClick = (reply: { display: string; value: string }) => {
     if (!currentNode) return;
 
@@ -258,12 +593,19 @@ export default function ScenarioEmulator({
     }
   };
 
+  // 폼 노드 제출 후 핸들러
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentNode) return;
 
     const elements: any[] = currentNode.data?.elements ?? [];
     const summaryParts: string[] = [];
+
+    // 추가: 이 폼에 설정된 slotKey
+    const formSlotKey: string | undefined = currentNode.data?.slotKey;
+
+    // 이 폼에서 사용한 값들을 한 객체로 모으기
+    const formObject: Record<string, string> = {};
 
     elements.forEach((el) => {
       const value = formValues[el.name] ?? "";
@@ -272,6 +614,43 @@ export default function ScenarioEmulator({
       }
     });
 
+    if (formSlotKey) {
+      setSlotValues((prev: any) => {
+        const prevFormdatas = prev[formSlotKey] || {};
+
+        // 1) 그리드에서 선택된 데이터 (있다면)
+        const selectedGridData = formValues.gridData;
+
+        // 2) 선택이 없다면, 전체 scenarios 사용
+        const fallbackGridData = prev.scenarios; // API 노드에서 이미 저장한 리스트
+
+        const finalGridData =
+          selectedGridData && Object.keys(selectedGridData).length > 0
+            ? selectedGridData
+            : fallbackGridData;
+
+        // 3) 기본적으로 formValues 전부를 머지
+        const mergedFormdatas: any = {
+          ...prevFormdatas,
+          ...formValues,
+        };
+
+        // 4) gridData는 위에서 구한 finalGridData로 강제 세팅
+        if (finalGridData) {
+          mergedFormdatas.gridData = finalGridData;
+        }
+
+        const next = {
+          ...prev,
+          [formSlotKey]: mergedFormdatas,
+        };
+        // console.log("[slotValues 업데이트] prev:", prev);
+        // console.log("[slotValues 업데이트] next:", next);
+        return next;
+      });
+    }
+    // console.log(slotValues)는 아직 이전 값이므로 참고용으로만 사용
+    // console.log("slotValues =======> :", slotValues);
     setSteps((prev) => [
       ...prev,
       {
@@ -313,6 +692,7 @@ export default function ScenarioEmulator({
     }
   };
 
+  // 링크 노드 후 대화 계속하기 핸들러
   const handleNextFromLink = () => {
     if (!currentNode) return;
     const next = findNextNode(nodes, edges, currentNode.id, null);
@@ -335,6 +715,50 @@ export default function ScenarioEmulator({
     }
   };
 
+  // iframe 노드 후 대화 계속하기 핸들러
+  const handleContinueFromIframe = () => {
+    if (!currentNode) return;
+
+    const next = findNextNode(nodes, edges, currentNode.id, null);
+    if (!next) {
+      setFinished(true);
+      return;
+    }
+
+    setCurrentNode(next);
+
+    if (next.type === "message") {
+      setSteps((prev) => [
+        ...prev,
+        {
+          id: next.id,
+          role: "bot",
+          text: next.data?.content ?? "",
+        },
+      ]);
+    } else if (next.type === "link") {
+      setSteps((prev) => [
+        ...prev,
+        {
+          id: next.id,
+          role: "bot",
+          text: next.data?.content ?? "링크로 이동합니다.",
+        },
+      ]);
+    } else if (next.type === "form") {
+      setSteps((prev) => [
+        ...prev,
+        {
+          id: next.id,
+          role: "bot",
+          text: next.data?.title
+            ? `폼: ${next.data.title}`
+            : "폼을 입력해 주세요.",
+        },
+      ]);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col rounded-xl border border-emerald-100 bg-white/80 p-3 shadow-sm">
       <div className="mb-2 flex items-center justify-between">
@@ -349,31 +773,35 @@ export default function ScenarioEmulator({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto rounded-md bg-emerald-50/40 p-2 text-xs">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden rounded-md bg-emerald-50/40 p-2 text-xs">
         {steps.length === 0 ? (
           <div className="flex h-full items-center justify-center text-[11px] text-gray-400">
             시나리오를 시작하려면 초기화를 눌러주세요.
           </div>
         ) : (
           <div className="space-y-2">
-            {steps.map((s) => (
-              <div
-                key={s.id}
-                className={
-                  s.role === "bot" ? "flex justify-start" : "flex justify-end"
-                }
-              >
+            {steps.map((s) => {
+              const renderedText = resolveTemplate(s.text, slotValues);
+
+              return (
                 <div
+                  key={s.id}
                   className={
-                    s.role === "bot"
-                      ? "max-w-[80%] rounded-lg bg-white px-2.5 py-1.5 text-[11px] text-gray-800 shadow"
-                      : "max-w-[80%] rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] text-white shadow"
+                    s.role === "bot" ? "flex justify-start" : "flex justify-end"
                   }
                 >
-                  {s.text}
+                  <div
+                    className={
+                      s.role === "bot"
+                        ? "max-w-[80%] rounded-lg bg-white px-2.5 py-1.5 text-[11px] text-gray-800 shadow whitespace-pre-wrap break-all"
+                        : "max-w-[80%] rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] text-white shadow whitespace-pre-wrap break-all"
+                    }
+                  >
+                    {renderedText}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -383,11 +811,15 @@ export default function ScenarioEmulator({
         finished={finished}
         formValues={formValues}
         setFormValues={setFormValues}
+        slotValues={slotValues}
         onReset={resetScenario}
         onContinueFromMessage={handleContinueFromMessage}
         onBranchClick={handleBranchClick}
         onSubmitForm={handleSubmitForm}
         onNextFromLink={handleNextFromLink}
+        llmDone={llmDone}
+        onContinueFromLlm={handleContinueFromLlm}
+        onContinueFromIframe={handleContinueFromIframe}
       />
     </div>
   );
