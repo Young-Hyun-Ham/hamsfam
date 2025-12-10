@@ -372,6 +372,75 @@ export default function ScenarioEmulator({
     };
   }, [currentNode, nodes, edges]);
 
+  // ==============================================================================
+  // 실행기 메소드 모음 start
+  // ==============================================================================
+  // 🔍 form 엘리먼트(type: "search") 전용 API 실행 함수
+  async function runSearchElement(el: any) {
+    if (!el || el.type !== "search") return;
+
+    const apiCfg = el.apiConfig;
+    if (!apiCfg || !apiCfg.url) return;
+
+    const value = formValues[el.name];
+    // 입력값이 없으면 검색 안 함
+    if (value === undefined || value === null || value === "") return;
+
+    // headers 파싱
+    let parsedHeaders: Record<string, string> = {};
+    try {
+      parsedHeaders = apiCfg.headers ? JSON.parse(apiCfg.headers) : {};
+    } catch (e) {
+      console.error("[search] header JSON parsing error:", e);
+    }
+
+    const method: string = apiCfg.method || "GET";
+
+    // 템플릿 치환에 사용할 컨텍스트:
+    // - value: 현재 search 입력값
+    // - formValues: 같은 폼의 다른 값들
+    // - slotValues: 기존 슬롯 값들
+    const ctx = {
+      value,
+      ...formValues,
+      ...slotValues,
+    };
+
+    // URL 템플릿 치환 (예: {{search_term}})
+    const url = resolveTemplate(apiCfg.url, ctx);
+
+    // body 템플릿 치환 (예: {"query":"{{value}}"})
+    let body: string | undefined = undefined;
+    if (apiCfg.bodyTemplate) {
+      body = resolveTemplate(apiCfg.bodyTemplate, ctx);
+    }
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: parsedHeaders,
+        ...(method.toUpperCase() !== "GET" && body ? { body } : {}),
+      });
+
+      const json = await res.json();
+
+      if (el.resultSlot) {
+        // 🔹 검색 결과를 지정된 슬롯에 그대로 넣어둔다.
+        //   (grid에서 사용하거나, 메시지 템플릿에서 그대로 참조할 수 있게)
+        setSlotValues((prev) => ({
+          ...prev,
+          [el.resultSlot]: json,
+        }));
+      }
+
+      return json;
+    } catch (err) {
+      console.error("[search] API 실행 오류:", err);
+      return null;
+    }
+  }
+
+
   // setSlot 노드 실행 함수
   function runSetSlotNode(node: AnyNode) {
     const assignments: any[] = node.data?.assignments ?? [];
@@ -554,7 +623,13 @@ export default function ScenarioEmulator({
       return false;
     }
   }
+  // ==============================================================================
+  // 실행기 메소드 모음 end
+  // ==============================================================================
 
+  // ==============================================================================
+  // handler 메소드 모음 start
+  // ==============================================================================
   // 메세지 노드 후 대화 계속하기 핸들러
   const handleContinueFromMessage = () => {
     if (!currentNode) return;
@@ -687,7 +762,7 @@ export default function ScenarioEmulator({
   };
 
   // 폼 노드 제출 후 핸들러
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentNode) return;
 
@@ -698,52 +773,53 @@ export default function ScenarioEmulator({
     const formSlotKey: string | undefined = currentNode.data?.slotKey;
 
     // 이 폼에서 사용한 값들을 한 객체로 모으기
-    const formObject: Record<string, string> = {};
+    const formObject: Record<string, any> = {};
 
-    elements.forEach((el) => {
-      const value = formValues[el.name] ?? "";
-      if (value) {
+    // 1) summaryParts 만들면서 formObject 채우기
+    for (const el of elements) {
+      const value = formValues[el.name];
+
+      if (value !== undefined && value !== null && value !== "") {
         summaryParts.push(`${el.label || el.name}: ${value}`);
+        formObject[el.name] = value;
       }
-    });
 
+      // 🔍 type: "search" 인 엘리먼트는 여기서 API 호출
+      if (el.type === "search") {
+        await runSearchElement(el);
+      }
+    }
+
+    // 2) formSlotKey 가 있으면, 이 폼 전체 값을 하나의 slot에 저장
     if (formSlotKey) {
       setSlotValues((prev: any) => {
         const prevFormdatas = prev[formSlotKey] || {};
 
-        // 1) 그리드에서 선택된 데이터 (있다면)
+        // 기존에 하던 gridData 처리 유지
         const selectedGridData = formValues.gridData;
-
-        // 2) 선택이 없다면, 전체 scenarios 사용
-        const fallbackGridData = prev.scenarios; // API 노드에서 이미 저장한 리스트
-
+        const fallbackGridData = prev.scenarios;
         const finalGridData =
           selectedGridData && Object.keys(selectedGridData).length > 0
             ? selectedGridData
             : fallbackGridData;
 
-        // 3) 기본적으로 formValues 전부를 머지
         const mergedFormdatas: any = {
           ...prevFormdatas,
           ...formValues,
         };
 
-        // 4) gridData는 위에서 구한 finalGridData로 강제 세팅
         if (finalGridData) {
           mergedFormdatas.gridData = finalGridData;
         }
 
-        const next = {
+        return {
           ...prev,
           [formSlotKey]: mergedFormdatas,
         };
-        // console.log("[slotValues 업데이트] prev:", prev);
-        // console.log("[slotValues 업데이트] next:", next);
-        return next;
       });
     }
-    // console.log(slotValues)는 아직 이전 값이므로 참고용으로만 사용
-    // console.log("slotValues =======> :", slotValues);
+
+    // 3) 사용자 입력 로그(step)에 기록
     setSteps((prev) => [
       ...prev,
       {
@@ -756,6 +832,7 @@ export default function ScenarioEmulator({
       },
     ]);
 
+    // 4) 다음 노드로 이동
     const next = findNextNode(nodes, edges, currentNode.id, null);
     if (!next) {
       setFinished(true);
@@ -851,6 +928,9 @@ export default function ScenarioEmulator({
       ]);
     }
   };
+  // ==============================================================================
+  // handler 메소드 모음 end
+  // ==============================================================================
 
   return (
     <div className="flex h-full flex-col rounded-xl border border-emerald-100 bg-white/80 p-3 shadow-sm">
