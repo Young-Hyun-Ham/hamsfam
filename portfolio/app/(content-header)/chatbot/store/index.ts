@@ -20,7 +20,7 @@ type ChatbotState = {
   sessions: ChatSession[];
   activeSessionId: string | null;
   systemPrompt: string;
-  
+
   scenarioRuns: Record<string, ScenarioRunState>;
 
   saveScenarioRun: (runId: string, patch: Partial<ScenarioRunState>) => void;
@@ -44,7 +44,7 @@ type ChatbotState = {
   // 백엔드(Firebase/Postgres 등) 연동
   initBackendSync: (userKey: string) => void;
   stopBackendSync: () => void;
-  fetchShortcutMenuList: (params: ShortcutMenuSearchParams) => Promise<ShortcutMenu[]>;
+  fetchShortcutMenuList: () => Promise<ShortcutMenu[]>;
 };
 
 // 공용 unsubscribe 핸들
@@ -267,8 +267,8 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
   },
 
   // ---------- shortcut-menu 목록 불러오기 ----------
-  fetchShortcutMenuList: async (params: ShortcutMenuSearchParams = {}) => {
-    return await fetchShortcutMenuList(params);
+  fetchShortcutMenuList: async () => {
+    return await fetchShortcutMenuList({});
   },
 }));
 

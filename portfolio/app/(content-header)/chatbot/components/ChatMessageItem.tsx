@@ -54,11 +54,11 @@ export default function ChatMessageItem({ message, onScenarioClick }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {/* 🔄 상태 표시 버튼 (진행중 / 완료) */}
+              {/* 상태 표시 버튼 (진행중 / 완료) */}
               <button
                 type="button"
                 className={
-                  "rounded-full border px-2 py-[2px] text-[11px] " + statusClass
+                  "rounded-full border px-2 py-[2px] text-[11px] cursor-pointer " + statusClass
                 }
                 onClick={() =>
                   onScenarioClick?.(

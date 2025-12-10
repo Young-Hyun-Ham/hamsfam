@@ -46,6 +46,12 @@ type ScenarioEmulatorProps = {
     steps: ChatStep[];
     finished: boolean;
   }) => void;
+
+  // 재시작(초기화) 시 부모에게 알려줄 콜백
+  onResetRun?: (runId: string) => void;
+  // 메시지에 저장된 실행 로그를 초기값으로 받기
+  initialSteps?: ChatStep[];
+  initialFinished?: boolean;
 };
 
 // 루트 노드 찾기
@@ -81,6 +87,9 @@ export default function ScenarioEmulator({
   scenarioRunId,
   onHistoryAppend,
   onProgress,
+  onResetRun, 
+  initialSteps,
+  initialFinished,
 }: ScenarioEmulatorProps) {
   const user = useStore((s: any) => s.user);
   const backend = useStore((s: any) => s.backend);
@@ -109,11 +118,12 @@ export default function ScenarioEmulator({
 
   const rootNode = useMemo(() => findRootNode(nodes, edges), [nodes, edges]);
 
+  // 초기값을 props 에서 받아서 시작
   const [currentNode, setCurrentNode] = useState<AnyNode | null>(null);
-  const [steps, setSteps] = useState<ChatStep[]>([]);
+  const [steps, setSteps] = useState<ChatStep[]>(initialSteps ?? []);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [slotValues, setSlotValues] = useState<Record<string, any>>({});
-  const [finished, setFinished] = useState(false);
+  const [finished, setFinished] = useState(initialFinished ?? false);
 
   // 한 번만 store 에서 복원했는지 여부
   const [hydratedFromStore, setHydratedFromStore] = useState(false);
@@ -144,9 +154,13 @@ export default function ScenarioEmulator({
   useEffect(() => {
     if (!scenarioRunId || !onProgress) return;
 
-    // ✅ 기존 실행(persistedRun)이 있는데 아직 복원 전이면,
-    //    잘못된 running/빈 steps 상태를 부모에게 보내지 않도록 잠깐 스킵
-    if (persistedRun && !hydratedFromStore) return;
+    // 이전 실행 기록(persistedRun)이 있는데
+    // 아직 복구(hydratedFromStore) 전 + 비어있는 초기 상태라면 부모로 보내지 않음
+    if (persistedRun && !hydratedFromStore) {
+      if (steps.length === 0 && !finished) {
+        return;
+      }
+    }
 
     onProgress({
       runId: scenarioRunId,
@@ -196,6 +210,10 @@ export default function ScenarioEmulator({
 
     if (scenarioRunId) {
       clearScenarioRun(scenarioRunId);
+    }
+    // 부모(ChatContainer)에게 "이 runId 다시 시작했어" 알려주기
+    if (onResetRun) {
+      onResetRun(scenarioRunId);
     }
   }
 
