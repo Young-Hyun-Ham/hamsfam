@@ -37,6 +37,17 @@ function ElementEditor({ element, index, onUpdate, onDelete, onGridCellChange })
     onUpdate(index, { ...element, options: newOptions });
   };
 
+  const handleApiConfigChange = (field, value) => {
+    const nextApiConfig = {
+      ...(element.apiConfig || {}),
+      [field]: value,
+    };
+    onUpdate(index, {
+      ...element,
+      apiConfig: nextApiConfig,
+    });
+  };
+
   const [displayKeysString, setDisplayKeysString] = useState(() => formatDisplayKeys(element.displayKeys));
 
   useEffect(() => {
@@ -331,18 +342,6 @@ function FormNodeController({ localNode, setLocalNode, backend }) {
     };
     fetchTemplates();
   }, [backend]);
-
-  // --- 💡 [추가] API 설정(중첩 객체)을 위한 핸들러 ---
-  const handleApiConfigChange = (field, value) => {
-    onUpdate(index, {
-      ...element,
-      apiConfig: {
-        ...element.apiConfig,
-        [field]: value
-      }
-    });
-  };
-  // --- 💡 [추가 끝] ---
 
   // 3. 훅의 handleLocalDataChange를 사용하도록 로컬 함수들 수정
   const localAddElement = (elementType) => {
