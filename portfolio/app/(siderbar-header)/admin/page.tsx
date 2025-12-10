@@ -1,7 +1,7 @@
 // app/(siderbar-header)/admin/page.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useStore } from "@/store";
 
@@ -48,7 +48,8 @@ export default function MainDashboardPage() {
     null;
 
   const rawJson = useMemo(
-    () => (user ? JSON.stringify(user, null, 2) : "// 로그인된 사용자가 없습니다."),
+    () =>
+      user ? JSON.stringify(user, null, 2) : "// 로그인된 사용자가 없습니다.",
     [user],
   );
 
@@ -56,6 +57,15 @@ export default function MainDashboardPage() {
     if (!text) return;
     navigator.clipboard?.writeText(text).catch(() => {});
   }
+
+  // ▼ 토큰 UI용 상태 (지금은 퍼블만)
+  const [tokenMenuOpen, setTokenMenuOpen] = useState(false);
+  const [tokenHistoryOpen, setTokenHistoryOpen] = useState(false);
+
+  // TODO: 나중에 실제 값 연결
+  const usedToken = 0;
+  const remainToken = 0;
+  const totalToken = 0;
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50">
@@ -123,6 +133,7 @@ export default function MainDashboardPage() {
               </div>
             </div>
 
+            {/* 역할 / 인증 상태 */}
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
                 <p className="mb-1 text-[11px] font-medium text-gray-500">
@@ -141,6 +152,71 @@ export default function MainDashboardPage() {
                 <p className="text-sm font-semibold text-emerald-600">
                   {user ? "로그인됨" : "로그아웃"}
                 </p>
+              </div>
+            </div>
+
+            {/* 사용자 토큰 카드 섹션 */}
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <p className="mb-2 text-[11px] font-medium text-gray-500">
+                사용자 토큰
+              </p>
+              <div className="grid grid-cols-3 gap-3 text-xs">
+                {/* 사용한 토큰 */}
+                <div className="rounded-xl border border-gray-100 bg-slate-50 p-3">
+                  <p className="mb-1 text-[11px] font-medium text-gray-500">
+                    사용한 토큰
+                  </p>
+                  <p className="text-lg font-semibold text-slate-800">
+                    {usedToken.toLocaleString()}
+                  </p>
+                </div>
+
+                {/* 남은 토큰 */}
+                <div className="rounded-xl border border-gray-100 bg-emerald-50/60 p-3">
+                  <p className="mb-1 text-[11px] font-medium text-emerald-700">
+                    남은 토큰
+                  </p>
+                  <p className="text-lg font-semibold text-emerald-800">
+                    {remainToken.toLocaleString()}
+                  </p>
+                </div>
+
+                {/* 총 토큰 + ... 메뉴 */}
+                <div className="relative rounded-xl border border-gray-100 bg-indigo-50/80 p-3">
+                  <div className="mb-1 flex items-center justify-between gap-1">
+                    <p className="text-[11px] font-medium text-indigo-700">
+                      총 토큰
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setTokenMenuOpen((v) => !v)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-xs text-indigo-700 hover:bg-indigo-100"
+                      aria-label="토큰 메뉴 열기"
+                    >
+                      {/* 간단한 … 아이콘 */}
+                      <span className="leading-none">⋯</span>
+                    </button>
+                  </div>
+                  <p className="text-lg font-semibold text-indigo-900">
+                    {totalToken.toLocaleString()}
+                  </p>
+
+                  {/* … 메뉴 드롭다운 */}
+                  {tokenMenuOpen && (
+                    <div className="absolute right-0 top-full z-20 mt-1 w-32 rounded-lg border border-gray-200 bg-white py-1 text-[12px] shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTokenMenuOpen(false);
+                          setTokenHistoryOpen(true);
+                        }}
+                        className="block w-full px-3 py-1.5 text-left text-gray-700 hover:bg-gray-50"
+                      >
+                        내역
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -251,6 +327,39 @@ export default function MainDashboardPage() {
           </details>
         </section>
       </main>
+
+      {/* ▼ 토큰 충전 내역 모달 (퍼블리싱용, 더미 데이터) */}
+      {tokenHistoryOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40"
+          onClick={() => setTokenHistoryOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">
+                토큰 충전 내역
+              </h2>
+              <button
+                type="button"
+                className="rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+                onClick={() => setTokenHistoryOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs">
+              {/* TODO: 실제 충전 내역 리스트로 교체 */}
+              <p className="text-gray-400 text-center py-6">
+                아직 충전 내역이 없습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
