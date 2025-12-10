@@ -50,8 +50,15 @@ function resolveTemplate(text: string, slots: Record<string, any>): string {
   });
 }
 
+// Step ID 생성 헬퍼 추가
+function makeStepId(base: string) {
+  // base(노드 id)에 타임스탬프 + 랜덤 문자열을 붙여서 유니크하게
+  return `${base}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export {
   cn,
   removeUndefinedDeep,
   resolveTemplate,
+  makeStepId,
 };

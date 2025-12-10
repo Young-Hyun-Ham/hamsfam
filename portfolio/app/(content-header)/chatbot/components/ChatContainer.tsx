@@ -1,7 +1,7 @@
 // app/(content-header)/chatbot/components/ChatContainer.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "@/store";
 
 import { cn } from "../utils";
@@ -109,6 +109,14 @@ export default function ChatContainer() {
   const [scenarioOpen, setScenarioOpen] = useState(false);
   const [scenarioKey, setScenarioKey] = useState<string | null>(null);
   const [scenarioTitle, setScenarioTitle] = useState<string>("");
+  // 지금 패널에 연결된 runId
+  const [currentScenarioRunId, setCurrentScenarioRunId] = useState<string | null>(null);
+  // 현재 패널에 연결된 시나리오 메시지 & 상태
+  const currentScenarioMessage = currentScenarioRunId
+    ? messages.find((m) => m.id === currentScenarioRunId)
+    : undefined;
+
+  const currentScenarioStatus = currentScenarioMessage?.scenarioStatus;
 
   // ▶ 시나리오 패널 열림 여부
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -118,13 +126,6 @@ export default function ChatContainer() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
-  // shortcut 메뉴에서 시나리오 선택 시 호출하는 기존 로직
-  const openScenarioPanel = (key: string, title: string) => {
-    setScenarioKey(key);
-    setScenarioTitle(title);
-    setScenarioOpen(true);
-  };
 
   // 실행 결과 수신 함수
   const handleScenarioHistoryAppend = ({
@@ -196,6 +197,34 @@ export default function ChatContainer() {
     }));
   };
 
+  // 
+  const handleScenarioProgress = useCallback(
+    ({
+      runId,
+      steps,
+      finished,
+    }: {
+      runId: string;
+      steps: ScenarioStep[];
+      finished: boolean;
+    }) => {
+      if (!activeSessionId) return;
+
+      patchMessage(activeSessionId, runId, (prev) => ({
+        ...prev,
+        // 빈 steps로 덮어쓰지 않기
+        scenarioSteps: steps.length > 0 ? steps : prev.scenarioSteps ?? [],
+        // 한번 done이면 다시 running 으로 돌아가지 않게
+        scenarioStatus: finished
+          ? "done"
+          : prev.scenarioStatus === "done"
+          ? "done"
+          : "running",
+      }));
+    },
+    [activeSessionId, patchMessage],
+  );
+
 
   // 1) 새 실행 (shortcut 메뉴에서만 사용)
   const startNewScenarioRun = ({ scenarioKey, scenarioTitle }: {
@@ -217,27 +246,18 @@ export default function ChatContainer() {
       scenarioStatus: "running",
     };
     addMessageToActive(scenarioMessage);
+    setCurrentScenarioRunId(runId);
 
     setScenarioData({
       title: scenarioTitle,
       content: (
         <ScenarioEmulator
+          key={runId}
           scenarioKey={scenarioKey}
           scenarioTitle={scenarioTitle}
           scenarioRunId={runId}
           onHistoryAppend={handleScenarioHistoryAppend}
-          onProgress={({ runId, steps, finished }) => {
-            if (!activeSessionId) return;
-            patchMessage(activeSessionId, runId, (prev) => ({
-              ...prev,
-              // 빈 steps 는 덮어쓰지 않고, 기존 로그를 유지
-              scenarioSteps: steps.length > 0 ? steps : (prev.scenarioSteps ?? []),
-              // 한번 done 이면 그 이후 running 으로는 안 돌아가게
-              scenarioStatus: finished
-                ? "done"
-                : (prev.scenarioStatus === "done" ? "done" : "running"),
-            }));
-          }}
+          onProgress={handleScenarioProgress}
           // 재시작 시 메시지도 함께 초기화
           onResetRun={handleScenarioResetRun}
         />
@@ -260,29 +280,18 @@ export default function ChatContainer() {
     initialSteps?: ScenarioStep[];
     initialFinished?: boolean;
   }) => {
-    // ❗여기서는 상태를 "running" 으로 바꾸거나 clear 하지 않는다
+    setCurrentScenarioRunId(runId);
+    // 여기서는 상태를 "running" 으로 바꾸거나 clear 하지 않는다
     setScenarioData({
       title: scenarioTitle || "시나리오 실행",
       content: (
         <ScenarioEmulator
+          key={runId}
           scenarioKey={scenarioKey}
           scenarioTitle={scenarioTitle}
           scenarioRunId={runId}
           onHistoryAppend={handleScenarioHistoryAppend}
-          onProgress={({ runId, steps, finished }) => {
-            if (!activeSessionId) return;
-            patchMessage(activeSessionId, runId, (prev) => ({
-              ...prev,
-              // 빈 steps 로 기존 로그 덮어쓰지 않기
-              scenarioSteps: steps.length > 0 ? steps : (prev.scenarioSteps ?? []),
-              // 한번 done 이면 다시 running 으로 안 돌아가게
-              scenarioStatus: finished
-                ? "done"
-                : prev.scenarioStatus === "done"
-                  ? "done"
-                  : "running",
-            }));
-          }}
+          onProgress={handleScenarioProgress}
           // 메시지에 저장된 실행 로그를 그대로 넘겨줌
           initialSteps={initialSteps}
           initialFinished={initialFinished}
@@ -666,15 +675,14 @@ export default function ChatContainer() {
                   onScenarioClick={(scenarioKey, scenarioTitle, messageId) => {
                     if (!scenarioKey || !messageId) return;
 
-                    const isDone = m.scenarioStatus === "done";
                     // 같은 messageId = 같은 runId 로 시나리오 패널 오픈
                     openExistingScenarioRun({
                       scenarioKey,
                       scenarioTitle: scenarioTitle || "시나리오 실행",
                       runId: messageId ?? "",
-                      // 완료 상태일 때만 메시지에 저장된 실행 내역 & 상태
-                      initialSteps: isDone ? m.scenarioSteps ?? [] : undefined,
-                      initialFinished: isDone ? true : undefined,
+                      // 완료/진행중 상관없이, DB에 저장된 로그를 전부 초기값으로 넘김
+                      initialSteps: m.scenarioSteps ?? [],
+                      initialFinished: m.scenarioStatus === "done",
                     });
                   }}
                 />
@@ -712,7 +720,7 @@ export default function ChatContainer() {
         open={scenarioOpen}
         scenarioTitle={scenarioData.title}
         nodeContent={scenarioData.content}
-        status={"done"}
+        status={currentScenarioStatus}
         onClose={() => setScenarioOpen(false)}
       />
       

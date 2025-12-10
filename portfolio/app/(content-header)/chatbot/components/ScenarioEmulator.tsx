@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/store";
 import * as builderBackendService from "../../builder/services/backendService";
 import ScenarioNodeControls from "./ScenarioNodeControls";
-import { resolveTemplate } from "../utils";
+import { makeStepId, resolveTemplate } from "../utils";
 import useChatbotStore from "../store";
 
 type AnyNode = {
@@ -151,6 +151,11 @@ export default function ScenarioEmulator({
     }
   }, [scenarioRunId, hydratedFromStore, persistedRun, nodes, rootNode]);
 
+  const lastProgressRef = useRef<{
+    stepsLen: number;
+    finished: boolean;
+  } | null>(null);
+
   useEffect(() => {
     if (!scenarioRunId || !onProgress) return;
 
@@ -162,6 +167,17 @@ export default function ScenarioEmulator({
       }
     }
 
+    const last = lastProgressRef.current;
+    // steps 길이와 finished 둘 다 이전과 같으면 다시 호출 안 함
+    if (last && last.stepsLen === steps.length && last.finished === finished) {
+      return;
+    }
+
+    lastProgressRef.current = {
+      stepsLen: steps.length,
+      finished,
+    };
+
     onProgress({
       runId: scenarioRunId,
       steps,
@@ -169,7 +185,7 @@ export default function ScenarioEmulator({
     });
   }, [
     scenarioRunId,
-    steps,
+    steps.length,
     finished,
     onProgress,
     persistedRun,
@@ -179,6 +195,14 @@ export default function ScenarioEmulator({
   useEffect(() => {
     if (!scenarioRunId) return;
 
+    // 이미 저장된 실행 기록(persistedRun)이 있는데
+    // 아직 그걸로 복원(hydratedFromStore)하기 전이면
+    // 여기서 saveScenarioRun 을 하면 "빈 초기값"으로 덮어써버리므로, 그냥 리턴
+    if (persistedRun && !hydratedFromStore) {
+      return;
+    }
+    
+    // 새 실행(run) 이거나, 이미 복원한 후에는 정상적으로 저장
     saveScenarioRun(scenarioRunId, {
       scenarioKey,
       scenarioTitle,
@@ -198,6 +222,7 @@ export default function ScenarioEmulator({
     currentNode,
     finished,
     saveScenarioRun,
+    hydratedFromStore,
   ]);
 
   function resetScenario() {
@@ -474,8 +499,8 @@ export default function ScenarioEmulator({
 
       let accumulated = "";
 
-      // 🔹 우선 빈 버블 하나 추가해두고, 그걸 계속 업데이트
-      const stepId = node.id;
+      // 우선 빈 버블 하나 추가해두고, 그걸 계속 업데이트
+      const stepId = makeStepId(node.id);
       setSteps((prev) => [
         ...prev,
         {
@@ -545,7 +570,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "",
         },
@@ -554,7 +579,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "",
         },
@@ -563,7 +588,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.title
             ? `폼: ${next.data.title}`
@@ -574,7 +599,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "링크로 이동합니다.",
         },
@@ -600,7 +625,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "",
         },
@@ -615,7 +640,7 @@ export default function ScenarioEmulator({
     setSteps((prev) => [
       ...prev,
       {
-        id: `${currentNode.id}-${reply.value}`,
+        id: makeStepId(`${currentNode.id}-${reply.value}`),
         role: "user",
         text: reply.display,
       },
@@ -642,7 +667,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.title
             ? `폼: ${next.data.title}`
@@ -653,7 +678,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "링크로 이동합니다.",
         },
@@ -722,7 +747,7 @@ export default function ScenarioEmulator({
     setSteps((prev) => [
       ...prev,
       {
-        id: `${currentNode.id}-form`,
+        id: makeStepId(`${currentNode.id}-form`),
         role: "user",
         text:
           summaryParts.length > 0
@@ -743,7 +768,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "",
         },
@@ -752,7 +777,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "링크로 이동합니다.",
         },
@@ -775,7 +800,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "",
         },
@@ -799,7 +824,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "",
         },
@@ -808,7 +833,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.content ?? "링크로 이동합니다.",
         },
@@ -817,7 +842,7 @@ export default function ScenarioEmulator({
       setSteps((prev) => [
         ...prev,
         {
-          id: next.id,
+          id: makeStepId(next.id),
           role: "bot",
           text: next.data?.title
             ? `폼: ${next.data.title}`
