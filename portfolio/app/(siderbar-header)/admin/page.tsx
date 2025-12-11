@@ -171,10 +171,10 @@ export default function MainDashboardPage() {
                   </p>
                 </div>
 
-                {/* 남은 토큰 */}
+                {/* 잔여 토큰 */}
                 <div className="rounded-xl border border-gray-100 bg-emerald-50/60 p-3">
                   <p className="mb-1 text-[11px] font-medium text-emerald-700">
-                    남은 토큰
+                    잔여 토큰
                   </p>
                   <p className="text-lg font-semibold text-emerald-800">
                     {remainToken.toLocaleString()}
