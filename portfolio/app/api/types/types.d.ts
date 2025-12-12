@@ -12,6 +12,7 @@ export type MenuType = {
   depth?: number;                 // root=0, 자식=1, 손자=2 ...
   path_ids?: string;              // 예: "admin>users>create"
   path_labels?: string;           // 예: "관리자>사용자관리>등록"
+  use_yn?: string;
 };
 
 // Google Drive 검색 옵션

@@ -1,3 +1,4 @@
+// app/(sider-header)/admin/menu/components/modal/MenuModal.tsx
 'use client';
 
 import { ChevronDown, X } from 'lucide-react';
@@ -153,7 +154,29 @@ export default function MenuModal({
                   />
                 </div>
               )}
+            </div>
 
+            {/* 사용여부 추가 */}
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-600 mb-1">
+                사용여부
+              </label>
+              <div className="relative">
+                <select
+                  className="appearance-none border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm w-full bg-white"
+                  name="use_yn"
+                  value={form.use_yn ?? "Y"}
+                  onChange={onChange}
+                >
+                  <option value="Y">사용</option>
+                  <option value="N">미사용</option>
+                </select>
+
+                <ChevronDown
+                  size={16}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                />
+              </div>
             </div>
           </div>
 

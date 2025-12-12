@@ -22,14 +22,16 @@ async function getMenusFromFirebase(): Promise<MenuType[]> {
     .orderBy("order", "asc")
     .get();
 
-  return snap.docs.map(
-    (d) =>
-      ({
-        id: d.id,
-        ...d.data(),
-      } as unknown as MenuType)
-  );
-}
+    const items = snap.docs
+      .map((d) =>
+        ({
+          id: d.id,
+          ...d.data(),
+        } as unknown as MenuType)
+      )
+      .filter(d => (d.use_yn ?? "Y") === "Y");
+    return items;
+  }
 
 export async function getMenusByBackend(
   backend: "postgres" | "firebase"
@@ -128,6 +130,7 @@ async function getSubMenusFromFirebase(up_menu_id: string): Promise<MenuType[]> 
           order: data.order,
           lev: data.lev ?? 0,
           up_id: data.up_id ?? "",
+          use_yn: data.use_yn ?? "Y",
           depth: base?.depth ?? 0,
           path_ids: base?.path_ids ?? (data.menu_id ?? ""),
           path_labels: base?.path_labels ?? (data.label ?? ""),
@@ -135,7 +138,8 @@ async function getSubMenusFromFirebase(up_menu_id: string): Promise<MenuType[]> 
       };
   
       // 루트 노드들 (depth=0, path는 자기 자신으로 시작)
-      const roots: Node[] = rootSnap.docs.map((d) =>
+      const roots: Node[] = rootSnap.docs
+        .map((d) =>
         toNode(d, {
           depth: 0,
           path_ids: (d.data() as any).menu_id ?? "",
@@ -207,7 +211,9 @@ async function getSubMenusFromFirebase(up_menu_id: string): Promise<MenuType[]> 
       });
   
       // 4) 반환 형태 매핑 (href, order 등 방어)
-      const items: MenuType[] = results.map((r) => ({
+      const items: MenuType[] = results
+      .filter(r => (r.use_yn ?? 'Y') === 'Y')
+      .map((r) => ({
         id: String(r.id),
         menu_id: r.menu_id,
         label: r.label,
@@ -215,11 +221,11 @@ async function getSubMenusFromFirebase(up_menu_id: string): Promise<MenuType[]> 
         order: r.order ?? 0,
         lev: r.lev,
         up_id: r.up_id ? String(r.up_id) : "",
+        use_yn: r.use_yn ?? "Y",
         depth: r.depth,
         path_ids: r.path_ids,
         path_labels: r.path_labels,
       }));
-  
       return items;
     } catch (err) {
       console.error("[submenus][GET][firebase]", err);
