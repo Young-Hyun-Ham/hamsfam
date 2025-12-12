@@ -36,20 +36,22 @@ export async function fetchMenuList(
   const snap = await getDocs(qRef);
   
   // 기본 매핑
-  let items: Menu[] = snap.docs.map((d) => {
-    const data = d.data() as any;
-    return {
-      id: d.id,
-      menu_id: data.menu_id ?? "",
-      label: data.label ?? "",
-      href: data.href ?? null,
-      order: data.order ?? null,
-      lev: data.lev ?? 1,
-      up_id: data.up_id ?? null,
-      createdAt: data.createdAt ?? null,
-      updatedAt: data.updatedAt ?? null,
-    } as Menu;
-  });
+  let items: Menu[] = snap.docs
+    .map((d) => {
+      const data = d.data() as any;
+      return {
+        id: d.id,
+        menu_id: data.menu_id ?? "",
+        label: data.label ?? "",
+        href: data.href ?? null,
+        order: data.order ?? null,
+        lev: data.lev ?? 1,
+        up_id: data.up_id ?? null,
+        createdAt: data.createdAt ?? null,
+        updatedAt: data.updatedAt ?? null,
+        use_yn: data.use_yn === null ? 'Y' : data.use_yn,
+      } as Menu;
+    });
 
   // 🔹 전체 메뉴를 별도로 가져와서 path 구성에 사용
   const fullSnap = await getDocs(collection(db, "menu"));
@@ -77,10 +79,11 @@ export async function fetchMenuList(
   }
 
   // 🔹 각 menu에 path 추가
-  items = items.map((m) => ({
-    ...m,
-    path_labels: buildPath(m.id ?? ""), // path 생성
-  }));
+  items = items
+    .map((m) => ({
+      ...m,
+      path_labels: buildPath(m.id ?? ""), // path 생성
+    }))
 
   // search(menu_id / label) 필터 (JS에서 처리)
   if (searchText && searchText.trim()) {
@@ -91,7 +94,6 @@ export async function fetchMenuList(
       return menuId.includes(keyword) || label.includes(keyword);
     });
   }
-
   return items;
 }
 

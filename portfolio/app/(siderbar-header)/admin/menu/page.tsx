@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useStore } from "@/store";
 
-import useMenuStore from './store/index';
+import useMenuStore from './store';
 import { FormState, Menu } from './types/types';
 import MenuModal from './components/modal/MenuModal';
 import { NavItem, SidebarMenu } from '@/types/nav';
@@ -19,6 +19,7 @@ const initialForm: FormState = {
   order: '',
   lev: '1',
   up_id: '',
+  use_yn: 'Y',
 };
 
 const PAGE_SIZE = 12; // 🔹 한 페이지에 10개씩
@@ -81,22 +82,26 @@ export default function MenuManagement() {
   const pageEnd = pageStart + PAGE_SIZE;
   const pagedMenus = menus.slice(pageStart, pageEnd);
 
-  const pageReload = async (params: {searchText?: string, lev?:  number | null}) => {
+  const pageReload = async (params: {searchText?: string, lev?:  number | null, isheader?: boolean}) => {
     const data = await fetchMenuList(params);
     setMenus(data);
     setCurrentPage(1);
+    if (!(params.isheader ?? false)) return;
 
     // 가져온 데이터로 글로벌 menu store 수정
     const navItems: NavItem[] = data.filter(d => d.lev === 1)
+                                    .filter(d => (d.use_yn ?? 'Y') === 'Y')
                                     .map((d: Menu) => ({
                                       id: d.id ?? '',
                                       label: d.label,
                                       href: d.href ?? '',
-                                      order: d.order ?? undefined
+                                      order: d.order ?? undefined,
+                                      use_yn: d.use_yn ?? 'Y',
                                     }));
     setHeaderMMenus(navItems);
 
     const sidebarMenus: SidebarMenu[] = data.filter(d => d.lev !== 1)
+                                            .filter(d => (d.use_yn ?? 'Y') === 'Y')
                                             .map((d: Menu) => ({
                                               id: d.id ?? '',
                                               label: d.label,
@@ -107,6 +112,7 @@ export default function MenuManagement() {
                                               depth: d.depth,
                                               path_ids: d.path_ids ?? '',
                                               path_labels: d.path_labels ?? '',
+                                              use_yn: d.use_yn ?? 'Y',
                                             }));
     setSidebarMenus(sidebarMenus);
   }
@@ -204,6 +210,7 @@ export default function MenuManagement() {
       order: menu.order?.toString() ?? '',
       lev: menu.lev.toString(),
       up_id: menu.up_id ?? '',
+      use_yn: menu.use_yn ?? "Y",
     });
     setIsModalOpen(true);
   };
@@ -229,7 +236,7 @@ export default function MenuManagement() {
       setError(null);
       await deleteMenuById(menu.id ?? "");
       // 삭제 후 목록 다시 로드 + 페이지 1로 이동
-      pageReload({ searchText, lev: levFilter });
+      pageReload({ searchText, lev: levFilter, isheader: true });
     } catch (err: any) {
       console.error(err);
       setError(err.message ?? '메뉴 삭제 실패');
@@ -253,6 +260,7 @@ export default function MenuManagement() {
         order: form.order ? Number(form.order) : null,
         lev: Number(form.lev),
         up_id: form.up_id.trim() || null,
+        use_yn: form.use_yn ?? "Y",
       } as Menu;
 
       if (!payload.menu_id || !payload.label || !payload.lev) {
@@ -272,7 +280,7 @@ export default function MenuManagement() {
       }
 
       // 🔹 저장 후 목록 새로고침 + 페이지 1로 이동
-      pageReload({ searchText, lev: levFilter });
+      pageReload({ searchText, lev: levFilter, isheader: true });
       handleCloseModal();
     } catch (err: any) {
       console.error(err);
@@ -433,6 +441,10 @@ export default function MenuManagement() {
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                   Parent ID
                 </th>
+                {/* Use */}
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-6">
+                  Used
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">
                   {/* 액션 영역 */}
                 </th>
@@ -475,6 +487,9 @@ export default function MenuManagement() {
                     >
                       {menu.path_labels ?? ''}
                     </span>
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap text-xs text-center">
+                    {menu.use_yn}
                   </td>
                   {/* 이 셀은 기본 내용 없음 (오버레이 전용 공간 느낌으로 둠) */}
                   <td className="px-4 py-2 whitespace-nowrap text-xs">

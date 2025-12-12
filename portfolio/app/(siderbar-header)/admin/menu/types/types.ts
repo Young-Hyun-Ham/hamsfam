@@ -13,6 +13,8 @@ type Menu = {
   depth?: number;                 // root=0, 자식=1, 손자=2 ...
   path_ids?: string;              // 예: "admin>users>create"
   path_labels?: string;           // 예: "관리자>사용자관리>등록"
+
+  use_yn?: "Y" | "N";  // Y: 사용, N: 미사용
 };
 
 type FormState = {
@@ -23,6 +25,8 @@ type FormState = {
   order: string;
   lev: string;
   up_id: string;
+
+  use_yn: "Y" | "N";
 };
 
 type MenuSearchParams = {
