@@ -13,6 +13,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line, Doughnut, Bar } from "react-chartjs-2";
+import { RangeUnit, UserStats, UserSummary } from "./types";
 
 ChartJS.register(
   CategoryScale,
@@ -25,34 +26,6 @@ ChartJS.register(
   Legend
 );
 
-type UserSummary = {
-  id: string; // Firestore doc id (== uid 라고 가정)
-  email: string;
-  name: string;
-  avatar_url?: string | null;
-};
-
-type UserStats = {
-  user: UserSummary;
-  todayTokens: number;
-  monthTokens: number;
-  totalTokens: number;
-  avgTokensPerSession: number;
-  daily: {
-    labels: string[];
-    values: number[];
-  };
-  backendUsage: {
-    firebase: number;
-    postgres: number;
-  };
-  topScenarios: {
-    name: string;
-    runs: number;
-    tokens: number;
-  }[];
-};
-
 export default function AdminUserStatsPage() {
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<UserSummary[]>([]);
@@ -62,13 +35,22 @@ export default function AdminUserStatsPage() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [rangeUnit, setRangeUnit] = useState<RangeUnit>("day");
+
+  const rangeLabelMap: Record<RangeUnit, string> = {
+    day: "오늘 (00시 ~ 23시)",
+    week: "이번 주 (월요일 ~ 일요일)",
+    month: "이번 달 (1일 ~ 말일)",
+    year: "올해 (1월 ~ 12월)",
+  };
 
   // 검색 입력
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
 
-  // 🔍 사용자 검색 (Firebase 기반 API 호출) - 디바운스
+  // 🔍 사용자 검색 - 디바운스
   useEffect(() => {
     if (!search.trim()) {
       setSearchResults([]);
@@ -81,11 +63,10 @@ export default function AdminUserStatsPage() {
         setError(null);
 
         const res = await fetch(
-          `/api/firebase/admin/user-stats/users?query=${encodeURIComponent(
+          `/api/admin/firebase/user-stats?query=${encodeURIComponent(
             search.trim()
           )}`
         );
-        console.log("res=========>", res)
         if (!res.ok) {
           throw new Error("사용자 검색에 실패했습니다.");
         }
@@ -108,7 +89,7 @@ export default function AdminUserStatsPage() {
     setSearch("");
   };
 
-  // 👤 선택된 사용자 변경 시 통계 조회 (Firebase 기반 API 호출)
+  // 선택된 사용자 변경 시 통계 조회
   useEffect(() => {
     if (!selectedUser) {
       setStats(null);
@@ -121,7 +102,9 @@ export default function AdminUserStatsPage() {
         setError(null);
 
         const res = await fetch(
-          `/api/firebase/admin/user-stats/${encodeURIComponent(selectedUser.id)}`
+          `/api/admin/firebase/user-stats/${encodeURIComponent(
+            selectedUser.id,
+          )}?range=${rangeUnit}`,
         );
         if (!res.ok) {
           throw new Error("사용자 통계 조회에 실패했습니다.");
@@ -135,7 +118,7 @@ export default function AdminUserStatsPage() {
         setStatsLoading(false);
       }
     })();
-  }, [selectedUser]);
+  }, [selectedUser, rangeUnit]);
 
   // ----- Chart 데이터 매핑 -----
   const lineData = stats
@@ -143,7 +126,7 @@ export default function AdminUserStatsPage() {
         labels: stats.daily.labels,
         datasets: [
           {
-            label: "일별 토큰 사용량",
+            label: "토큰 사용량",
             data: stats.daily.values,
             borderWidth: 2,
             tension: 0.3,
@@ -154,35 +137,61 @@ export default function AdminUserStatsPage() {
 
   const lineOptions: any = {
     responsive: true,
+    maintainAspectRatio: false, // 높이에 맞춰 가로가 줄어드는 것 방지
+    layout: {
+      padding: {
+        left: 8,
+        right: 8, // 필요하면 0으로
+        top: 8,
+        bottom: 8,
+      },
+    },
     plugins: {
       legend: { display: false },
       tooltip: { intersect: false, mode: "index" as const },
     },
     scales: {
-      x: { grid: { display: false } },
-      y: { beginAtZero: true },
+      x: {
+        grid: { display: false },
+        ticks: {
+          maxRotation: 0,
+          autoSkip: true,
+        },
+      },
+      y: {
+        beginAtZero: true,
+      },
     },
   };
 
   const doughnutData = stats
-    ? {
-        labels: ["Firebase", "PostgreSQL"],
-        datasets: [
-          {
-            data: [
-              stats.backendUsage.firebase,
-              stats.backendUsage.postgres,
-            ],
-            borderWidth: 1,
-          },
-        ],
-      }
-    : { labels: [], datasets: [] };
+  ? {
+      labels: ["챗봇 메뉴", "시나리오 빌더", "게시판"],
+      datasets: [
+        {
+          data: [
+            stats.sourceUsage.chatbot,
+            stats.sourceUsage.builder,
+            stats.sourceUsage.board,
+          ],
+          backgroundColor: [
+            "#4F46E5", // chatbot - Indigo
+            "#10B981", // builder - Emerald
+            "#F59E0B", // board - Amber
+          ],
+          borderColor: "#ffffff",
+          borderWidth: 2,
+        },
+      ],
+    }
+  : { labels: [], datasets: [] };
 
   const doughnutOptions: any = {
     responsive: true,
     plugins: {
-      legend: { position: "bottom" as const },
+      legend: {
+        display: false,
+      },
     },
   };
 
@@ -215,7 +224,7 @@ export default function AdminUserStatsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
-              사용자별 통계 (Firebase 기준)
+              사용자별 통계
             </h1>
             <p className="mt-1 text-xs text-slate-500">
               Firebase 토큰 로그 데이터를 기반으로, 선택한 사용자의 토큰 사용량과
@@ -356,26 +365,54 @@ export default function AdminUserStatsPage() {
                     일별 토큰 사용량
                   </h2>
                   <p className="mt-1 text-[11px] text-slate-500">
-                    Firebase 토큰 로그 기준 최근 N일 데이터.
+                    {rangeLabelMap[rangeUnit]} 기준 토큰 사용량입니다.
                   </p>
                 </div>
-                <div className="text-[11px] text-slate-400">단위: 토큰</div>
+
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span>단위: 토큰</span>
+                  <select
+                    className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] text-slate-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    value={rangeUnit}
+                    onChange={(e) => setRangeUnit(e.target.value as RangeUnit)}
+                  >
+                    <option value="day">일단위 (00-23시)</option>
+                    <option value="week">주단위 (월-일)</option>
+                    <option value="month">월단위 (1-말일)</option>
+                    <option value="year">년단위 (1-12월)</option>
+                  </select>
+                </div>
               </div>
-              <div className="h-64">
+
+              <div className="h-64 w-full">
                 <Line data={lineData} options={lineOptions} />
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
               <h2 className="text-sm font-semibold text-slate-900">
-                백엔드별 사용 비율
+                메뉴(소스)별 사용 비율
               </h2>
-              <p className="mt-1 text-[11px] text-slate-500">
-                현재는 Firebase 기준이지만, 이후 PostgreSQL 로깅 추가를 위한
-                자리.
+              <p className="mt-1 text-[11fpx] text-slate-500">
+                source 필드(chatbot / builder / board)를 기준으로 한 토큰 사용 비율입니다.
               </p>
               <div className="mt-3 flex h-56 items-center justify-center">
                 <Doughnut data={doughnutData} options={doughnutOptions} />
+              </div>
+              {/* 직접 만든 legend */}
+              <div className="mt-4 flex items-center gap-6 text-xs text-slate-700">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 rounded-full" style={{ background: "#4F46E5" }}></span>
+                  챗봇 메뉴
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 rounded-full" style={{ background: "#10B981" }}></span>
+                  시나리오 빌더
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 rounded-full" style={{ background: "#F59E0B" }}></span>
+                  게시판
+                </div>
               </div>
             </div>
           </section>

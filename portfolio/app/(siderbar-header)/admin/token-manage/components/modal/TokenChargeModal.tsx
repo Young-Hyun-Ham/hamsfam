@@ -5,6 +5,8 @@ import { useMemo, useState, ChangeEvent, FormEvent } from "react";
 import { AdminTokenUser } from "../../types";
 import useAdminTokenStore from "../../store";
 import { formatNumber } from "../../utils";
+import axios from "axios";
+import { useTokenInput } from "@/types/token";
 
 type Props = {
   open: boolean;
@@ -92,6 +94,19 @@ export default function TokenChargeModal({
       alert(err?.message ?? "토큰 충전 중 오류가 발생했습니다.");
     }
   };
+
+  const tokenUse = async () => {
+    const payload: useTokenInput = {
+      userId: selectedUser?.id ?? "",
+      amount: 10,
+      usageType: "llm",
+      source: "chatbot",
+      sessionId: "session-1765153859736",
+      messageId: "welcome-1765153859736",
+      memo: "챗봇 대화 1턴 사용",
+    }
+    await axios.post("/api/user-token/firebase/use", payload);
+  }
 
   if (!open) return null;
 
@@ -243,6 +258,13 @@ export default function TokenChargeModal({
 
           {/* 버튼 영역 */}
           <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              className="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50"
+              onClick={tokenUse}
+            >
+              사용(테스트)
+            </button>
             <button
               type="button"
               className="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50"
