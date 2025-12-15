@@ -1,10 +1,11 @@
+// app/(sider-header)/admin/token-manage/store/index.ts
 import { create } from "zustand";
-import * as backendService from "../services/backendServices";
 
 import type {
   AdminTokenUser,
   ChargeUserTokenInput,
 } from "../types";
+import { api } from "@/lib/axios";
 
 type StoreState = {
   users: AdminTokenUser[];
@@ -17,7 +18,8 @@ type StoreState = {
   fetchHistory: (userId: string) => Promise<void>;
 };
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? "firebase";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? 'firebase';
+const BASE_PATH = `/api/admin/${BACKEND}/token-manage`;
 
 const useUserTokenStore = create<StoreState>((set, get) => ({
   users: [],
@@ -25,52 +27,33 @@ const useUserTokenStore = create<StoreState>((set, get) => ({
   loading: false,
   error: null,
 
-  // 사용자 + 토큰 목록 로드
+  /* ========================= 목록 조회 ========================= */
   fetchUserList: async (params) => {
-    try {
-      set({ loading: true, error: null });
-      const items = await backendService.fetchUserList(BACKEND, params ?? {});
-      set({ users: items, loading: false });
-      return items;
-    } catch (err: any) {
-      console.error(err);
-      set({
-        error: err?.message ?? "사용자 조회 실패",
-        loading: false,
-      });
-      return [];
-    }
+    set({ loading: true, error: null });
+    const { keyword } = params;
+
+    const res = await api.get(BASE_PATH, {
+      params: {
+        keyword: keyword ?? "",
+      },
+    });
+
+    const items = (res.data?.items ?? []) as AdminTokenUser[];
+    set({ loading: false, error: null });
+    return items;
   },
-
-  // 토큰 충전
-  chargeToken: async (args: ChargeUserTokenInput) => {
-    try {
-      set({ loading: true, error: null });
-
-      await backendService.chargeUserToken(BACKEND, args);
-
-      // 간단하게 전체 목록 다시 로딩
-      const { fetchUserList } = get();
-      await fetchUserList();
-
-      set({ loading: false });
-    } catch (err: any) {
-      console.error(err);
-      set({
-        error: err?.message ?? "토큰 충전 실패",
-        loading: false,
-      });
-      throw err; // 컴포넌트에서 alert 등 처리할 수 있게
-    }
+  /* ========================= 토큰 충전 ========================= */
+  chargeToken: async (payload: ChargeUserTokenInput) => {
+    set({ loading: true, error: null });
+    await api.post(`${BASE_PATH}`, payload);
+    set({ loading: false, error: null });
   },
+  /* ========================= 충전 History 조회 ========================= */
   fetchHistory: async (userId) => {
-    try {
-      set({ loading: true, error: null });
-      const list = await backendService.fetchUserTokenHistory(BACKEND, userId);
-      set({ history: list, loading: false });
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
-    }
+    set({ loading: true, error: null });
+    const res = await api.get(`${BASE_PATH}/${encodeURIComponent(userId)}`);
+    // 백엔드에서 이미 형식 맞춰서 내려주므로 그대로 리턴
+    set({ history: res.data?.items ?? [], loading: false });
   },
 }));
 

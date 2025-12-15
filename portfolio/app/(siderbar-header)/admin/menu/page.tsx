@@ -89,31 +89,32 @@ export default function MenuManagement() {
     if (!(params.isheader ?? false)) return;
 
     // 가져온 데이터로 글로벌 menu store 수정
-    const navItems: NavItem[] = data.filter(d => d.lev === 1)
-                                    .filter(d => (d.use_yn ?? 'Y') === 'Y')
-                                    .map((d: Menu) => ({
-                                      id: d.id ?? '',
-                                      label: d.label,
-                                      href: d.href ?? '',
-                                      order: d.order ?? undefined,
-                                      use_yn: d.use_yn ?? 'Y',
-                                    }));
-    setHeaderMMenus(navItems);
-
-    const sidebarMenus: SidebarMenu[] = data.filter(d => d.lev !== 1)
+    const allMenuData = await fetchMenuList({});
+    const navItems: NavItem[] = allMenuData.filter(d => d.lev === 1)
                                             .filter(d => (d.use_yn ?? 'Y') === 'Y')
                                             .map((d: Menu) => ({
                                               id: d.id ?? '',
                                               label: d.label,
                                               href: d.href ?? '',
                                               order: d.order ?? undefined,
-                                              lev: d.lev,
-                                              up_id: d.up_id ?? '',
-                                              depth: d.depth,
-                                              path_ids: d.path_ids ?? '',
-                                              path_labels: d.path_labels ?? '',
                                               use_yn: d.use_yn ?? 'Y',
                                             }));
+    setHeaderMMenus(navItems);
+
+    const sidebarMenus: SidebarMenu[] = allMenuData.filter(d => d.lev !== 1)
+                                                    .filter(d => (d.use_yn ?? 'Y') === 'Y')
+                                                    .map((d: Menu) => ({
+                                                      id: d.id ?? '',
+                                                      label: d.label,
+                                                      href: d.href ?? '',
+                                                      order: d.order ?? undefined,
+                                                      lev: d.lev,
+                                                      up_id: d.up_id ?? '',
+                                                      depth: d.depth,
+                                                      path_ids: d.path_ids ?? '',
+                                                      path_labels: d.path_labels ?? '',
+                                                      use_yn: d.use_yn ?? 'Y',
+                                                    }));
     setSidebarMenus(sidebarMenus);
   }
 
@@ -133,7 +134,7 @@ export default function MenuManagement() {
       const currentLev = Number(name === 'lev' ? value : prev.lev || '1');
 
       // PATH(up_id)나 menu_id가 바뀌면 href 자동 생성
-      if (name === 'up_id' || name === 'menu_id') {
+      if (!isEditing && (name === 'up_id' || name === 'menu_id')) {
         // 이번에 변경된 값 기준으로 upId / menuId 결정
         const upId = name === 'up_id' ? value : prev.up_id;
         const menuId = name === 'menu_id' ? value : prev.menu_id;
@@ -279,7 +280,7 @@ export default function MenuManagement() {
         }
       }
 
-      // 🔹 저장 후 목록 새로고침 + 페이지 1로 이동
+      // 저장 후 목록 새로고침 + 페이지 1로 이동
       pageReload({ searchText, lev: levFilter, isheader: true });
       handleCloseModal();
     } catch (err: any) {

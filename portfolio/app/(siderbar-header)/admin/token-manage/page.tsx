@@ -3,9 +3,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import TokenChargeModal from "./components/modal/TokenChargeModal";
 import { AdminTokenUser } from "./types";
 import useUserTokenStore from "./store";
+import TokenChargeModal from "./components/modal/TokenChargeModal";
 import TokenHistoryModal from "./components/modal/TokenHistoryModal";
 import { formatNumber } from "./utils";
 
@@ -39,7 +39,7 @@ export default function AdminUserTokenPage() {
       setError(null);
 
       // 실제 구현 예시:
-      const data = await fetchUserList();
+      const data = await fetchUserList({});
       setUsers(data);
 
       setCurrentPage(1);
@@ -210,10 +210,10 @@ export default function AdminUserTokenPage() {
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-10">
                   #
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-40">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-30">
                   이름
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-56">
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                   이메일
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-32">
@@ -266,9 +266,6 @@ export default function AdminUserTokenPage() {
                   <td className="px-4 py-2 whitespace-nowrap text-gray-800">
                     {formatNumber(user.remainToken)}
                   </td>
-
-                  {/* 기본 액션 셀 (비워둠) */}
-                  <td className="px-4 py-2 whitespace-nowrap text-xs" />
 
                   {/* 선택된 행일 때 Edit 버튼 오버레이 */}
                   {selectedRowSub === user.sub && (
