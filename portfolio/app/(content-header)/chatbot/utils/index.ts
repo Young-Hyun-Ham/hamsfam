@@ -56,9 +56,12 @@ function makeStepId(base: string) {
   return `${base}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 export {
   cn,
   removeUndefinedDeep,
   resolveTemplate,
   makeStepId,
+  sleep,
 };

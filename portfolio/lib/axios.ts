@@ -1,3 +1,4 @@
+// lib/axios.ts
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 declare module "axios" {
@@ -20,3 +21,20 @@ api.interceptors.request.use((config) => {
   // }
   return config;
 });
+
+/** 응답 인터셉터 (공통 에러 로깅) */
+api.interceptors.response.use(
+  (res) => res,
+  (error: AxiosError) => {
+    if (error.response) {
+      console.error(
+        "API Error",
+        error.response.status,
+        error.response.data
+      );
+    } else {
+      console.error("Network Error", error.message);
+    }
+    return Promise.reject(error);
+  }
+);

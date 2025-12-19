@@ -7,6 +7,9 @@ export interface KnowledgeProject {
   name: string;
   description?: string;
   defaultLanguage: string;
+
+  intentThreshold?: number; // 임계치(Embedding intent 매칭 점수 기준 등) 0~1 권장
+
   status: KnowledgeProjectStatus;
   createdAt: string;
   updatedAt: string;
@@ -41,6 +44,7 @@ export interface KnowledgeEntity {
   kind: EntityKind;
   values: KnowledgeEntityValue[];
   regexPattern?: string;
+  description?: string;
   isSystem?: boolean;
   createdAt: string;
   updatedAt: string;

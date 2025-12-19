@@ -1,7 +1,8 @@
+// app/(sider-header)/admin/knowledge/store/index.ts
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { KnowledgeProject, KnowledgeIntent, KnowledgeEntity } from "../types";
-import * as backendService from "../services/backendServices";
+import { axiosRequestJSON } from "../utils";
 
 type KnowledgeState = {
   loading: boolean;
@@ -17,9 +18,64 @@ type KnowledgeState = {
   fetchProjects: () => Promise<void>;
   selectProject: (projectId: string) => Promise<void>;
   createProject: (payload: Partial<KnowledgeProject>) => Promise<void>;
-  saveIntent: (payload: Partial<KnowledgeIntent>) => Promise<void>;
-  saveEntity: (payload: Partial<KnowledgeEntity>) => Promise<void>;
+  updateProject: (projectId: string, patch: Partial<KnowledgeProject>) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
+
+  createIntent: (projectId: string, payload: Partial<KnowledgeIntent>) => Promise<void>;
+  updateIntent: (projectId: string, intentId: string, payload: Partial<KnowledgeIntent>) => Promise<void>;
+  deleteIntent: (projectId: string, intentId: string) => Promise<void>;
+
+  createEntity: (projectId: string, payload: Partial<KnowledgeEntity>) => Promise<void>;
+  updateEntity: (projectId: string, entityId: string, payload: Partial<KnowledgeEntity>) => Promise<void>;
+  deleteEntity: (projectId: string, entityId: string) => Promise<void>;
 };
+
+// 베이스 URL (필요하면 prefix 변경)
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? "firebase"; 
+const BASE = `/api/admin/${BACKEND}/knowledge`;
+
+async function apiCreateIntent(projectId: string, payload: any) {
+  return axiosRequestJSON<KnowledgeIntent>({
+    method: "POST",
+    url: `${BASE}/projects/${projectId}/intents`,
+    data: payload,
+  });
+}
+async function apiUpdateIntent(projectId: string, intentId: string, payload: any) {
+  return axiosRequestJSON<KnowledgeIntent>({
+    method: "PATCH",
+    url: `${BASE}/projects/${projectId}/intents/${intentId}`,
+    data: payload,
+  });
+}
+async function apiDeleteIntent(projectId: string, intentId: string) {
+  return axiosRequestJSON<{ ok: boolean }>({
+    method: "DELETE",
+    url: `${BASE}/projects/${projectId}/intents/${intentId}`,
+  });
+}
+
+// ✅ 추가: Entity CRUD
+async function apiCreateEntity(projectId: string, payload: any) {
+  return axiosRequestJSON<KnowledgeEntity>({
+    method: "POST",
+    url: `${BASE}/projects/${projectId}/entities`,
+    data: payload,
+  });
+}
+async function apiUpdateEntity(projectId: string, entityId: string, payload: any) {
+  return axiosRequestJSON<KnowledgeEntity>({
+    method: "PATCH",
+    url: `${BASE}/projects/${projectId}/entities/${entityId}`,
+    data: payload,
+  });
+}
+async function apiDeleteEntity(projectId: string, entityId: string) {
+  return axiosRequestJSON<{ ok: boolean }>({
+    method: "DELETE",
+    url: `${BASE}/projects/${projectId}/entities/${entityId}`,
+  });
+}
 
 const useKnowledgeStore = create<KnowledgeState>()(
   devtools((set, get) => ({
@@ -35,7 +91,12 @@ const useKnowledgeStore = create<KnowledgeState>()(
     fetchProjects: async () => {
       set({ loading: true, error: null });
       try {
-        const projects = await backendService.getProjects();
+        const data = await axiosRequestJSON<{ items: KnowledgeProject[] }>({
+          method: "GET",
+          url: `${BASE}/projects`,
+        });
+
+        const projects = data.items;
         set({ projects });
         // 최초 진입 시 첫번째 프로젝트 자동 선택
         if (!get().selectedProjectId && projects.length > 0) {
@@ -52,10 +113,16 @@ const useKnowledgeStore = create<KnowledgeState>()(
       set({ selectedProjectId: projectId, loading: true, error: null });
       try {
         const [intents, entities] = await Promise.all([
-          backendService.getIntents(projectId),
-          backendService.getEntities(projectId),
+          await axiosRequestJSON<{ items: KnowledgeIntent[] }>({
+            method: "GET",
+            url: `${BASE}/projects/${projectId}/intents`,
+          }),
+            await axiosRequestJSON<{ items: KnowledgeEntity[] }>({
+            method: "GET",
+            url: `${BASE}/projects/${projectId}/entities`,
+          })
         ]);
-        set({ intents, entities });
+        set({ intents: intents.items, entities: entities.items });
       } catch (e: any) {
         set({ error: e?.message ?? "프로젝트 데이터 조회 중 오류" });
       } finally {
@@ -64,26 +131,142 @@ const useKnowledgeStore = create<KnowledgeState>()(
     },
 
     createProject: async (payload) => {
-      await backendService.createProject(payload);
-      await get().fetchProjects();
+      set({ loading: true, error: null });
+      try {
+        // ✅ 서버로 보내기 전에 기본값 보정
+        const body = {
+          ...payload,
+          intentThreshold: 0.75, // 기본 임계치
+        };
+
+        // 예: firebase route
+        const res = await fetch("/api/admin/firebase/knowledge/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) throw new Error("프로젝트 생성 실패");
+
+        const created: KnowledgeProject = await res.json();
+
+        set((state) => ({
+          projects: [created, ...state.projects],
+          selectedProjectId: created.id,
+          loading: false,
+        }));
+      } catch (e: any) {
+        set({ loading: false, error: e?.message ?? "createProject error" });
+      }
     },
 
-    saveIntent: async (payload) => {
-      if (!get().selectedProjectId) return;
-      // await backendService.saveIntent({
-      //   ...payload,
-      //   projectId: get().selectedProjectId,
-      // });
-      await get().selectProject(get().selectedProjectId!);
+    updateProject: async (projectId, patch) => {
+      set({ loading: true, error: null });
+      try {
+        const res = await fetch(`/api/admin/firebase/knowledge/projects/${projectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        });
+
+        if (!res.ok) throw new Error("프로젝트 업데이트 실패");
+
+        const updated: KnowledgeProject = await res.json();
+
+        set((state) => ({
+          projects: state.projects.map((p) => (p.id === projectId ? updated : p)),
+          loading: false,
+        }));
+      } catch (e: any) {
+        set({ loading: false, error: e?.message ?? "updateProject error" });
+      }
     },
 
-    saveEntity: async (payload) => {
-      if (!get().selectedProjectId) return;
-      // await backendService.saveEntity({
-      //   ...payload,
-      //   projectId: get().selectedProjectId,
-      // });
-      await get().selectProject(get().selectedProjectId!);
+    deleteProject: async (projectId) => {
+      set({ loading: true, error: null });
+      try {
+        axiosRequestJSON<{ ok: boolean }>({
+          method: "DELETE",
+          url: `${BASE}/projects/${projectId}`,
+        });
+        await get().selectProject(projectId);
+      } catch (e: any) {
+        set({ error: e?.message ?? "프로젝트 삭제 오류" });
+      } finally {
+        set({ loading: false });
+      }
+    },
+
+    createIntent: async (projectId, payload) => {
+      set({ loading: true, error: null });
+      try {
+        await apiCreateIntent(projectId, payload);
+        await get().selectProject(projectId);
+      } catch (e: any) {
+        set({ error: e?.message ?? "인텐트 생성 오류" });
+      } finally {
+        set({ loading: false });
+      }
+    },
+
+    updateIntent: async (projectId, intentId, payload) => {
+      set({ loading: true, error: null });
+      try {
+        await apiUpdateIntent(projectId, intentId, payload);
+        await get().selectProject(projectId);
+      } catch (e: any) {
+        set({ error: e?.message ?? "인텐트 수정 오류" });
+      } finally {
+        set({ loading: false });
+      }
+    },
+
+    deleteIntent: async (projectId, intentId) => {
+      set({ loading: true, error: null });
+      try {
+        await apiDeleteIntent(projectId, intentId);
+        await get().fetchProjects();
+      } catch (e: any) {
+        set({ error: e?.message ?? "인텐트 삭제 오류" });
+      } finally {
+        set({ loading: false });
+      }
+    },
+
+    createEntity: async (projectId, payload) => {
+      set({ loading: true, error: null });
+      try {
+        await apiCreateEntity(projectId, payload);
+        await get().selectProject(projectId);
+      } catch (e: any) {
+        set({ error: e?.message ?? "엔티티 생성 오류" });
+      } finally {
+        set({ loading: false });
+      }
+    },
+
+    updateEntity: async (projectId, entityId, payload) => {
+      set({ loading: true, error: null });
+      try {
+        await apiUpdateEntity(projectId, entityId, payload);
+        await get().selectProject(projectId);
+      } catch (e: any) {
+        set({ error: e?.message ?? "엔티티 수정 오류" });
+      } finally {
+        set({ loading: false });
+      }
+    },
+
+    deleteEntity: async (projectId, entityId) => {
+      set({ loading: true, error: null });
+      try {
+        await apiDeleteEntity(projectId, entityId);
+        await get().selectProject(projectId);
+      } catch (e: any) {
+        set({ error: e?.message ?? "엔티티 삭제 오류" });
+      } finally {
+        set({ loading: false });
+      }
     },
   })),
 );

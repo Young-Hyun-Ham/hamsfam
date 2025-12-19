@@ -25,7 +25,12 @@ type ProjectListPanelProps = {
   projects: KnowledgeProject[];
   selectedProjectId: string | null;
   onSelectProject: (projectId: string) => void;
-  onCreateProject: (payload: { name: string; description?: string }) => void;
+
+  onCreateProject: (payload: {
+    name: string;
+    description?: string;
+    defaultLanguage: string;
+  }) => void;
 };
 
 export default function ProjectListPanel({
@@ -38,6 +43,7 @@ export default function ProjectListPanel({
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newDefaultLanguage, setNewDefaultLanguage] = useState("ko-KR");
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -66,10 +72,12 @@ export default function ProjectListPanel({
     onCreateProject({
       name: newName.trim(),
       description: newDescription.trim() || undefined,
+      defaultLanguage: newDefaultLanguage,
     });
 
     setNewName("");
     setNewDescription("");
+    setNewDefaultLanguage("ko-KR");
     setCreating(false);
     setPage(1);
   };
@@ -129,6 +137,21 @@ export default function ProjectListPanel({
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
               />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-gray-700">
+                기본 언어
+              </label>
+              <select
+                className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                value={newDefaultLanguage}
+                onChange={(e) => setNewDefaultLanguage(e.target.value)}
+              >
+                <option value="ko-KR">ko-KR</option>
+                <option value="en-US">en-US</option>
+                <option value="ja-JP">ja-JP</option>
+                <option value="zh-CN">zh-CN</option>
+              </select>
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <button

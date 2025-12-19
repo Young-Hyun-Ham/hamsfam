@@ -1,6 +1,13 @@
 // app/(content-header)/chatbot/types/index.ts
 
 export type ChatRole = "user" | "assistant" | "system";
+export type ChatScenarioStatus = 
+  | "linked_suggest"    // 연계: 실행제안
+  | "linked_done"       // 연계: 완료(예/아니오 눌러도 완료)
+  | "linked_canceled"   // 연계: 취소(원하면 안 씀)
+  | "running"           // 실행: 진행중
+  | "done"              // 실행: 완료
+;
 
 export type ChatMessageKind =
   | "llm"          // 일반 LLM 대화
@@ -36,7 +43,7 @@ export type ChatMessage = {
   /** 에뮬레이터에서 실제로 돌린 로그 */
   scenarioSteps?: ScenarioStep[];
   
-  scenarioStatus?: "running" | "done";
+  scenarioStatus?: ChatScenarioStatus;
 };
 
 export interface ChatSession {

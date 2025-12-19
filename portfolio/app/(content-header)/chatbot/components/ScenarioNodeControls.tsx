@@ -29,6 +29,9 @@ type ScenarioNodeControlsProps = {
   
   // iframe 노드용
   onContinueFromIframe: () => void;
+
+  // slot filling
+  onSlotFillingClick?: (reply: { display: string; value: any }) => void;
 };
 
 export default function ScenarioNodeControls({
@@ -45,6 +48,7 @@ export default function ScenarioNodeControls({
   llmDone,
   onContinueFromLlm,
   onContinueFromIframe,
+  onSlotFillingClick,
 }: ScenarioNodeControlsProps) {
   const { showAlert, showConfirm } = useModal();
 
@@ -105,6 +109,26 @@ export default function ScenarioNodeControls({
           <button
             key={r.value}
             onClick={() => onBranchClick(r)}
+            className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
+          >
+            {r.display}
+          </button>
+        ))}
+      </div>
+    );
+  }
+  
+  if (currentNode.type === "slotFilling" || currentNode.type === "slotfilling") {
+    const replies: { display: string; value: any }[] =
+      currentNode.data?.replies ?? currentNode.data?.quickReplies ?? [];
+
+    return (
+      <div className="mt-3 flex flex-wrap gap-2">
+        {replies.map((r) => (
+          <button
+            key={String(r.value)}
+            type="button"
+            onClick={() => onSlotFillingClick?.(r)}
             className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs text-emerald-700 hover:bg-emerald-50"
           >
             {r.display}

@@ -2,12 +2,13 @@
 
 import { X } from "lucide-react";
 import { cn } from "../utils";
+import { ChatScenarioStatus } from "../types";
 
 export type ScenarioPanelProps = {
   open: boolean;
   scenarioTitle?: string;
   nodeContent?: React.ReactNode; 
-  status?: "running" | "done";
+  status?: ChatScenarioStatus;
   onClose: () => void;
 };
 

@@ -367,6 +367,20 @@ export default function ScenarioEmulator({
       })();
     }
 
+    // 5) slotFilling 노드: 질문을 steps에 뿌리고, 사용자의 선택/입력을 기다린다
+    if (
+      currentNode.type === "slotFilling" ||
+      currentNode.type === "slotfilling"
+    ) {
+      const q = currentNode.data?.content ?? "값을 선택/입력해 주세요.";
+      // 중복으로 계속 push되는 것 방지(현재 노드 id로 1번만)
+      setSteps((prev) => {
+        const already = prev.some((s) => s.id === makeStepId(currentNode.id));
+        if (already) return prev;
+        return [...prev, { id: makeStepId(currentNode.id), role: "bot", text: q }];
+      });
+    }
+
     return () => {
       cancelled = true;
     };
@@ -928,6 +942,43 @@ export default function ScenarioEmulator({
       ]);
     }
   };
+
+  // slotFilling 노드: quick reply 클릭 시
+  const handleSlotFillingClick = (reply: { display: string; value: any }) => {
+    if (!currentNode) return;
+
+    const slotName: string = currentNode.data?.slot ?? currentNode.data?.slotName ?? "";
+    // 1) 유저 발화(step) 추가
+    setSteps((prev) => [
+      ...prev,
+      // 선택한 값 user 채팅 추가
+      // { id: makeStepId(`${currentNode.id}-sf-${String(reply.value)}`), role: "user", text: reply.display },
+    ]);
+
+    // 2) slotValues 저장
+    if (slotName) {
+      setSlotValues((prev) => ({ ...prev, [slotName]: reply.value }));
+    }
+
+    // 3) 다음 노드로 이동 (가능하면 handle=reply.value로, 아니면 default/null)
+    const handle = String(reply.value);
+    const next =
+      findNextNode(nodes, edges, currentNode.id, handle) ||
+      findNextNode(nodes, edges, currentNode.id, "default") ||
+      findNextNode(nodes, edges, currentNode.id, null);
+
+    if (!next) {
+      setFinished(true);
+      return;
+    }
+
+    setCurrentNode(next);
+
+    // 4) 다음이 message면 바로 봇 step 추가
+    if (next.type === "message") {
+      setSteps((prev) => [...prev, { id: makeStepId(next.id), role: "bot", text: next.data?.content ?? "" }]);
+    }
+  };
   // ==============================================================================
   // handler 메소드 모음 end
   // ==============================================================================
@@ -993,6 +1044,7 @@ export default function ScenarioEmulator({
         llmDone={llmDone}
         onContinueFromLlm={handleContinueFromLlm}
         onContinueFromIframe={handleContinueFromIframe}
+        onSlotFillingClick={handleSlotFillingClick}
       />
     </div>
   );
