@@ -27,6 +27,10 @@ export interface KnowledgeIntent {
   isFallback?: boolean;
   createdAt: string;
   updatedAt: string;
+
+  needsEmbedding?: boolean;
+  embeddingUpdatedAt?: string;
+  embeddingVersion?: number;
 }
 
 export type EntityKind = "list" | "regex" | "system";
@@ -48,4 +52,8 @@ export interface KnowledgeEntity {
   isSystem?: boolean;
   createdAt: string;
   updatedAt: string;
+  
+  needsEmbedding?: boolean;
+  embeddingUpdatedAt?: string;
+  embeddingVersion?: number;
 }

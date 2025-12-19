@@ -5,7 +5,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
 const GEMINI_API_MODELS = process.env.GOOGLE_GEMINI_MODELS
   ? JSON.parse(process.env.GOOGLE_GEMINI_MODELS)
-  : ['gemini-2.0-flash'];
+  : ["gemini-2.0-flash"];
+
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 // 스트리밍용 모델
 const streamingModel = genAI.getGenerativeModel({
@@ -13,8 +14,10 @@ const streamingModel = genAI.getGenerativeModel({
 });
 
 export async function POST(req: NextRequest) {
-  const { prompt } = await req.json();
+  const { prompt, systemPrompt } = await req.json();
   const encoder = new TextEncoder();
+
+  const finalPrompt = (systemPrompt ? `${systemPrompt}\n\n` : "") + (prompt ?? "");
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -23,7 +26,7 @@ export async function POST(req: NextRequest) {
           contents: [
             {
               role: "user",
-              parts: [{ text: prompt }],
+              parts: [{ text: finalPrompt }],
             },
           ],
         });
@@ -33,11 +36,11 @@ export async function POST(req: NextRequest) {
           if (!text) continue;
           controller.enqueue(encoder.encode(text));
         }
+
+        controller.close();
       } catch (err) {
         console.error("Gemini stream error:", err);
         controller.error(err);
-      } finally {
-        controller.close();
       }
     },
   });

@@ -34,6 +34,14 @@ type KnowledgeState = {
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? "firebase"; 
 const BASE = `/api/admin/${BACKEND}/knowledge`;
 
+/** 임베딩 관련 플래그 주입: B안에서는 create/update 시점에 needsEmbedding만 올린다. */
+function withNeedsEmbedding<T extends Record<string, any>>(payload: T): T {
+  return {
+    ...payload,
+    needsEmbedding: true,
+  };
+}
+
 async function apiCreateIntent(projectId: string, payload: any) {
   return axiosRequestJSON<KnowledgeIntent>({
     method: "POST",
@@ -200,7 +208,7 @@ const useKnowledgeStore = create<KnowledgeState>()(
     createIntent: async (projectId, payload) => {
       set({ loading: true, error: null });
       try {
-        await apiCreateIntent(projectId, payload);
+        await apiCreateIntent(projectId, withNeedsEmbedding(payload as any));
         await get().selectProject(projectId);
       } catch (e: any) {
         set({ error: e?.message ?? "인텐트 생성 오류" });
@@ -212,7 +220,7 @@ const useKnowledgeStore = create<KnowledgeState>()(
     updateIntent: async (projectId, intentId, payload) => {
       set({ loading: true, error: null });
       try {
-        await apiUpdateIntent(projectId, intentId, payload);
+        await apiUpdateIntent(projectId, intentId, withNeedsEmbedding(payload as any));
         await get().selectProject(projectId);
       } catch (e: any) {
         set({ error: e?.message ?? "인텐트 수정 오류" });
@@ -236,7 +244,7 @@ const useKnowledgeStore = create<KnowledgeState>()(
     createEntity: async (projectId, payload) => {
       set({ loading: true, error: null });
       try {
-        await apiCreateEntity(projectId, payload);
+        await apiCreateEntity(projectId, withNeedsEmbedding(payload as any));
         await get().selectProject(projectId);
       } catch (e: any) {
         set({ error: e?.message ?? "엔티티 생성 오류" });
@@ -248,7 +256,7 @@ const useKnowledgeStore = create<KnowledgeState>()(
     updateEntity: async (projectId, entityId, payload) => {
       set({ loading: true, error: null });
       try {
-        await apiUpdateEntity(projectId, entityId, payload);
+        await apiUpdateEntity(projectId, entityId, withNeedsEmbedding(payload as any));
         await get().selectProject(projectId);
       } catch (e: any) {
         set({ error: e?.message ?? "엔티티 수정 오류" });

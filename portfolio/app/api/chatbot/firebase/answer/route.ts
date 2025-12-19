@@ -3,17 +3,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
-  orderBy,
   query,
-  QueryConstraint,
+  where,
 } from "firebase/firestore";
+import { embedText } from "@/lib/ai/geminiEmbedding";
 
-// ---------- types ----------
+const EMBEDDING_VERSION = 1;
+
 type AnswerRequest = {
   projectId: string;
   text: string;
   locale?: string;
+  systemPrompt?: string;
+  mode?: "plan" | "full";
 };
 
 type MatchedIntent = {
@@ -25,263 +30,266 @@ type MatchedIntent = {
   score: number;
 };
 
-type ExtractedEntity = {
-  entityName: string;
-  value: string; // canonical value
-  matched: string;
-  start: number;
-  end: number;
-};
-
 function normalize(v: string) {
   return (v ?? "").toString().replace(/\s+/g, " ").trim();
 }
-function lower(v: string) {
-  return normalize(v).toLowerCase();
-}
 
-/** 1) Rule 기반 intent 매칭 */
-function matchIntentByRule(inputText: string, intents: any[]): MatchedIntent | null {
-  const t = lower(inputText);
-  if (!t) return null;
-
-  let best: MatchedIntent | null = null;
-
-  for (const it of intents ?? []) {
-    const phrases: string[] = Array.isArray(it.trainingPhrases) ? it.trainingPhrases : [];
-    let localBest = 0;
-
-    for (const p of phrases) {
-      const phrase = lower(p);
-      if (!phrase) continue;
-
-      if (t.includes(phrase)) {
-        localBest = Math.max(localBest, phrase.length); // 길이 점수
-      }
-    }
-
-    if (localBest > 0) {
-      const candidate: MatchedIntent = {
-        id: it.id,
-        name: it.name,
-        displayName: it.displayName,
-        description: it.description,
-        isFallback: Boolean(it.isFallback),
-        score: localBest,
-      };
-      if (!best || candidate.score > best.score) best = candidate;
-    }
+function cosineSimilarity(a: number[], b: number[]) {
+  if (!a?.length || !b?.length || a.length !== b.length) return 0;
+  let dot = 0,
+    na = 0,
+    nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
   }
-
-  return best;
+  const denom = Math.sqrt(na) * Math.sqrt(nb);
+  return denom ? dot / denom : 0;
 }
 
-/** 2) Embedding 확장 포인트 (MVP: 미구현) */
-async function matchIntentByEmbedding(_inputText: string, _intents: any[]) {
-  return null as MatchedIntent | null;
-}
+/** ✅ /api/chat/gemini 스트리밍을 끝까지 읽어서 텍스트로 변환 */
+async function callGeminiStreamToText(
+  req: NextRequest,
+  prompt: string,
+  systemPrompt?: string
+): Promise<string> {
+  const origin = new URL(req.url).origin;
 
-/** synonym dict 기반 entity 추출 */
-function extractEntitiesBySynonymDict(inputText: string, entities: any[]): ExtractedEntity[] {
-  const raw = normalize(inputText);
-  const t = raw.toLowerCase();
-  if (!t) return [];
-
-  type DictItem = { entityName: string; value: string; syn: string };
-  const dict: DictItem[] = [];
-
-  for (const e of entities ?? []) {
-    const entityName = String(e.name ?? "");
-    const values = Array.isArray(e.values) ? e.values : [];
-    for (const v of values) {
-      const canonical = String(v?.value ?? "");
-      const synonyms = Array.isArray(v?.synonyms) ? v.synonyms : [];
-
-      const allSyns = [canonical, ...synonyms]
-        .map((s: any) => normalize(String(s ?? "")))
-        .filter(Boolean);
-
-      for (const syn of allSyns) {
-        dict.push({ entityName, value: canonical, syn });
-      }
-    }
-  }
-
-  // 긴 synonym 우선 매칭
-  dict.sort((a, b) => b.syn.length - a.syn.length);
-
-  const hits: ExtractedEntity[] = [];
-  const used = new Array<boolean>(t.length).fill(false);
-
-  const markUsed = (s: number, e: number) => {
-    for (let i = s; i < e; i++) used[i] = true;
-  };
-  const isFree = (s: number, e: number) => {
-    for (let i = s; i < e; i++) if (used[i]) return false;
-    return true;
-  };
-
-  for (const item of dict) {
-    const synLower = item.syn.toLowerCase();
-    if (!synLower) continue;
-
-    let from = 0;
-    while (true) {
-      const idx = t.indexOf(synLower, from);
-      if (idx === -1) break;
-
-      const start = idx;
-      const end = idx + synLower.length;
-
-      if (isFree(start, end)) {
-        hits.push({
-          entityName: item.entityName,
-          value: item.value,
-          matched: raw.slice(start, end),
-          start,
-          end,
-        });
-        markUsed(start, end);
-      }
-
-      from = idx + 1;
-    }
-  }
-
-  return hits;
-}
-
-async function listIntents(projectId: string) {
-  const colRef = collection(db, "knowledge_projects", projectId, "intents");
-  const constraints: QueryConstraint[] = [orderBy("createdAt", "desc")];
-  const snap = await getDocs(query(colRef, ...constraints));
-
-  return snap.docs.map((d) => {
-    const data = d.data() as any;
-    return {
-      id: d.id,
-      name: String(data.name ?? ""),
-      displayName: data.displayName ? String(data.displayName) : undefined,
-      description: data.description ? String(data.description) : undefined,
-      isFallback: Boolean(data.isFallback),
-      trainingPhrases: Array.isArray(data.trainingPhrases) ? data.trainingPhrases : [],
-
-      // ✅ 지식 답변(있을 때만 사용)
-      answer: data.answer ? String(data.answer) : undefined,
-
-      // scenario 연결 정보
-      scenarioKey: data.scenarioKey ? String(data.scenarioKey) : undefined,
-      scenarioTitle: data.scenarioTitle ? String(data.scenarioTitle) : undefined,
-      confirmMessage: data.confirmMessage ? String(data.confirmMessage) : undefined,
-      confirmEnabled: data.confirmEnabled === undefined ? true : Boolean(data.confirmEnabled),
-      autoRun: Boolean(data.autoRun),
-    };
+  const res = await fetch(`${origin}/api/chat/gemini`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, systemPrompt }),
   });
-}
 
-/** Firestore: entities list */
-async function listEntities(projectId: string) {
-  const colRef = collection(db, "knowledge_projects", projectId, "entities");
-  const constraints: QueryConstraint[] = [orderBy("createdAt", "desc")];
-  const snap = await getDocs(query(colRef, ...constraints));
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Gemini HTTP ${res.status} ${msg}`);
+  }
+  if (!res.body) throw new Error("Gemini: no response body");
 
-  return snap.docs.map((d) => {
-    const data = d.data() as any;
-    return {
-      id: d.id,
-      name: String(data.name ?? ""),
-      displayName: data.displayName ? String(data.displayName) : undefined,
-      description: data.description ? String(data.description) : undefined,
-      values: Array.isArray(data.values) ? data.values : [],
-    };
-  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+
+  let out = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value) out += decoder.decode(value, { stream: true });
+  }
+  out += decoder.decode(); // flush
+
+  return out.trim();
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<AnswerRequest>;
-    const projectId = String(body.projectId ?? "").trim();
-    const text = String(body.text ?? "");
+    const body = (await req.json()) as AnswerRequest;
+    const projectId = normalize(body.projectId);
+    const input = normalize(body.text);
 
-    if (!projectId || !normalize(text)) {
+    if (!projectId || !input) {
       return NextResponse.json(
-        { ok: false, error: "projectId, text는 필수입니다." },
+        { ok: false, message: "projectId/text is required" },
         { status: 400 }
       );
     }
 
-    const [intents, entities] = await Promise.all([
-      listIntents(projectId),
-      listEntities(projectId),
-    ]);
-
-    let matched = matchIntentByRule(text, intents);
-    if (!matched) matched = await matchIntentByEmbedding(text, intents);
-
-    // 3) fallback
-    if (!matched) {
-      const fallback = (intents ?? []).find((x: any) => Boolean(x.isFallback));
-      if (fallback) {
-        matched = {
-          id: fallback.id,
-          name: fallback.name,
-          displayName: fallback.displayName,
-          description: fallback.description,
-          isFallback: true,
-          score: 0,
-        };
-      }
-    }
-
-    const extracted = extractEntitiesBySynonymDict(text, entities);
-
-    const hit = matched
-      ? (intents ?? []).find((x: any) => x.id === matched!.id)
+    /** 1) 프로젝트 설정 읽기 (intentThreshold) */
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    const projectData = projectSnap.exists()
+      ? (projectSnap.data() as any)
       : null;
 
-    const scenarioKey = hit?.scenarioKey ? String(hit.scenarioKey) : "";
-    const scenarioTitle = hit?.scenarioTitle ? String(hit.scenarioTitle) : "";
-    const confirmEnabled = hit?.confirmEnabled !== false;
-    const autoRun = Boolean(hit?.autoRun);
+    const intentThreshold =
+      typeof projectData?.intentThreshold === "number"
+        ? projectData.intentThreshold
+        : 0.75;
 
-    const confirmMessage =
-      hit?.confirmMessage ||
-      `[${scenarioTitle || scenarioKey || "시나리오"}]을 실행 하시겠습니까?`;
+    /** 2) ✅ 입력 임베딩(진짜) */
+    const embedded = await embedText(input);
+    const inputVec = embedded.values;
 
-    // "지식 답변"은 오직 hit.answer가 있을 때만
-    const knowledgeAnswer = hit?.answer ? String(hit.answer) : null;
+    // 임베딩이 비어있으면 매칭 불가 → plan 모드면 gemini로
+    if (!inputVec?.length) {
+      const mode = body.mode ?? "plan";
+      const shouldCallGemini = true;
+
+      const answer =
+        mode === "full"
+          ? await callGeminiStreamToText(req, input, body.systemPrompt)
+          : null;
+
+      return NextResponse.json({
+        ok: true,
+        projectId,
+        input,
+        intent: null,
+        entities: [],
+        scenario: null,
+        fallback: true,
+        answer,
+        shouldCallGemini: mode === "plan",
+        gemini:
+          mode === "plan"
+            ? {
+                prompt: input,
+                systemPrompt: body.systemPrompt ?? null,
+                reason: "no_intent",
+              }
+            : null,
+        debug: {
+          intentThreshold,
+          intentsCount: 0,
+          top: null,
+          embedModel: embedded.model,
+          embedDim: embedded.dim,
+        },
+      });
+    }
+
+    /** 3) 인텐트 로드 (학습된 것만: embeddingVersion == 1) */
+    const intentsRef = collection(db, "projects", projectId, "intents");
+    const intentsSnap = await getDocs(
+      query(intentsRef, where("embeddingVersion", "==", EMBEDDING_VERSION))
+    );
+
+    let fallbackIntent: any | null = null;
+
+    const candidates: Array<{ docId: string; data: any; score: number }> = [];
+    intentsSnap.forEach((d) => {
+      const data = d.data() as any;
+
+      if (data?.isFallback) fallbackIntent = { id: d.id, ...data };
+
+      // ✅ embeddingDim 우선, 없으면 embedding.length로 추정
+      const emb: number[] | undefined = Array.isArray(data?.embedding)
+        ? data.embedding
+        : undefined;
+
+      if (!emb || emb.length === 0) return;
+
+      const embDim =
+        typeof data?.embeddingDim === "number" ? data.embeddingDim : emb.length;
+
+      // ✅ dim mismatch는 비교 불가 → 스킵 (중요)
+      if (embDim !== inputVec.length) return;
+
+      // ✅ 학습 필요 상태면 스킵(옵션: 안정성)
+      if (data?.needsEmbedding === true) return;
+
+      const score = cosineSimilarity(inputVec, emb);
+      candidates.push({ docId: d.id, data, score });
+    });
+
+    candidates.sort((a, b) => b.score - a.score);
+    const top = candidates[0] ?? null;
+    const topScore = top?.score ?? 0;
+
+    /** 4) 매칭 결정 */
+    let matched: MatchedIntent | null = null;
+    let fallback = false;
+
+    if (top && topScore >= intentThreshold) {
+      matched = {
+        id: top.docId,
+        name: top.data?.name ?? top.docId,
+        displayName: top.data?.displayName,
+        description: top.data?.description,
+        isFallback: !!top.data?.isFallback,
+        score: Number(topScore.toFixed(6)),
+      };
+      fallback = !!top.data?.isFallback;
+    } else if (fallbackIntent) {
+      matched = {
+        id: fallbackIntent.id,
+        name: fallbackIntent?.name ?? fallbackIntent.id,
+        displayName: fallbackIntent?.displayName,
+        description: fallbackIntent?.description,
+        isFallback: true,
+        score: Number(topScore.toFixed(6)),
+      };
+      fallback = true;
+    }
+
+    /** 5) 답변 선택 정책 */
+    let canned: string | null = null;
+    if (matched?.id) {
+      const hit = matched.id === top?.docId ? top?.data : null;
+      const v = hit?.answer ?? hit?.response ?? null;
+      if (typeof v === "string" && v.trim()) canned = v.trim();
+    }
+    if (!canned && fallbackIntent) {
+      const v = fallbackIntent?.answer ?? fallbackIntent?.response ?? null;
+      if (typeof v === "string" && v.trim()) canned = v.trim();
+    }
+
+    const mode = body.mode ?? "plan";
+    let answer: string | null = null;
+    let shouldCallGemini = false;
+    let geminiReason: "no_intent" | "below_threshold" | "no_canned" | null =
+      null;
+
+    if (canned) {
+      answer = canned;
+    } else {
+      shouldCallGemini = true;
+
+      if (!matched) geminiReason = "no_intent";
+      else if (fallback) geminiReason = "below_threshold";
+      else geminiReason = "no_canned";
+
+      if (mode === "full") {
+        answer = await callGeminiStreamToText(req, input, body.systemPrompt);
+        shouldCallGemini = false;
+      }
+    }
 
     return NextResponse.json({
       ok: true,
       projectId,
-      input: text,
-      intent: matched
+      input,
+      intent: matched,
+      entities: [],
+      scenario: null,
+      fallback,
+      answer,
+      shouldCallGemini,
+      gemini: shouldCallGemini
         ? {
-            id: matched.id,
-            name: matched.name,
-            displayName: matched.displayName,
-            isFallback: matched.isFallback ?? false,
-            score: matched.score,
+            prompt: input,
+            systemPrompt: body.systemPrompt ?? null,
+            reason: geminiReason,
           }
         : null,
-      entities: extracted,
-      scenario: scenarioKey
-        ? {
-            scenarioKey,
-            scenarioTitle: scenarioTitle || scenarioKey,
-            confirmEnabled,
-            autoRun,
-            confirmMessage,
-          }
-        : null,
-      fallback: Boolean(matched?.isFallback),
-      answer: knowledgeAnswer,
-
-      debug: { intentsCount: intents.length, entitiesCount: entities.length },
+      debug: {
+        intentThreshold,
+        intentsCount: intentsSnap.size,
+        top: top
+          ? {
+              id: top.docId,
+              name: top.data?.name ?? top.docId,
+              score: Number(top.score.toFixed(6)),
+              needsEmbedding: !!top.data?.needsEmbedding,
+              embeddingDim:
+                typeof top.data?.embeddingDim === "number"
+                  ? top.data.embeddingDim
+                  : Array.isArray(top.data?.embedding)
+                  ? top.data.embedding.length
+                  : null,
+              embeddingModel: top.data?.embeddingModel ?? null,
+            }
+          : null,
+        inputEmbedding: {
+          model: embedded.model,
+          dim: embedded.dim,
+        },
+      },
     });
   } catch (e: any) {
     return NextResponse.json(
-      { ok: false, error: e?.message ?? "unknown error" },
+      { ok: false, message: e?.message ?? "answer error" },
       { status: 500 }
     );
   }

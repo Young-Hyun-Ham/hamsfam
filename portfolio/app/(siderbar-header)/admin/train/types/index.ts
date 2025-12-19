@@ -1,4 +1,4 @@
-// app/(sidebar-header)/admin/study/types/index.ts
+// app/(sidebar-header)/admin/train/types/index.ts
 
 export type StudyProjectSummary = {
   id: string;
@@ -22,4 +22,12 @@ export type StudyJob = {
   targetType: "project" | "intent" | "entity";
   targetSummary: string; // 예: "전체 인텐트", "인텐트 5개", "엔티티 3개"
   message?: string;
+};
+
+export type StudyJobLog = {
+  id: string;
+  createdAt: string;
+  level: "info" | "warn" | "error";
+  message: string;
+  meta?: any;
 };
