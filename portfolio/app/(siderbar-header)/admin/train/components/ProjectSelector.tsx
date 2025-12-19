@@ -1,4 +1,4 @@
-// app/(sidebar-header)/admin/study/components/ProjectSelector.tsx
+// app/(sidebar-header)/admin/train/components/ProjectSelector.tsx
 "use client";
 
 import { ChevronDown } from "lucide-react";

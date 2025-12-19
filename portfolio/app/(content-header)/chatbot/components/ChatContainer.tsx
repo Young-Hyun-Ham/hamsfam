@@ -418,7 +418,8 @@ export default function ChatContainer() {
       const welcomeMsg: ChatMessage = {
         id: `welcome-${Date.now()}`,
         role: "assistant",
-        content: "새 채팅을 시작했습니다. 시나리오에 맞게 메시지를 입력해 보세요.",
+        content:
+          "새 채팅을 시작했습니다. 시나리오에 맞게 메시지를 입력해 보세요.",
         createdAt: new Date().toISOString(),
       };
       currentSessionId = createSession("새 채팅", [welcomeMsg]);
@@ -445,12 +446,12 @@ export default function ChatContainer() {
     };
     addMessageToActive(assistantBase);
 
-    // ✅ fallback UI 제어용
-    const fallbackPrefixDefault = "";
+    // fallback UI 제어용
     let showFallbackLoading = false;
-    let fallbackPrefixRef = fallbackPrefixDefault;
+    let fallbackPrefixRef = "";
 
-    // ✅ 1) 지식관리 answer 먼저 호출
+    // 1) 지식관리 answer 먼저 호출 (PLAN 모드)
+    let shouldCallGemini = true; // 기본은 Gemini로(지식 실패/예외 대비)
     try {
       const backend = (process.env.NEXT_PUBLIC_BACKEND || "firebase").toLowerCase();
       const answerUrl =
@@ -470,35 +471,35 @@ export default function ChatContainer() {
             projectId,
             text,
             locale: "ko",
+            mode: "plan",      // PLAN 모드
+            systemPrompt,      // Gemini에 그대로 전달
           }),
         });
 
         if (ansRes.ok) {
           const ans = await ansRes.json();
 
-          // ✅ 서버 응답 스펙에 맞춘 fallback 판별 (핵심)
-          // - 서버가 { fallback: boolean } 필드를 내려주고 있음
-          // - intent가 null이면 사실상 fallback 상황이므로 UI를 켠다
-          const isFallback =
-            Boolean(ans?.fallback) ||
-            Boolean(ans?.isFallback) ||
-            Boolean(ans?.intent?.isFallback) ||
-            ans?.intent == null;
-
+          // 시나리오 우선 처리 (인텐트 매칭 + 시나리오 연결된 경우)
           const scenarioKey = String(ans?.scenario?.scenarioKey ?? "");
           const scenarioTitle = String(ans?.scenario?.scenarioTitle ?? "");
           const hasScenario = Boolean(scenarioKey);
 
-          console.log("[answer]", {
-            intent: ans?.intent,
-            fallback: ans?.fallback,
-            isFallback,
-            scenarioKey,
-            hasScenario,
-          });
+          // PLAN 모드에서도 지식 답변(answer)이 내려올 수 있음(=canned)
+          if (ans?.answer) {
+            patchMessage(currentSessionId!, assistantId, (prev) => ({
+              ...prev,
+              kind: "llm",
+              content: ans.answer,
+              meta: { ...(prev as any)?.meta, loading: false },
+            }));
+            setIsSending(false);
+            textareaRef.current?.focus();
+            return;
+          }
 
-          // 1) 시나리오 연결된 인텐트면: "suggest" 메시지로 만들고 종료
-          if (!isFallback && hasScenario) {
+          // 시나리오 연결된 인텐트면: suggest 메시지로 만들고 종료
+          // (Gemini 호출 필요 없는 경우에만 시나리오로 유도)
+          if (hasScenario && ans?.shouldCallGemini === false) {
             patchMessage(currentSessionId!, assistantId, (prev) => ({
               ...prev,
               kind: "scenario",
@@ -515,42 +516,63 @@ export default function ChatContainer() {
             return;
           }
 
-          // 2) fallback이면: 안내 + dots 먼저 표시하고, Gemini로 계속 진행
-          if (isFallback) {
-            const prefix = getGeminiPrefix(ans);
-            showFallbackLoading = true;
-            fallbackPrefixRef = prefix || "일반 답변으로 진행합니다.\n\n";
+          // 이제부터 “Gemini를 호출할지”는 서버가 준 결정을 따른다
+          shouldCallGemini = Boolean(ans?.shouldCallGemini);
 
+          if (shouldCallGemini) {
+            // reason 기반 prefix (서버가 gemini.reason 내려줌)
+            const reason = ans?.gemini?.reason as
+              | "no_intent"
+              | "below_threshold"
+              | "no_canned"
+              | null
+              | undefined;
+
+            // 기존 getGeminiPrefix도 유지 가능(하지만 now는 reason 기반이 더 정확)
+            let prefix = "";
+            if (reason === "no_intent") {
+              prefix = "등록된 의도에 해당하는 답변을 찾지 못해 일반 답변으로 진행합니다.\n\n";
+            } else if (reason === "below_threshold") {
+              prefix = "매칭 정확도가 낮아 일반 답변으로 진행합니다.\n\n";
+            } else if (reason === "no_canned") {
+              prefix = "해당 의도에 연결된 답변/시나리오가 아직 없습니다.\n일반 답변으로 진행합니다.\n\n";
+            } else {
+              // reason이 없으면 기존 로직으로 fallback 문구 생성
+              prefix = getGeminiPrefix(ans) || "일반 답변으로 진행합니다.\n\n";
+            }
+
+            showFallbackLoading = true;
+            fallbackPrefixRef = prefix;
+
+            // prefix + dots(loading) 먼저 보여주기
             patchMessage(currentSessionId!, assistantId, (prev: any) => ({
               ...prev,
               kind: "llm",
-              content: fallbackPrefixRef, // prefix 먼저 보여줌(유지)
+              content: fallbackPrefixRef,
               meta: { ...(prev?.meta ?? {}), loading: true },
             }));
           } else {
-            // 3) fallback이 아니고 지식 답변이 있으면: 일반 텍스트로 종료
-            if (ans?.answer) {
-              patchMessage(currentSessionId!, assistantId, (prev) => ({
-                ...prev,
-                kind: "llm",
-                content: ans.answer,
-                meta: { ...(prev as any)?.meta, loading: false },
-              }));
-              setIsSending(false);
-              textareaRef.current?.focus();
-              return;
-            }
-            // 4) intent는 있는데 answer가 null인 경우: 정책상 Gemini로 보낼지 말지 선택 가능
-            //    -> 여기서는 Gemini로 진행 (그냥 계속 아래로 내려감)
+            // shouldCallGemini=false인데 answer도 없고 scenario도 없으면
+            // 정책상 그냥 종료시켜도 되고, 안전하게 Gemini로 보낼 수도 있음.
+            // 여기서는 "안전"을 위해 Gemini로 보냄.
+            shouldCallGemini = true;
           }
         }
       }
     } catch (err) {
       console.error("Knowledge answer error:", err);
       // 지식관리 실패해도 Gemini로 진행
+      shouldCallGemini = true;
     }
 
-    // ✅ 2) Gemini 스트림 (fallback일 경우 첫 chunk에서 dots만 끄고 답변 붙임)
+    // 2) Gemini 스트림: shouldCallGemini일 때만 실행
+    if (!shouldCallGemini) {
+      // 혹시 남아있으면 정리
+      setIsSending(false);
+      textareaRef.current?.focus();
+      return;
+    }
+
     try {
       const res = await fetch("/api/chat/gemini", {
         method: "POST",
@@ -566,7 +588,7 @@ export default function ChatContainer() {
         throw new Error(`Gemini HTTP ${res.status} ${msg}`);
       }
 
-      // ✅ fallback UI가 "보이도록" 아주 짧게만 대기 (필수는 아니지만 UX 안정)
+      // prefix가 "보이도록" 아주 짧게만 대기(UX 안정)
       if (showFallbackLoading) {
         await sleep(300);
       }
@@ -583,12 +605,10 @@ export default function ChatContainer() {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
 
-        const chunk = decoder.decode(value || new Uint8Array(), {
-          stream: !done,
-        });
+        const chunk = decoder.decode(value || new Uint8Array(), { stream: !done });
         if (!chunk) continue;
 
-        // ✅ 첫 chunk에서 loading만 끄고, prefix는 유지한 채 chunk를 붙인다
+        // 첫 chunk에서 loading만 끄고, prefix 유지한 채 chunk 붙임
         if (!started) {
           started = true;
 
@@ -597,7 +617,7 @@ export default function ChatContainer() {
               ...prev,
               kind: "llm",
               content: (fallbackPrefixRef ?? "") + chunk,
-              meta: { ...(prev?.meta ?? {}), loading: false }, // ✅ dots OFF
+              meta: { ...(prev?.meta ?? {}), loading: false },
             }));
             continue;
           }
@@ -609,7 +629,7 @@ export default function ChatContainer() {
         }));
       }
 
-      // ✅ 스트림이 "아무 chunk도 못 받고" 끝났으면 loading 끄기(안전장치)
+      // 스트림이 아무 chunk도 못 받고 끝났으면 loading 끄기(안전)
       if (showFallbackLoading && !started) {
         patchMessage(currentSessionId!, assistantId, (prev: any) => ({
           ...prev,
@@ -624,7 +644,7 @@ export default function ChatContainer() {
         content: "⚠️ 답변 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
       }));
     } finally {
-      // ✅ 혹시 남아있으면 무조건 끔
+      // 혹시 남아있으면 무조건 끔
       if (showFallbackLoading) {
         patchMessage(currentSessionId!, assistantId, (prev: any) => ({
           ...prev,
@@ -634,9 +654,7 @@ export default function ChatContainer() {
       setIsSending(false);
       textareaRef.current?.focus();
     }
-
   };
-
 
   return (
     <div className="flex h-full bg-gradient-to-b from-slate-50 to-slate-100">
