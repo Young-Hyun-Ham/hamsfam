@@ -4,6 +4,7 @@ import { useNodeController } from './hooks/useNodeController'; // 💡[추가된
 
 function SlotFillingNodeController({ localNode, setLocalNode }) {
     const { data } = localNode;
+    console.log("data =====================> ", data)
     // 💡[수정된 부분] Custom Hook 사용
     const { handleLocalDataChange, addReply, updateReply, deleteReply } = useNodeController(setLocalNode);
 

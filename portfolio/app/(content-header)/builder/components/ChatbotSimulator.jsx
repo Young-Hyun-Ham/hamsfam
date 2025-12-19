@@ -272,13 +272,14 @@ function ChatbotSimulator({ nodes, edges, isVisible, isExpanded, setIsExpanded }
         />
       )
       }
-
+      {/* 시뮬레이터에서 채팅 제거
       <UserInput
         currentNode={currentNode}
         isStarted={isStarted}
         onTextInputSend={handleTextInputSend}
         onOptionClick={handleOptionClick}
       />
+      */}
     </div>
   );
 }

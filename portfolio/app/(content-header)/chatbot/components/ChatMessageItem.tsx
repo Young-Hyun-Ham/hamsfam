@@ -1,86 +1,177 @@
-// app/(content-header)/chatbot/components/ChatMessageItem.tsx
 "use client";
 
 import { useState } from "react";
 import { ChatMessage, ScenarioStep } from "../types";
 
+function LoadingDots({ label = "처리중" }: { label?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] text-gray-500">
+      {label}
+      <span className="loading-dots">
+        <span>.</span>
+        <span>.</span>
+        <span>.</span>
+      </span>
+    </span>
+  );
+}
+
 type Props = {
   message: ChatMessage;
-  onScenarioClick?: (scenarioKey: string, scenarioTitle?: string, messageId?: string) => void;
+
+  onScenarioClick?: (
+    scenarioKey: string,
+    scenarioTitle?: string,
+    messageId?: string
+  ) => void;
+
+  onScenarioAccept?: (
+    messageId: string,
+    scenarioKey: string,
+    scenarioTitle?: string
+  ) => void;
+  onScenarioReject?: (messageId: string) => void;
 };
 
-export default function ChatMessageItem({ message, onScenarioClick }: Props) {
+export default function ChatMessageItem({
+  message,
+  onScenarioClick,
+  onScenarioAccept,
+  onScenarioReject,
+}: Props) {
   const isAssistant = message.role === "assistant";
 
-  // === 시나리오 실행 메시지 전용 UI ==========================
   if (message.kind === "scenario" && message.scenarioKey) {
     const [open, setOpen] = useState(false);
 
-    const title = message.scenarioTitle || "시나리오 실행";
+    const title = message.scenarioTitle || "시나리오";
     const steps: ScenarioStep[] = message.scenarioSteps ?? [];
 
-    // 실행 로그 텍스트: 봇/사용자 구분해서 변환
+    const status =
+      message.scenarioStatus ??
+      (steps && steps.length > 0 ? "done" : "running");
+
+    // ✅ 연계 여부를 status prefix로 확정
+    const isLinked = String(status).startsWith("linked_");
+
+    const headerLabel = isLinked ? "시나리오 연계" : "시나리오 실행";
+
+    const statusLabel =
+      status === "linked_suggest"
+        ? "실행제안"
+        : status === "linked_done"
+        ? "완료"
+        : status === "linked_canceled"
+        ? "취소"
+        : status === "done"
+        ? "완료"
+        : "진행중";
+
+    const statusClass =
+      status === "linked_suggest"
+        ? "border-sky-300 bg-sky-50 text-sky-700"
+        : status === "linked_done"
+        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+        : status === "linked_canceled"
+        ? "border-gray-300 bg-gray-50 text-gray-600"
+        : status === "done"
+        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+        : "border-amber-300 bg-amber-50 text-amber-700";
+
     const detailText =
       steps.length > 0
         ? steps
-            .map((s) =>
-              s.role === "bot" ? `봇: ${s.text}` : `사용자: ${s.text}`,
-            )
+            .map((s) => (s.role === "bot" ? `봇: ${s.text}` : `사용자: ${s.text}`))
             .join("\n")
-        : message.content; // 혹시 scenarioSteps 없으면 content fallback
-
-    // 상태값: 없으면 steps 유무로 추정
-    const status: "running" | "done" =
-      message.scenarioStatus ??
-      (steps && steps.length > 0 ? "done" : "running");
-    
-    const statusLabel = status === "done" ? "완료" : "진행중";
-    const statusClass =
-      status === "done"
-        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-        : "border-amber-300 bg-amber-50 text-amber-700";
+        : message.content;
 
     return (
       <div className="flex justify-start mb-2">
         <div className="max-w-[80%] rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900 shadow">
-          {/* 상단 헤더 */}
           <div className="flex items-start gap-2">
             <div className="flex-1">
               <div className="text-[11px] font-semibold text-emerald-600">
-                시나리오 실행
+                {headerLabel}
               </div>
               <div className="text-[12px] font-medium text-emerald-900">
-                시나리오 실행: {title}
+                {headerLabel}: {title}
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              {/* 상태 표시 버튼 (진행중 / 완료) */}
-              <button
-                type="button"
-                className={
-                  "rounded-full border px-2 py-[2px] text-[11px] cursor-pointer " + statusClass
-                }
-                onClick={() =>
-                  onScenarioClick?.(
-                    message.scenarioKey!,
-                    message.scenarioTitle,
-                    message.id, // 어느 메시지인지 같이 전달
-                  )
-                }
-              >
-                {statusLabel}
-              </button>
 
-              {/* 상세 토글 버튼 */}
+            <div className="flex items-center gap-1">
+              {/* ✅ 연계는 언제나 클릭 불가(완료/취소 포함) */}
+              {!isLinked ? (
+                <button
+                  type="button"
+                  className={
+                    "rounded-full border px-2 py-[2px] text-[11px] cursor-pointer " +
+                    statusClass
+                  }
+                  onClick={() =>
+                    onScenarioClick?.(
+                      message.scenarioKey!,
+                      message.scenarioTitle,
+                      message.id
+                    )
+                  }
+                >
+                  {statusLabel}
+                </button>
+              ) : (
+                <span
+                  className={
+                    "rounded-full border px-2 py-[2px] text-[11px] select-none " +
+                    statusClass
+                  }
+                >
+                  {statusLabel}
+                </span>
+              )}
+
               <button
                 type="button"
                 className="rounded-full px-1.5 py-[2px] text-[11px] text-emerald-700 hover:bg-emerald-100"
-                onClick={() => setOpen((v: any) => !v)}
+                onClick={() => setOpen((v) => !v)}
               >
                 {open ? "숨기기 ▲" : "상세 보기 ▼"}
               </button>
             </div>
           </div>
+
+          {/* ✅ 연계: 실행제안일 때만 예/아니오 */}
+          {status === "linked_suggest" && (
+            <div className="mt-2 rounded-md bg-white/70 px-2 py-2 text-[12px] text-emerald-900">
+              <div className="whitespace-pre-wrap">{message.content}</div>
+              {(message as any)?.meta?.loading ? (
+                <div className="mt-2">
+                  <LoadingDots label="처리중" />
+                </div>
+              ) : null}
+
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-md bg-emerald-600 px-3 py-1.5 text-[12px] text-white hover:bg-emerald-700"
+                  onClick={() =>
+                    onScenarioAccept?.(
+                      message.id,
+                      message.scenarioKey!,
+                      message.scenarioTitle
+                    )
+                  }
+                >
+                  예
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[12px] text-gray-700 hover:bg-gray-50"
+                  onClick={() => onScenarioReject?.(message.id)}
+                >
+                  아니오
+                </button>
+              </div>
+            </div>
+          )}
 
           {open && (
             <div className="mt-2 rounded-md bg-emerald-100/70 px-2 py-1.5 text-[11px] text-emerald-900 whitespace-pre-wrap">
@@ -92,7 +183,6 @@ export default function ChatMessageItem({ message, onScenarioClick }: Props) {
     );
   }
 
-  // 👉 일반 LLM / 사용자 메시지
   return (
     <div className={isAssistant ? "flex justify-start mb-2" : "flex justify-end mb-2"}>
       <div
@@ -103,6 +193,12 @@ export default function ChatMessageItem({ message, onScenarioClick }: Props) {
         }
       >
         <div className="whitespace-pre-wrap">{message.content}</div>
+        {/* LLM fallback/Gemini 로딩 표시 */}
+        {(message as any)?.meta?.loading ? (
+          <div className="mt-2">
+            <LoadingDots label="처리중" />
+          </div>
+        ) : null}
       </div>
     </div>
   );

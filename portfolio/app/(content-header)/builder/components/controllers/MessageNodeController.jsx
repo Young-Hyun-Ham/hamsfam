@@ -12,6 +12,7 @@ function MessageNodeController({ localNode, setLocalNode }) {
         <label>Content</label>
         <textarea value={data.content || ''} onChange={(e) => handleLocalDataChange('content', e.target.value)} rows={4} />
       </div>
+      {/* Quick Replies 옵션 제거
       <div className={styles.formGroup}>
         <label>Quick Replies</label>
         <div className={styles.repliesContainer}>
@@ -37,6 +38,7 @@ function MessageNodeController({ localNode, setLocalNode }) {
           </button>
         </div>
       </div>
+      */}
       {/* 2. 기존 UI를 공통 컴포넌트로 대체 */}
       {/* 채팅 대화 다음것과 묶기 */}
       <ChainNextCheckbox

@@ -7,8 +7,6 @@ import * as fastApi from "../dto/postgresApi";
 import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
 import { fetchShortcutMenuListFromPostgres } from "../dto/postgresApi";
 import { fetchShortcutMenuListFromFirebase } from "../dto/firebaseApi";
-// import * as firebaseApi from '@/app/api/builder/firebaseApi';
-// import * as fastApi from '@/app/api/builder/fastApi';
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? "firebase";
 

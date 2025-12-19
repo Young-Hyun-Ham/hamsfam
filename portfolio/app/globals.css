@@ -32,3 +32,17 @@ html, body, #__next { height: 100%; }
 body { margin: 0; }
 .app-root { height: 100%; display: flex; flex-direction: column; }
 .app-main { height: 100%; min-height: 0; } /* 내부 스크롤 허용 */
+
+/* 채팅 시 llm 로딩 표시 */
+.loading-dots span {
+  display: inline-block;
+  animation: loadingDots 1.2s infinite;
+  opacity: 0.2;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadingDots {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
