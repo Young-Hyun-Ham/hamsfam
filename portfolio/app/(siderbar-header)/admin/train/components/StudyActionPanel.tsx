@@ -32,7 +32,7 @@ export default function StudyActionPanel() {
     setModalOpen(true);
   };
 
-  const handleConfirmRun = async () => {
+  const handleConfirmRun = async (selectedIds?: string[]) => {
     if (!selectedProject) return;
     if (submitting) return;
 
@@ -74,8 +74,8 @@ export default function StudyActionPanel() {
         projectName: selectedProject.name,
         targetType,
         triggeredBy,
+        targetIds: selectedIds,
       }
-      console.log("학습 데이터 ==================> ", payload)
       await runTrain(payload);
       // 성공/실패 상태 업데이트는 store에서 처리됨(fetchJobs/fetchLogs까지)
     } catch (e: any) {
@@ -106,7 +106,7 @@ export default function StudyActionPanel() {
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded-md bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed"
+          className="cursor-pointer rounded-md bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed"
           disabled={!selectedProject || submitting}
           onClick={() => openConfirm("project")}
         >
@@ -115,7 +115,7 @@ export default function StudyActionPanel() {
 
         <button
           type="button"
-          className="rounded-md bg-white px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-60"
+          className="cursor-pointer rounded-md bg-white px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-60"
           disabled={!selectedProject || submitting}
           onClick={() => openConfirm("intent")}
         >
@@ -124,7 +124,7 @@ export default function StudyActionPanel() {
 
         <button
           type="button"
-          className="rounded-md bg-white px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-60"
+          className="cursor-pointer rounded-md bg-white px-3 py-1.5 text-[11px] font-semibold text-gray-800 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-60"
           disabled={!selectedProject || submitting}
           onClick={() => openConfirm("entity")}
         >

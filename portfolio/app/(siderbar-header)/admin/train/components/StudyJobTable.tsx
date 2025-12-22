@@ -1,10 +1,12 @@
+// app/(siderbar-header)/admin/train/components/StudyJobTable.tsx
+import { formatDate } from "@/lib/utils/firebaseUtils";
 import useStudyStore from "../store";
 
 export default function StudyJobTable({ jobs }: any) {
   const { selectedJobId, setSelectedJobId } = useStudyStore();
 
   return (
-    <div className="rounded-lg border bg-white">
+    <div className="rounded-lg bg-white shadow-sm border border-gray-100 px-2">
       <div className="border-b px-4 py-3 text-sm font-semibold">학습 실행 이력</div>
 
       <div className="max-h-[360px] overflow-auto">
@@ -35,7 +37,7 @@ export default function StudyJobTable({ jobs }: any) {
                     </span>
                   </td>
                   <td className="px-3 py-2">{j.targetSummary ?? j.targetType}</td>
-                  <td className="px-3 py-2">{String(j.startedAt ?? "").slice(0, 19)}</td>
+                  <td className="px-3 py-2">{formatDate(String(j.startedAt ?? "").slice(0, 19))}</td>
                   <td className="px-3 py-2 text-gray-600">{j.message}</td>
                 </tr>
               );

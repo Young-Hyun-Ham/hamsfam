@@ -6,7 +6,7 @@ import useStudyStore from "../store";
 import type { StudyJobLog } from "../types";
 
 function formatTime(v?: string) {
-  if (!v) return "";
+  if (!v || typeof v === "object") return "";
   // "2025-..." 형태라면 앞부분만
   return v.replace("T", " ").replace("Z", "").slice(0, 19);
 }
@@ -117,7 +117,7 @@ export default function RealtimeLogPanel() {
   }, [selectedJob, polling]);
 
   return (
-    <div className="rounded-lg border bg-white h-full flex flex-col">
+    <div className="rounded-lg bg-white h-full flex flex-col shadow-sm border border-gray-100 px-2 ">
       <div className="border-b px-4 py-3 flex items-center justify-between">
         <div className="text-sm font-semibold">실시간 로그</div>
         {headerRight}

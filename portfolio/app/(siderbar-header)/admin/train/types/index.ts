@@ -1,12 +1,39 @@
 // app/(sidebar-header)/admin/train/types/index.ts
 
+export type StudyLastTrain = {
+  jobId: string;
+  status: "queued" | "running" | "success" | "failed" | string;
+  targetType?: string;
+  targetSummary?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  updatedAt?: string;
+  message?: string;
+};
+
+export type TrainPreviewItem = {
+  id: string;
+  name: string;
+  description?: string;
+  updatedAt?: string | null;
+  needsEmbedding: boolean;
+};
+
+type KnowledgeCounts = {
+  intents: { total: number; untrained: number };
+  entities: { total: number; untrained: number };
+  knowledge: { total: number; untrained: number }; // intents+entities
+};
+
 export type StudyProjectSummary = {
   id: string;
   name: string;
   description?: string;
   defaultLanguage: string;
   knowledgeCount: number; // 인텐트/엔티티 등 지식 개수 합계
-  lastTrainedAt?: string | null;
+
+  lastTrain?: StudyLastTrain | null;
+  counts?: KnowledgeCounts | null;
 };
 
 export type StudyJobStatus = "pending" | "running" | "success" | "failed";

@@ -107,9 +107,9 @@ const useKnowledgeStore = create<KnowledgeState>()(
         const projects = data.items;
         set({ projects });
         // 최초 진입 시 첫번째 프로젝트 자동 선택
-        if (!get().selectedProjectId && projects.length > 0) {
-          await get().selectProject(projects[0].id);
-        }
+        // if (!get().selectedProjectId && projects.length > 0) {
+        //   await get().selectProject(projects[0].id);
+        // }
       } catch (e: any) {
         set({ error: e?.message ?? "프로젝트 조회 중 오류" });
       } finally {
