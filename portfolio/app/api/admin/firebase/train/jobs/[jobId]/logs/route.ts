@@ -11,12 +11,11 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-// ✅ Next 16: params가 Promise로 올 수 있으므로 Promise 타입까지 허용
 type Ctx = { params: Promise<{ jobId: string }> | { jobId: string } };
 
 export async function GET(req: NextRequest, ctx: Ctx) {
   try {
-    // ✅ params unwrap
+    // params unwrap
     const { jobId } =
       "then" in (ctx.params as any)
         ? await (ctx.params as Promise<{ jobId: string }>)
@@ -36,9 +35,13 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     const jobRef = doc(db, "train_jobs", jobId);
     const jobSnap = await getDoc(jobRef);
     if (!jobSnap.exists()) {
+      // return NextResponse.json(
+      //   { ok: false, message: "job not found", items: [] },
+      //   { status: 404 }
+      // );
       return NextResponse.json(
-        { ok: false, message: "job not found", items: [] },
-        { status: 404 }
+        { ok: true, pending: true, items: [] },
+        { status: 200 }
       );
     }
 

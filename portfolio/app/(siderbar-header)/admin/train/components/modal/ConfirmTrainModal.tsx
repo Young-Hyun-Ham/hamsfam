@@ -1,6 +1,9 @@
+// app/(siderbar-header)/admin/train/components/modal/ConfirmTrainModal.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { TrainPreviewItem } from "../../types";
+import { formatDate } from "@/lib/utils/firebaseUtils"
 
 type TargetType = "project" | "intent" | "entity";
 
@@ -14,7 +17,7 @@ type Props = {
   entityNeedCount?: number;
 
   onClose: () => void;
-  onConfirm: () => Promise<void> | void;
+  onConfirm: (selectedIds?: string[]) => Promise<void> | void;
 };
 
 export default function ConfirmTrainModal({
@@ -31,15 +34,52 @@ export default function ConfirmTrainModal({
   const [doubleCheck, setDoubleCheck] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // 프리뷰 목록 상태
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [items, setItems] = useState<TrainPreviewItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const isFullTrain = targetType === "project";
+  const isPickable = targetType === "intent" || targetType === "entity";
+
   useEffect(() => {
     if (!open) {
       setConfirmText("");
       setDoubleCheck(false);
       setSubmitting(false);
+      setPreviewLoading(false);
+      setPreviewError(null);
+      setItems([]);
+      setSelectedIds([]);
     }
-  }, [open]);
 
-  const isFullTrain = targetType === "project";
+    // intent/entity 모달 열릴 때 프리뷰 조회
+    if (isPickable) {
+      (async () => {
+        try {
+          setPreviewLoading(true);
+          setPreviewError(null);
+
+          const res = await fetch(
+            `/api/admin/firebase/train/preview?projectId=${encodeURIComponent(projectId)}&targetType=${targetType}&onlyNeeds=true&limit=200`
+          );
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
+
+          const list: TrainPreviewItem[] = Array.isArray(data?.items) ? data.items : [];
+          setItems(list);
+          // ✅ 기본은 전체 선택(=needsEmbedding true 전체)
+          setSelectedIds(list.map((x) => x.id));
+        } catch (e: any) {
+          setPreviewError(e?.message ?? "대상 조회 실패");
+        } finally {
+          setPreviewLoading(false);
+        }
+      })();
+    }
+  }, [open, isPickable, projectId, targetType]);
+  
 
   const title = useMemo(() => {
     if (targetType === "project") return "⚠️ 전체 지식 재학습";
@@ -58,9 +98,23 @@ export default function ConfirmTrainModal({
   }, [targetType]);
 
   const confirmEnabled = useMemo(() => {
-    if (!isFullTrain) return true;
+    if (!isFullTrain) {
+      // intent/entity는 선택 1개 이상이어야 실행되게
+      return selectedIds.length > 0 && !previewLoading && !previewError;
+    }
     return confirmText.trim() === projectId && doubleCheck;
-  }, [isFullTrain, confirmText, projectId, doubleCheck]);
+  }, [isFullTrain, confirmText, projectId, doubleCheck, selectedIds.length, previewLoading, previewError]);
+
+  if (!open) return null;
+
+  const toggleAll = () => {
+    if (selectedIds.length === items.length) setSelectedIds([]);
+    else setSelectedIds(items.map((x) => x.id));
+  };
+
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
 
   if (!open) return null;
 
@@ -89,6 +143,78 @@ export default function ConfirmTrainModal({
               </div>
             )}
           </div>
+          
+          {/* intent/entity일 때 프리뷰 리스트 */}
+          {isPickable && (
+            <div className="rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+                <div className="text-[12px] font-semibold text-gray-800">
+                  학습 대상({targetType === "intent" ? "인텐트" : "엔티티"}) 목록
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] hover:bg-gray-50"
+                    onClick={toggleAll}
+                    disabled={previewLoading}
+                  >
+                    {selectedIds.length === items.length ? "전체 해제" : "전체 선택"}
+                  </button>
+                  <span className="text-[11px] text-gray-500">
+                    선택 {selectedIds.length.toLocaleString("ko-KR")} / {items.length.toLocaleString("ko-KR")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="max-h-56 overflow-auto p-3">
+                {previewLoading && (
+                  <div className="text-sm text-gray-400">대상을 불러오는 중...</div>
+                )}
+                {previewError && (
+                  <div className="text-sm text-rose-600">{previewError}</div>
+                )}
+                {!previewLoading && !previewError && items.length === 0 && (
+                  <div className="text-sm text-gray-400">학습할 대상이 없습니다(needsEmbedding=true 없음).</div>
+                )}
+
+                {!previewLoading && !previewError && items.length > 0 && (
+                  <ul className="space-y-2">
+                    {items.map((it) => {
+                      const checked = selectedIds.includes(it.id);
+                      return (
+                        <li key={it.id} className="flex items-start gap-2 rounded-md border border-gray-100 p-2 hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={checked}
+                            onChange={() => toggleOne(it.id)}
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="text-[12px] font-semibold text-gray-900 truncate">
+                                {it.name || "(no name)"}
+                              </div>
+                              <div className="text-[10px] text-gray-400">
+                                {formatDate(it.updatedAt)}
+                              </div>
+                            </div>
+                            {it.description && (
+                              <div className="mt-0.5 text-[11px] text-gray-500 line-clamp-2">
+                                {it.description}
+                              </div>
+                            )}
+                            <div className="mt-0.5 text-[10px] text-gray-400 break-all">
+                              id: {it.id}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
 
           {isFullTrain && (
             <>
@@ -148,14 +274,15 @@ export default function ConfirmTrainModal({
             onClick={async () => {
               try {
                 setSubmitting(true);
-                await onConfirm();
+                // intent/entity는 선택 ids 전달
+                await onConfirm(isPickable ? selectedIds : undefined);
                 onClose();
               } finally {
                 setSubmitting(false);
               }
             }}
           >
-            {submitting ? "실행 중..." : "학습 실행"}
+            {submitting ? "실행 중..." : isPickable ? `선택 ${selectedIds.length}개 학습 실행` : "학습 실행"}
           </button>
         </div>
       </div>

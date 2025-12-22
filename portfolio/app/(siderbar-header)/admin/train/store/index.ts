@@ -129,17 +129,16 @@ const useStudyStore = create<StudyState>((set, get) => ({
 
       // KnowledgeProject -> StudyProjectSummary 로 매핑
       const items = Array.isArray(data?.items) ? data.items : [];
+      console.log("fetchProjects====================> ", items)
       const projects: StudyProjectSummary[] = items.map((p: any) => ({
+        //
         id: p.id,
         name: p.name ?? p.title ?? "제목없음",
         description: p.description ?? "",
         defaultLanguage: p.defaultLanguage ?? "ko-KR",
-        knowledgeCount: Number(p.knowledgeCount ?? 0),
-        lastTrainedAt: p.lastTrainedAt ?? null,
 
-        // (선택) needsEmbedding 카운트를 서버가 주면 바로 연결
-        intentNeedCount: p.intentNeedCount,
-        entityNeedCount: p.entityNeedCount,
+        lastTrain: p.lastTrain,
+        counts: p.counts,
       }));
 
       set({ projects });
@@ -176,7 +175,7 @@ const useStudyStore = create<StudyState>((set, get) => ({
 
     try {
       const res = await fetch(
-        `/api/admin/${BACKEND}/train/jobs/${jobId}/logs?limit=200`,
+        `${TRAIN_BASE}/jobs/${jobId}/logs?limit=200`,
         { method: "GET" }
       );
 

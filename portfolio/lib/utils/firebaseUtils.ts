@@ -33,3 +33,14 @@ export function formatDateTime(d: Date): string {
   const s = pad(d.getSeconds());
   return `${y}-${m}-${day} ${h}:${min}:${s}`;
 }
+
+export function formatDate(dateIso?: string | null) {
+  if (!dateIso) return "-";
+  return new Date(dateIso).toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

@@ -4,31 +4,21 @@
 import { ChevronDown } from "lucide-react";
 import useStudyStore from "../store";
 import type { StudyProjectSummary } from "../types";
-
-function formatDate(dateIso?: string | null) {
-  if (!dateIso) return "-";
-  return new Date(dateIso).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { formatDate } from "@/lib/utils/firebaseUtils"
 
 export default function ProjectSelector() {
   const { projects, selectedProjectId, setSelectedProjectId } = useStudyStore();
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-2 shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between px-2 py-2">
         <h2 className="text-sm font-semibold text-gray-800">프로젝트 선택</h2>
         <span className="text-[11px] text-gray-400">
           총 {projects.length.toLocaleString("ko-KR")}개
         </span>
       </div>
 
-      <div className="relative">
+      <div className="relative px-2">
         <select
           className="appearance-none border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm w-full bg-white"
           value={selectedProjectId ?? ""}
@@ -82,8 +72,32 @@ function SelectedProjectSummary({
         </p>
       )}
       <div className="mt-2 flex items-center justify-between text-[10px] text-gray-500">
-        <span>지식 개수: {project.knowledgeCount.toLocaleString("ko-KR")}개</span>
-        <span>마지막 학습: {formatDate(project.lastTrainedAt)}</span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span>
+            지식개수:{" "}
+            <b className="text-gray-700">
+              {(project.counts?.knowledge?.total ?? 0) - (project.counts?.knowledge?.untrained ?? 0)}/
+              {(project.counts?.knowledge?.total ?? 0)}
+            </b>
+          </span>
+          <span className="text-gray-300">|</span>
+          <span>
+            인텐트:{" "}
+            <b className="text-gray-700">
+              {(project.counts?.intents?.total ?? 0) - (project.counts?.intents?.untrained ?? 0)}/
+              {(project.counts?.intents?.total ?? 0)}
+            </b>
+          </span>
+          <span className="text-gray-300">|</span>
+          <span>
+            엔티티:{" "}
+            <b className="text-gray-700">
+              {(project.counts?.entities?.total ?? 0) - (project.counts?.entities?.untrained ?? 0)}/
+              {(project.counts?.entities?.total ?? 0)}
+            </b>
+          </span>
+        </span>
+        <span>마지막 학습: {formatDate(project.lastTrain?.finishedAt)}</span>
       </div>
     </div>
   );

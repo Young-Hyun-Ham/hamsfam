@@ -15,7 +15,7 @@ export default async function ModulePage({ params }: { params: Params; }) {
   }
 
   // 디렉터리 내의 파일을 동적으로 import (webpack이 context로 묶어줍니다)
-  const Mod = NextDynamic(() => import(`@/app/(siderbar-header)/admin/modules/${slug}`), {
+  const Mod = NextDynamic(() => import(`@/app/(siderbar-header)/admin/${slug}`), {
     loading: () => <div className="p-6 text-sm text-gray-500">로딩 중…</div>,
     // ssr: true 기본값이면 충분. 모듈이 클라이언트 전용이면 그 파일에 'use client' 선언
   });

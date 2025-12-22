@@ -15,13 +15,27 @@ export default function TrainPage() {
     projects,
     jobs,
     selectedProjectId,
-    setSelectedProjectId,
     fetchProjects,
+    fetchJobs,
+    setSelectedJobId,
   } = useStudyStore();
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  // 프로젝트 선택되면 해당 프로젝트 학습이력 로드
+  useEffect(() => {
+    // 선택 해제면 화면도 초기화
+    if (!selectedProjectId) {
+      setSelectedJobId(null);
+      fetchJobs(null); // 아래 store에서 null 처리(=jobs 비움)하도록 수정 권장
+      return;
+    }
+
+    setSelectedJobId(null);      // 이전 선택 job 로그/선택 초기화
+    fetchJobs(selectedProjectId);
+  }, [selectedProjectId, fetchJobs, setSelectedJobId]);
 
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === selectedProjectId) ?? null,
