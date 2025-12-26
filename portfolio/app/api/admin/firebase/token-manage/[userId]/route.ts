@@ -1,7 +1,7 @@
 // app/api/admin/firebase/token-manage/[userId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { toDateTimeString } from "@/lib/utils/firebaseUtils";
+import { toDateTimeString } from "@/lib/utils/Utils";
 
 const TOKEN_COLLECTION = "user_token";
 
