@@ -72,3 +72,35 @@ Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 
 워크스페이스 관리 쉬움 — frontend, backend 등 여러 패키지 한 번에 관리
 CI/CD 속도 향상 — GitHub Actions 등에서 설치 시간 단축
 의존성 충돌 방지 — 각 모듈이 자기 버전을 명확히 가짐
+
+
+# Category 패키지 구조(표준 준수)
+``` bash
+app/(sidebar-header)/admin/category/
+├── components/
+│   ├── BoardCategoryListPanel.tsx
+│   ├── BoardCategoryDetailPanel.tsx
+│   └── modal/
+│       ├── BoardCategoryUpsertModal.tsx
+│       └── BoardCategoryDeleteModal.tsx
+├── store/
+│   └── index.ts
+├── types/
+│   └── index.ts
+└── page.tsx
+```
+
+
+# Board 패키지 구조(표준 준수)
+```bash
+app/(content-header)/board/[slug]/
+├── components/
+│   ├── BoardListPanel.tsx
+│   ├── BoardDetailPanel.tsx
+│   └── BoardSearchBar.tsx
+├── store/
+│   └── index.ts
+├── types/
+│   └── index.ts
+└── page.tsx
+```

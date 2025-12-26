@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { toDateTimeString } from "@/lib/utils/firebaseUtils";
+import { toDateTimeString } from "@/lib/utils/Utils";
 import { FieldValue } from "firebase-admin/firestore";
 
 /** 토큰 관리용 사용자 타입 */
