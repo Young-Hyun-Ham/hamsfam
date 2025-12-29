@@ -37,6 +37,7 @@ type CreateInput = {
   title: string;
   content: string;
   password?: string;
+  hasPassword?: boolean;
   authorId?: string;
   authorName?: string;
   tags: string[];
@@ -47,6 +48,8 @@ type UpdatePatch = Partial<{
   title: string;
   content: string;
   tags: string[];
+  password?: string;
+  hasPassword?: boolean;
   status: "published" | "draft";
 }>;
 

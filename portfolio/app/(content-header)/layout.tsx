@@ -18,6 +18,7 @@ export default async function MainSectionLayout({ children }: { children: ReactN
 
   return (
     <ContentLayout
+      scrollMode="page"
       header={<HeaderNav items={menus} />}
     >
     {children}

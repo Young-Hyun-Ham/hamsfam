@@ -4,12 +4,12 @@ app/(content-header)/board/
 ├── README.md                    # Board Front 문서 (이 파일)
 └── [slug]/
     ├── components/
-    │   ├── BoardListPanel.tsx   # 게시글 목록 패널
     │   ├── BoardDetailPanel.tsx # 게시글 상세 패널
+    │   ├── BoardListPanel.tsx   # 게시글 목록 패널
     │   ├── BoardSearchBar.tsx   # 검색/필터 UI
     │   └── modal/
-    │       ├── BoardUpsertModal.tsx  # 게시글 등록/수정 모달
-    │       └── BoardDeleteModal.tsx  # 게시글 삭제(강력 경고) 모달
+    │       ├── BoardDeleteModal.tsx  # 게시글 삭제(강력 경고) 모달
+    │       └── BoardUpsertModal.tsx  # 게시글 등록/수정 모달
     ├── store/
     │   └── index.ts             # Board 전용 Zustand Store
     ├── types/
