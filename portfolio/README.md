@@ -63,19 +63,25 @@ pnpm install
 </details>
 
 🧠 참고사항
+<pre>
 Next.js 프로젝트에 pnpm이 좋을까?
-Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 때문에 pnpm이 특히 유리합니다.
+Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 때문에 pnpm이 특히 유리함.
+</pre>
 
 ✅ 이점 정리:
+<pre>
 빌드 속도 향상 — npm보다 2~3배 빠름
 저장공간 절약 — 패키지 캐시를 재활용
 워크스페이스 관리 쉬움 — frontend, backend 등 여러 패키지 한 번에 관리
 CI/CD 속도 향상 — GitHub Actions 등에서 설치 시간 단축
 의존성 충돌 방지 — 각 모듈이 자기 버전을 명확히 가짐
+</pre>
 
 
 # Category 패키지 구조(표준 준수)
-``` bash
+<details>
+<summary>app/(sidebar-header)/admin/category/</summary>
+<pre>
 app/(sidebar-header)/admin/category/
 ├── components/
 │   ├── BoardCategoryListPanel.tsx
@@ -88,19 +94,25 @@ app/(sidebar-header)/admin/category/
 ├── types/
 │   └── index.ts
 └── page.tsx
-```
+</pre>
+</details>
 
-
-# Board 패키지 구조(표준 준수)
-```bash
+# Board 패키지 구조 (표준 준수)
+<details>
+<summary>📦 Front</summary>
+<pre>
 app/(content-header)/board/[slug]/
 ├── components/
 │   ├── BoardListPanel.tsx
 │   ├── BoardDetailPanel.tsx
-│   └── BoardSearchBar.tsx
+│   ├── BoardSearchBar.tsx
+│   └── modal/
+│       ├── BoardUpsertModal.tsx
+│       └── BoardDeleteModal.tsx
 ├── store/
 │   └── index.ts
 ├── types/
 │   └── index.ts
 └── page.tsx
-```
+</pre>
+</details>
