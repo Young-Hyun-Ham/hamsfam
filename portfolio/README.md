@@ -24,6 +24,7 @@ npm install -g pnpm
 pnpm create next-app [프로젝트명]
 ```
 
+# 3. 의존성 설치
 <details>
 <summary>의존성 (package.json)</summary>
 <pre>
@@ -85,7 +86,6 @@ pnpm create next-app [프로젝트명]
 }
 </pre>
 </details>
-
 <details>
 <summary>공통 css(global.css)</summary>
 <pre>
@@ -139,8 +139,6 @@ body { margin: 0; }
 }
 </pre>
 </details>
-
-# 3. 의존성 설치
 ```bash 
 pnpm install
 ```
@@ -150,17 +148,10 @@ pnpm install
 pnpm run build
 pnpm dev
 ```
-
 ---
 
 🧠 참고사항
 <pre>
-<details>
-<summary>테스트</summary>
-<pre>
-???
-</pre>
-</details>
 Next.js 프로젝트에 pnpm이 좋을까?
 Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 때문에 pnpm이 특히 유리함.
 </pre>
