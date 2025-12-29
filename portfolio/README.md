@@ -155,6 +155,12 @@ pnpm dev
 
 🧠 참고사항
 <pre>
+<details>
+<summary>테스트</summary>
+<pre>
+???
+</pre>
+</details>
 Next.js 프로젝트에 pnpm이 좋을까?
 Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 때문에 pnpm이 특히 유리함.
 </pre>
