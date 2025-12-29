@@ -1,12 +1,21 @@
 # Nextjs + React + TypeScript + Zustand + VITE + Pnpm + firebase + Figma
 
+# 프로젝트 실행
+```bash 
+git clone https://github.com/Young-Hyun-Ham/hamsfam.git
+cd ./portfolio
+/portfolio> pnpm install
+/portfolio> pnpm run build
+/portfolio> pnpm dev
+```
+---
+
+# 코드 스니펫 프로젝트
 ## 1. pnpm 설치
 설치확인: 
 ```bash
 pnpm -v
-```
-설치가 되어 있지 않다면 아래 명령어 실행
-```bash
+# 설치가 되어 있지 않다면 아래 명령어 실행
 npm install -g pnpm
 ```
 
@@ -15,8 +24,9 @@ npm install -g pnpm
 pnpm create next-app [프로젝트명]
 ```
 
-## 1. 의존성설치 (package.json) 및 기본 css 적용
-```json
+<details>
+<summary>의존성 (package.json)</summary>
+<pre>
 {
   "name": "basic",
   "version": "0.1.0",
@@ -30,37 +40,118 @@ pnpm create next-app [프로젝트명]
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "next": "16.0.0",
-    "firebase": "^12.2.1",
+    "@mui/icons-material": "^6.5.0",
+    "@mui/material": "^6.5.0",
+    "@rjsf/core": "^5.24.12",
+    "@rjsf/mui": "^5.24.12",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.15.6",
+    "@types/ws": "^8.18.1",
     "axios": "^1.11.0",
+    "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
+    "dotenv": "^17.2.3",
+    "firebase": "^12.2.1",
+    "firebase-admin": "^13.5.0",
+    "googleapis": "^166.0.0",
     "jose": "^6.0.13",
+    "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
+    "next": "16.0.7",
+    "openai": "^6.9.1",
+    "pg": "^8.16.3",
+    "react": "19.2.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.2.1",
+    "reactflow": "^11.11.4",
+    "uuid": "^13.0.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "@xyflow/react": "^12.8.2",
     "eslint": "^9",
-    "eslint-config-next": "16.0.0"
+    "eslint-config-next": "16.0.7",
+    "lucide-react": "^0.541.0",
+    "react-flow": "^1.0.3",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
-```
+</pre>
+</details>
+
+<details>
+<summary>공통 css(global.css)</summary>
+<pre>
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 전역 (globals.css) */
+html, body, #__next { height: 100%; }
+
+/* layout 구조에 따라 main 등도 100% 명시 */
+body { margin: 0; }
+.app-root { height: 100%; display: flex; flex-direction: column; }
+.app-main { height: 100%; min-height: 0; } /* 내부 스크롤 허용 */
+
+/* 채팅 시 llm 로딩 표시 */
+.loading-dots span {
+  display: inline-block;
+  animation: loadingDots 1.2s infinite;
+  opacity: 0.2;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadingDots {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+</pre>
+</details>
+
+# 3. 의존성 설치
 ```bash 
 pnpm install
 ```
 
-<details>
-<summary>공통 css(index.css)</summary>
-<pre>
-???
-</pre>
-</details>
+# 4. 실행
+```bash 
+pnpm run build
+pnpm dev
+```
+
+---
 
 🧠 참고사항
 <pre>
@@ -76,43 +167,3 @@ Next.js + React 환경에서는 빌드, 의존성, 워크스페이스가 많기 
 CI/CD 속도 향상 — GitHub Actions 등에서 설치 시간 단축
 의존성 충돌 방지 — 각 모듈이 자기 버전을 명확히 가짐
 </pre>
-
-
-# Category 패키지 구조(표준 준수)
-<details>
-<summary>app/(sidebar-header)/admin/category/</summary>
-<pre>
-app/(sidebar-header)/admin/category/
-├── components/
-│   ├── BoardCategoryListPanel.tsx
-│   ├── BoardCategoryDetailPanel.tsx
-│   └── modal/
-│       ├── BoardCategoryUpsertModal.tsx
-│       └── BoardCategoryDeleteModal.tsx
-├── store/
-│   └── index.ts
-├── types/
-│   └── index.ts
-└── page.tsx
-</pre>
-</details>
-
-# Board 패키지 구조 (표준 준수)
-<details>
-<summary>📦 Front</summary>
-<pre>
-app/(content-header)/board/[slug]/
-├── components/
-│   ├── BoardListPanel.tsx
-│   ├── BoardDetailPanel.tsx
-│   ├── BoardSearchBar.tsx
-│   └── modal/
-│       ├── BoardUpsertModal.tsx
-│       └── BoardDeleteModal.tsx
-├── store/
-│   └── index.ts
-├── types/
-│   └── index.ts
-└── page.tsx
-</pre>
-</details>
