@@ -4,6 +4,7 @@
 import usePublicBoardStore from "../store";
 import type { BoardPost } from "../types";
 import BoardSearchBar from "./BoardSearchBar";
+import { useStore } from "@/store"
 
 export default function BoardListPanel({
   items,
@@ -12,9 +13,17 @@ export default function BoardListPanel({
   items: BoardPost[];
   selectedId: string | null;
 }) {
-  const { category, select, fetchMore, page, openCreate, loading } =
-    usePublicBoardStore();
+  const { user } = useStore();
+  const { 
+    category, 
+    select, 
+    fetchMore, 
+    page, 
+    openCreate, 
+    loading 
+  } = usePublicBoardStore();
 
+  const currentUserId = (user?.id ?? user?.uid ?? "").toString();
   const canWrite = Boolean(category?.edit);
 
   return (
@@ -48,13 +57,23 @@ export default function BoardListPanel({
       <BoardSearchBar />
 
       {/* List */}
-      <div className="min-h-0 flex-1 overflow-auto p-3">
+      <div className="min-h-0 flex-1 overflow-auto p-3 py-1">
         {items.length === 0 ? (
           <div className="p-4 text-sm text-gray-500">게시글이 없습니다.</div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {items.map((it) => {
               const active = it.id === selectedId;
+
+              // 보호글 + 작성자 불일치면 마스킹
+              const authorId = (it as any).authorId?.toString?.() ?? "";
+              const isSecret = Boolean(it.hasPassword);
+              const isOwner = isSecret && authorId && currentUserId && authorId === currentUserId;
+
+              const displayTitle = isSecret && !isOwner ? "비밀글입니다." : it.title;
+              const displayAuthor = isSecret && !isOwner ? "익명" : (it.authorName ? `작성자: ${it.authorName}` : "작성자: -");
+              const displayCreatedAt = isSecret && !isOwner ? "-" : (it.createdAt ?? "-");
+
               return (
                 <li
                   key={it.id}
@@ -65,13 +84,11 @@ export default function BoardListPanel({
                     active ? "ring-1 ring-gray-200" : "",
                   ].join(" ")}
                 >
-                  <div className="truncate text-sm font-medium">{it.title}</div>
+                  <div className="truncate text-sm font-medium">{displayTitle}</div>
                   <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                    <span className="truncate">
-                      {it.authorName ? `작성자: ${it.authorName}` : "작성자: -"}
-                    </span>
+                    <span className="truncate">{displayAuthor}</span>
                     <span className="text-gray-300">•</span>
-                    <span>{it.createdAt ?? "-"}</span>
+                    <span>{displayCreatedAt}</span>
 
                     {it.hasPassword ? (
                       <>
@@ -84,7 +101,7 @@ export default function BoardListPanel({
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {(it.tags ?? []).slice(0, 4).map((t: string) => (
+                    {isSecret && !isOwner ? null : (it.tags ?? []).slice(0, 4).map((t: string) => (
                       <span
                         key={t}
                         className="rounded-2xl bg-gray-100 px-2.5 py-1 text-[11px] text-gray-700 shadow-sm ring-1 ring-black/5"

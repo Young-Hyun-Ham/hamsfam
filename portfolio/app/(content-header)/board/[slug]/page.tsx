@@ -41,6 +41,12 @@ export default function PublicBoardPage() {
 
   return (
     <>
+      {/* 브라우저 비번매니저 오토필 방지용 더미 필드 (username/password를 여기로 유도) */}
+      <div className="hidden" aria-hidden="true">
+        <input type="text" name="fake-username" autoComplete="username" />
+        <input type="password" name="fake-password" autoComplete="current-password" />
+      </div>
+
       {/* 부모 높이/오버플로우를 확정해서 body 스크롤로 튀는 걸 차단 */}
       <div className="flex h-full min-h-0 flex-col overflow-hidden px-4">
         <div className="mb-2 flex items-center justify-between">
