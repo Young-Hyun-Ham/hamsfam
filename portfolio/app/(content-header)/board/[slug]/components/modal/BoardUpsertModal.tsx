@@ -20,6 +20,7 @@ export default function BoardUpsertModal() {
   const {
     upsertOpen,
     closeUpsert,
+    closeDetail,
     createPost,
     updatePost,
     items,
@@ -35,7 +36,7 @@ export default function BoardUpsertModal() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  // ✅ NEW
+  // NEW
   const [tagsText, setTagsText] = useState("");
   const [password, setPassword] = useState("");
 
@@ -71,7 +72,6 @@ export default function BoardUpsertModal() {
         content: c,
         tags,
         password: Boolean(pw.length) ? pw : undefined,
-        hasPassword: Boolean(pw.length),
       });
     } else {
       await createPost({
@@ -79,7 +79,6 @@ export default function BoardUpsertModal() {
         content: c,
         tags,
         password: Boolean(pw.length) ? pw : undefined,
-        hasPassword: Boolean(pw.length),
       });
     }
     closeUpsert();
@@ -109,7 +108,10 @@ export default function BoardUpsertModal() {
             </div>
 
             <button
-              onClick={closeUpsert}
+              onClick={() => {
+                closeUpsert();
+                closeDetail();
+              }}
               className="rounded-xl bg-gray-100 px-3 py-2 text-xs text-gray-700 hover:bg-gray-200"
               aria-label="닫기"
             >
@@ -201,7 +203,10 @@ export default function BoardUpsertModal() {
 
           <div className="flex items-center justify-end gap-2 px-6 pb-6">
             <button
-              onClick={closeUpsert}
+              onClick={() => {
+                closeUpsert();
+                closeDetail();
+              }}
               disabled={Boolean(saving)}
               className="rounded-2xl bg-gray-100 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
             >

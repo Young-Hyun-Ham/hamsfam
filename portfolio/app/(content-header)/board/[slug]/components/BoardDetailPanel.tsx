@@ -19,8 +19,7 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     
     openEdit,
     openDelete,
-    // 추가된 store api (없으면 undefined여도 OK)
-    isPostUnlocked,
+    
     verifyPostPassword,
   } = usePublicBoardStore() as any;
 
@@ -29,6 +28,10 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
   // 보호글 잠금해제 상태
   const [pw, setPw] = useState("");
   const [pwError, setPwError] = useState<string | null>(null);
+
+  // 언락 상태를 컴포넌트에서만 관리 (글 바뀌면 무조건 다시 잠김)
+  const [unlocked, setUnlocked] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
 
   const postId = selected?.id ?? "";
 
@@ -43,24 +46,36 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
   useEffect(() => {
     if (!postId) return;
     fetchReplies(postId);
+    setUnlocked(false);
     setReplyText("");
     setPw("");
     setPwError(null);
   }, [postId, fetchReplies]);
 
   // locked 계산도 훅 이후에(하지만 return 이전이라 OK)
-  const locked = Boolean(selected?.hasPassword) && !(isPostUnlocked?.(postId) ?? false);
+  const locked = Boolean(selected?.hasPassword) && !unlocked;
   const canReplyFinal = canReply && !locked;
   // 권한 (현재 리스트에서 edit 권한을 글쓰기 기준으로 쓰고 있어서 동일하게)
   const canEdit = Boolean(category?.edit) && !locked;
 
   async function unlock() {
+    const pwTrim = pw.trim();
+    if (!postId || !pwTrim) return;
+
     setPwError(null);
-    const ok = await verifyPostPassword?.(postId, pw);
-    if (!ok) setPwError("비밀번호가 올바르지 않습니다.");
-    else {
-      setPw("");
-      setPwError(null);
+    setUnlocking(true);
+    try {
+      const ok = await verifyPostPassword?.(postId, pwTrim);
+      if (!ok) {
+        setPwError("비밀번호가 올바르지 않습니다.");
+        setUnlocked(false);
+      } else {
+        setUnlocked(true);
+        setPw("");
+        setPwError(null);
+      }
+    } finally {
+      setUnlocking(false);
     }
   }
 
@@ -78,7 +93,6 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     await deleteReply(replyId, postId);
   };
 
-  // ✅ 여기서 early return 해도 "훅은 이미 위에서 전부 호출" 되었기 때문에 안전
   if (!selected) return null;
 
   return (
@@ -118,7 +132,12 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
           ) : null}
 
           <button
-            onClick={closeDetail}
+            onClick={() => {
+              setUnlocked(false);
+              setPw("");
+              setPwError(null);
+              closeDetail();
+            }}
             className="rounded-2xl bg-gray-100 px-4 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-200"
           >
             닫기

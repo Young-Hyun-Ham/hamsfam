@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { tokenizeForSearch, getCategoryPerm, normalize } from "./_utils";
 import { toDateTimeString } from "@/lib/utils/Utils";
+import { hashPassword } from "@/lib/utils/password";
 
 const MAX_LIMIT = 50;
 
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
       return {
         id: d.id,
         ...data,
+        passwordHash: undefined,
         createdAt: toDateTimeString(data.createdAt),
         updatedAt: toDateTimeString(data.updatedAt),
       };
@@ -114,6 +116,9 @@ export async function POST(req: NextRequest) {
     const status = normalize(body.status) || "published";
     const authorId = normalize(body.authorId) || null;
     const authorName = normalize(body.authorName) || "익명";
+    const pw = normalize(body.password);
+    const passwordHash = pw ? await hashPassword(pw) : "";
+    const hasPassword = Boolean(pw);
 
     if (!title) return NextResponse.json({ ok: false, message: "title is required" }, { status: 400 });
 
@@ -128,6 +133,8 @@ export async function POST(req: NextRequest) {
       tokens,
       authorId,
       authorName,
+      hasPassword,
+      passwordHash: passwordHash || null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -159,6 +166,18 @@ export async function PATCH(req: NextRequest) {
     if (body.content != null) patch.content = normalize(body.content);
     if (body.tags != null) patch.tags = Array.isArray(body.tags) ? body.tags.map((t: any) => normalize(t)).filter(Boolean) : [];
     if (body.status != null) patch.status = normalize(body.status);
+    
+    if (body.password != null) {
+      const pw = normalize(body.password);
+      if (pw) {
+        patch.hasPassword = true;
+        patch.passwordHash = await hashPassword(pw);
+      } else {
+        // 빈 문자열이면 비번 해제
+        patch.hasPassword = false;
+        patch.passwordHash = null;
+      }
+    }
 
     // tokens 재계산
     const nextTitle = patch.title ?? post.title ?? "";

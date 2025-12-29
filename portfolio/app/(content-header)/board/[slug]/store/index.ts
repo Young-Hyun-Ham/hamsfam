@@ -77,6 +77,8 @@ type State = {
   fetchReplies: (postId: string) => Promise<void>;
   createReply: (postId: string, content: string) => Promise<string | null>;
   deleteReply: (replyId: string, postId?: string) => Promise<boolean>;
+
+  verifyPostPassword: (postId: string, password: string) => Promise<boolean>;
 };
 
 function normalize(v: any) {
@@ -165,32 +167,77 @@ function mapPageInfo(data: any, fallbackLimit: number): PageInfo {
 }
 
 /**
- * ✅ 프로젝트마다 API가 다를 수 있어서
+ * 프로젝트마다 API가 다를 수 있어서
  * - v1: /board/:id (REST path)
  * - v2: /board (body에 id) 또는 /board?id= (query)
  * 둘 다 자동 대응
  */
 async function patchBoardAuto(base: string, id: string, body: any) {
   try {
-    await api.patch(`${base}/board/${encodeURIComponent(id)}`, body);
+    // await api.patch(`${base}/board/${encodeURIComponent(id)}`, body);
+    await api.patch(`${base}/board`, { id, ...body });
     return;
   } catch (e: any) {
     const status = e?.response?.status;
     // 404면 "경로 방식 불일치"일 확률이 높아서 fallback
     if (status !== 404) throw e;
   }
-  await api.patch(`${base}/board`, { id, ...body });
 }
 
 async function deleteBoardAuto(base: string, id: string) {
   try {
-    await api.delete(`${base}/board/${encodeURIComponent(id)}`);
+    // await api.delete(`${base}/board/${encodeURIComponent(id)}`);
+    await api.delete(`${base}/board`, { params: { id } });
     return;
   } catch (e: any) {
     const status = e?.response?.status;
     if (status !== 404) throw e;
   }
-  await api.delete(`${base}/board`, { params: { id } });
+}
+
+async function verifyPasswordAuto(base: string, id: string, password: string) {
+  const { user } = useStore.getState();
+  const userId = user?.id ?? user?.uid ?? "";
+  const pw = normalize(password);
+  if (!pw) throw new Error("password is required");
+
+  // v1: POST /board/verify  { id, password }
+  try {
+    const { data } = await api.post(
+      `${base}/board/verify`,
+      { id, password: pw },
+      {
+        headers: {
+          "x-user-id": userId, // ✅ 작성자 검증용
+        },
+      }
+    );
+    // 서버가 ok=true 내려주거나 200이면 성공으로 판단
+    if (data?.ok === false) return false;
+    return true;
+  } catch (e: any) {
+    const status = e?.response?.status;
+    if (status !== 404) {
+      // 401/403 등은 비번 틀림일 수 있음 → false
+      if (status === 401 || status === 403) return false;
+      throw e;
+    }
+  }
+
+  // v2: GET /board/verify?id=...&password=...
+  // try {
+  //   const { data } = await api.get(
+  //     `${base}/board/verify`, 
+  //     { params: { id, password: pw } },
+  //   );
+  //   if (data?.ok === false) return false;
+  //   return true;
+  // } catch (e: any) {
+  //   const status = e?.response?.status;
+  //   if (status === 401 || status === 403) return false;
+  //   // 404 포함 그 외는 “검증 엔드포인트가 없거나” 예외
+  //   throw e;
+  // }
 }
 
 const usePublicBoardStore = create<State>((set, get) => ({
@@ -204,7 +251,7 @@ const usePublicBoardStore = create<State>((set, get) => ({
   query: {},
 
   page: {
-    limit: 5,
+    limit: 7,
     nextCursorId: null,
     hasMore: false,
   },
@@ -336,7 +383,6 @@ const usePublicBoardStore = create<State>((set, get) => ({
       return null;
     }
 
-    // ✅ 프론트 가드
     if (state.category && !state.category.edit) {
       set({ error: "write not allowed" });
       return null;
@@ -390,6 +436,7 @@ const usePublicBoardStore = create<State>((set, get) => ({
     const body: any = {};
     if (patch.title !== undefined) body.title = normalize(patch.title);
     if (patch.content !== undefined) body.content = normalize(patch.content);
+    if (patch.password !== undefined) body.password = normalize(patch.password);
     if (patch.tags !== undefined) {
       body.tags = Array.isArray(patch.tags)
         ? patch.tags.map(normalize).filter(Boolean)
@@ -552,7 +599,6 @@ const usePublicBoardStore = create<State>((set, get) => ({
     const id = normalize(replyId);
     if (!id) return false;
 
-    // ✅ 삭제는 서버가 최종이지만, 프론트 가드도 걸어둠
     // (운영 정책에 따라 reply 또는 edit 중 하나만 있어도 허용하도록 서버에서 처리)
     if (category && !category.reply && !category.edit) {
       set({ error: "delete reply not allowed" });
@@ -589,6 +635,34 @@ const usePublicBoardStore = create<State>((set, get) => ({
       set({ repliesSaving: false });
     }
   },
+
+  verifyPostPassword: async (postId: string, password: string) => {
+    const base = getApiBase();
+    const id = normalize(postId);
+    const pw = normalize(password);
+
+    if (!id) return false;
+    if (!pw) {
+      set({ error: "비밀번호를 입력해 주세요." });
+      return false;
+    }
+
+    set({ error: null });
+
+    try {
+      const ok = await verifyPasswordAuto(base, id, pw);
+      if (!ok) {
+        // 401/403 또는 서버 ok=false 등을 false로 처리
+        set({ error: "비밀번호가 올바르지 않습니다." });
+        return false;
+      }
+      return true;
+    } catch (e: any) {
+      set({ error: axiosErrMessage(e) });
+      return false;
+    }
+  },
+
 }));
 
 export default usePublicBoardStore;
