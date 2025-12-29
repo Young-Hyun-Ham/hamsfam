@@ -1,8 +1,8 @@
 // app/components/ContentLayout.tsx
 "use client"
 
-import { useEffect, useState } from "react"; 
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react"; 
+import { usePathname, useRouter } from "next/navigation";
 
 import { useStore } from "@/store";
 import { api } from "@/lib/axios";
@@ -12,10 +12,20 @@ import TokenTimer from "./TokenTimer";
 type ContentProps = {
   header?: React.ReactNode;
   children: React.ReactNode; // content
+  /** 
+   * layout: (기존) main이 스크롤 컨테이너
+   * page: 레이아웃은 고정, 페이지(children)가 스크롤 컨테이너
+   */
+  scrollMode?: "layout" | "page";
 };
 
-export default function ConnectLayout({ header, children }: ContentProps) {
+export default function ConnectLayout({
+  header,
+  children,
+  scrollMode = "layout",
+}: ContentProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useStore((s: any) => s.user);
   const authChecked = useStore((s: any) => s.authChecked);
   const logout = useStore((s: any) => s.logout);
@@ -23,6 +33,13 @@ export default function ConnectLayout({ header, children }: ContentProps) {
   const token = useStore((s: any) => s.token);
   
   const [loading, setLoading] = useState(false);
+
+  // board(및 board 하위)에서만 page 스크롤 모드
+  // 필요하면 "/faq" 같은 것도 추가 가능
+  const isPageScroll = useMemo(() => {
+    if (!pathname) return false;
+    return pathname === "/board" || pathname.startsWith("/board/");
+  }, [pathname]);
 
   useEffect(() => {
     if (!authChecked) return;
@@ -64,7 +81,7 @@ export default function ConnectLayout({ header, children }: ContentProps) {
 
   return (
     // 전체 높이 확보
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-dvh bg-gray-50 text-gray-900 flex flex-col overflow-hidden">
       {/* 상단 헤더 (고정) */}
       <header className="sticky top-0 z-30 h-14 bg-white/90 backdrop-blur shadow-sm">
         <div className="h-full px-4 flex items-center justify-between">
@@ -96,10 +113,18 @@ export default function ConnectLayout({ header, children }: ContentProps) {
       </header>
 
       {/* 하단 바디 (좌/우 그리드) */}
-      <div className="flex min-h-[calc(100vh-3.5rem)] w-full relative">
-        {/* 우측 컨텐츠: 좌측 가장자리도 은은한 그림자 */}
-        <main className="relative flex-1 min-w-0 overflow-y-auto bg-gray-50">
-          <div className="p-6">{children}</div>
+      <div className="flex flex-1 min-h-0 w-full relative overflow-hidden">
+        <main
+          className={[
+            "relative flex-1 min-w-0 bg-gray-50",
+            // 모드에 따라 스크롤 주체를 변경
+            isPageScroll ? "overflow-hidden" : "overflow-y-auto",
+          ].join(" ")}
+        >
+          {/* page 모드일 때는 children이 스크롤을 가지므로 padding 래퍼도 높이 체인 유지 */}
+          <div className={isPageScroll ? "h-full min-h-0 p-6 overflow-hidden" : "p-6"}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

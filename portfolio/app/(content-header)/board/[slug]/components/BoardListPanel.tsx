@@ -18,7 +18,7 @@ export default function BoardListPanel({
   const canWrite = Boolean(category?.edit);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div>
@@ -28,6 +28,7 @@ export default function BoardListPanel({
         </div>
 
         {/* loading 중엔 버튼 비활성/스켈레톤 느낌 */}
+        {(!canWrite || loading) ? null : (
         <button
           onClick={openCreate}
           disabled={!canWrite || loading}
@@ -41,12 +42,13 @@ export default function BoardListPanel({
         >
           글쓰기
         </button>
+        )}
       </div>
 
       <BoardSearchBar />
 
       {/* List */}
-      <div className="flex-1 overflow-auto p-3">
+      <div className="min-h-0 flex-1 overflow-auto p-3">
         {items.length === 0 ? (
           <div className="p-4 text-sm text-gray-500">게시글이 없습니다.</div>
         ) : (

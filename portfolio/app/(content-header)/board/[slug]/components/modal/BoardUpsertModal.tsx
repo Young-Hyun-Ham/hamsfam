@@ -70,14 +70,16 @@ export default function BoardUpsertModal() {
         title: t,
         content: c,
         tags,
-        password: pw.length ? pw : undefined,
+        password: Boolean(pw.length) ? pw : undefined,
+        hasPassword: Boolean(pw.length),
       });
     } else {
       await createPost({
         title: t,
         content: c,
         tags,
-        password: pw.length ? pw : undefined,
+        password: Boolean(pw.length) ? pw : undefined,
+        hasPassword: Boolean(pw.length),
       });
     }
     closeUpsert();

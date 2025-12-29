@@ -6,7 +6,6 @@ import usePublicBoardStore from "../store";
 import type { BoardPost } from "../types";
 
 export default function BoardDetailPanel({ selected }: { selected: BoardPost | null }) {
-  // ✅ 훅/스토어 호출은 무조건 최상단에서 "항상" 호출
   const {
     closeDetail,
     category,
@@ -17,15 +16,17 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     fetchReplies,
     createReply,
     deleteReply,
-
-    // ✅ 추가된 store api (없으면 undefined여도 OK)
+    
+    openEdit,
+    openDelete,
+    // 추가된 store api (없으면 undefined여도 OK)
     isPostUnlocked,
     verifyPostPassword,
   } = usePublicBoardStore() as any;
 
   const [replyText, setReplyText] = useState("");
 
-  // ✅ 보호글 잠금해제 상태
+  // 보호글 잠금해제 상태
   const [pw, setPw] = useState("");
   const [pwError, setPwError] = useState<string | null>(null);
 
@@ -38,7 +39,7 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
 
   const canReply = Boolean(category?.reply);
 
-  // ✅ selected가 바뀔 때만 댓글 로드
+  // selected가 바뀔 때만 댓글 로드
   useEffect(() => {
     if (!postId) return;
     fetchReplies(postId);
@@ -47,9 +48,11 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     setPwError(null);
   }, [postId, fetchReplies]);
 
-  // ✅ locked 계산도 훅 이후에(하지만 return 이전이라 OK)
+  // locked 계산도 훅 이후에(하지만 return 이전이라 OK)
   const locked = Boolean(selected?.hasPassword) && !(isPostUnlocked?.(postId) ?? false);
   const canReplyFinal = canReply && !locked;
+  // 권한 (현재 리스트에서 edit 권한을 글쓰기 기준으로 쓰고 있어서 동일하게)
+  const canEdit = Boolean(category?.edit) && !locked;
 
   async function unlock() {
     setPwError(null);
@@ -79,7 +82,7 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
   if (!selected) return null;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* header */}
       <div className="flex items-center justify-between px-5 pb-4 pt-5">
         <div>
@@ -89,12 +92,38 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
           </div>
         </div>
 
-        <button
-          onClick={closeDetail}
-          className="rounded-2xl bg-gray-100 px-4 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-200"
-        >
-          닫기
-        </button>
+        {/* 액션 버튼 영역 추가 */}
+        <div className="flex items-center gap-2">
+          {canEdit ? (
+            <>
+              <button
+                onClick={() => openEdit?.(selected.id)}
+                className="rounded-2xl bg-white px-4 py-2 text-xs font-medium text-gray-800
+                           shadow-[0_10px_28px_rgba(0,0,0,0.10)] ring-1 ring-black/5
+                           hover:bg-gray-50 hover:shadow-[0_14px_36px_rgba(0,0,0,0.14)]
+                           active:scale-[0.98]"
+              >
+                수정
+              </button>
+
+              <button
+                onClick={() => openDelete?.(selected.id)}
+                className="rounded-2xl bg-red-600 px-4 py-2 text-xs font-medium text-white
+                           shadow-[0_10px_28px_rgba(0,0,0,0.12)]
+                           hover:bg-red-700 active:scale-[0.98]"
+              >
+                삭제
+              </button>
+            </>
+          ) : null}
+
+          <button
+            onClick={closeDetail}
+            className="rounded-2xl bg-gray-100 px-4 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-200"
+          >
+            닫기
+          </button>
+        </div>
       </div>
 
       {/* body */}
@@ -125,7 +154,7 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
           {pwError ? <div className="mt-2 text-xs text-red-600">{pwError}</div> : null}
         </div>
       ) : (
-        <div className="flex-1 overflow-auto px-5 pb-6">
+        <div className="min-h-0 flex-1 overflow-auto px-5 pb-6">
           <div className="space-y-4">
             <section className="rounded-3xl bg-white p-5 shadow-[0_14px_40px_rgba(0,0,0,0.10)] ring-1 ring-black/5">
               <div className="text-[11px] text-gray-400">작성자: {selected.authorName ?? "-"}</div>

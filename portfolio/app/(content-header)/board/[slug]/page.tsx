@@ -41,22 +41,25 @@ export default function PublicBoardPage() {
 
   return (
     <>
-      <div className="h-full overflow-hidden px-4">
-        <div className="mb-3 flex items-center justify-between">
+      {/* 부모 높이/오버플로우를 확정해서 body 스크롤로 튀는 걸 차단 */}
+      <div className="flex h-full min-h-0 flex-col overflow-hidden px-4">
+        <div className="mb-2 flex items-center justify-between">
+          {/*
           <div className="text-sm font-semibold">
             <span className="font-mono">{slug}</span>
           </div>
+          */}
           <div className="text-xs text-gray-500">
             {loading ? "loading..." : error ? `error: ${error}` : ""}
           </div>
         </div>
 
         {/* flex 기반으로 width/slide 애니메이션 */}
-        <div className="flex h-full gap-4">
+        <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
           {/* Left (List) */}
           <div
             className={[
-              "min-h-0 overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 ease-out",
+              "min-h-0 min-w-0 overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 ease-out",
               detailOpen ? "w-5/12" : "w-full",
             ].join(" ")}
           >
@@ -66,11 +69,12 @@ export default function PublicBoardPage() {
           {/* Right (Detail) - 슬라이드 + 페이드 */}
           <div
             className={[
-              "h-full rounded-2xl bg-white shadow-sm transition-all duration-300 ease-out min-h-0 overflow-hidden",
+              "h-full rounded-2xl bg-white shadow-sm transition-all duration-300 ease-out min-h-0 min-w-0 overflow-hidden",
               detailOpen
                 ? "w-7/12 translate-x-0 opacity-100"
                 : "w-0 translate-x-6 opacity-0 pointer-events-none",
             ].join(" ")}
+            aria-hidden={!detailOpen}
           >
             <BoardDetailPanel selected={selected} />
           </div>
