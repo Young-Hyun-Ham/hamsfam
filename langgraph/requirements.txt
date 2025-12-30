@@ -1,0 +1,37 @@
+# FastAPI 웹 프레임워크
+fastapi==0.111.0
+
+# ASGI 서버 (FastAPI 실행용)
+uvicorn[standard]==0.30.1
+
+# 데이터베이스 ORM 라이브러리
+SQLAlchemy==2.0.31
+asyncpg==0.30.0
+
+# PostgreSQL 데이터베이스 드라이버
+psycopg2-binary==2.9.9
+
+# 환경변수(.env) 관리
+python-dotenv==1.0.1
+
+# 비밀번호 해싱 및 검증 라이브러리 (bcrypt 포함)
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2   # Passlib과 호환되는 안정 버전
+
+# 데이터 유효성 검사 라이브러리 (FastAPI에서 사용)
+pydantic==2.7.4
+pydantic-settings==2.2.1
+
+# jwt
+python-jose[cryptography]>=3.3.0
+
+# AI ( langchain, langsmith[추적] )
+openai
+langsmith
+# langchain
+# langchain-community
+# langchain-openai
+# langchain-teddynote
+
+# PostgreSQL 백터 사용을 위한 확장 라이브러리
+pgvector

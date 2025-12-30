@@ -38,7 +38,11 @@ export default function ConnectLayout({
   // 필요하면 "/faq" 같은 것도 추가 가능
   const isPageScroll = useMemo(() => {
     if (!pathname) return false;
-    return pathname === "/board" || pathname.startsWith("/board/");
+    return pathname === "/board" || 
+          pathname.startsWith("/board/") || 
+          pathname === "/ai-chat" || 
+          pathname.startsWith("/ai-chat/")
+    ;
   }, [pathname]);
 
   useEffect(() => {
