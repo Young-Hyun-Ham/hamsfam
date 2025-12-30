@@ -1,0 +1,171 @@
+{
+  "nodes": [
+  {
+    "dragging": false,
+    "data": {
+      "id": "slotfilling-1765937679841-o6g169g",
+      "replies": [
+        {
+          "display": "A",
+          "value": "1"
+        },
+        {
+          "value": "2",
+          "display": "B"
+        }
+      ],
+      "slot": "data",
+      "content": "어느것을 선택 하십니까?"
+    },
+    "positionAbsolute": {
+      "x": 250.56382180816956,
+      "y": 145.1784098401307
+    },
+    "position": {
+      "y": 145.1784098401307,
+      "x": 250.56382180816956
+    },
+    "type": "slotfilling",
+    "height": 331,
+    "id": "slotfilling-1765937679841-o6g169g",
+    "width": 250,
+    "selected": false
+  },
+  {
+    "selected": false,
+    "positionAbsolute": {
+      "x": 545.4997677382802,
+      "y": 214.0964830687774
+    },
+    "data": {
+      "chainNext": false,
+      "content": "A: {{A}}\nB: {{B}}\ndata: {{data}}",
+      "id": "message-1765937713246-5wsqxkv",
+      "replies": []
+    },
+    "type": "message",
+    "id": "message-1765937713246-5wsqxkv",
+    "height": 165,
+    "width": 250,
+    "position": {
+      "x": 545.4997677382802,
+      "y": 214.0964830687774
+    },
+    "dragging": false
+  },
+  {
+    "width": 250,
+    "dragging": false,
+    "positionAbsolute": {
+      "x": 250.8751025036712,
+      "y": 508.79752064451054
+    },
+    "position": {
+      "y": 508.79752064451054,
+      "x": 250.8751025036712
+    },
+    "data": {
+      "evaluationType": "BUTTON",
+      "id": "branch-1765938493354-po6yy8i",
+      "content": "차이가 몰까?",
+      "replies": [
+        {
+          "value": "cond_1765938493354",
+          "display": "A"
+        },
+        {
+          "display": "B",
+          "value": "cond_1765938513590-fa8vn03"
+        }
+      ],
+      "conditions": [
+        {
+          "operator": "==",
+          "id": "cond-1765938493354",
+          "value": "",
+          "slot": "",
+          "valueType": "value"
+        }
+      ]
+    },
+    "id": "branch-1765938493354-po6yy8i",
+    "selected": false,
+    "height": 322,
+    "type": "branch"
+  },
+  {
+    "height": 165,
+    "id": "message-1765938597984-bgtyak5",
+    "position": {
+      "x": 568.412660555195,
+      "y": 494.7567442680825
+    },
+    "width": 250,
+    "selected": false,
+    "data": {
+      "chainNext": false,
+      "id": "message-1765938597984-bgtyak5",
+      "replies": [],
+      "content": "A 선택"
+    },
+    "dragging": false,
+    "positionAbsolute": {
+      "x": 568.412660555195,
+      "y": 494.7567442680825
+    },
+    "type": "message"
+  },
+  {
+    "dragging": false,
+    "width": 250,
+    "id": "message-1765938617377-kgdmtgf",
+    "positionAbsolute": {
+      "x": 566.2525411126676,
+      "y": 693.487732980601
+    },
+    "position": {
+      "y": 693.487732980601,
+      "x": 566.2525411126676
+    },
+    "data": {
+      "content": "B선택",
+      "chainNext": false,
+      "replies": [],
+      "id": "message-1765938617377-kgdmtgf"
+    },
+    "type": "message",
+    "height": 165,
+    "selected": false
+  }
+],
+"edges": [
+  {
+    "id": "reactflow__edge-slotfilling-1765937679841-o6g169g-message-1765937713246-5wsqxkv",
+    "source": "slotfilling-1765937679841-o6g169g",
+    "targetHandle": null,
+    "target": "message-1765937713246-5wsqxkv",
+    "sourceHandle": null
+  },
+  {
+    "target": "branch-1765938493354-po6yy8i",
+    "id": "reactflow__edge-message-1765937713246-5wsqxkv-branch-1765938493354-po6yy8i",
+    "targetHandle": null,
+    "sourceHandle": null,
+    "source": "message-1765937713246-5wsqxkv"
+  },
+  {
+    "target": "message-1765938597984-bgtyak5",
+    "sourceHandle": "cond_1765938493354",
+    "id": "reactflow__edge-branch-1765938493354-po6yy8icond_1765938493354-message-1765938597984-bgtyak5",
+    "source": "branch-1765938493354-po6yy8i",
+    "targetHandle": null
+  },
+  {
+    "sourceHandle": "cond_1765938513590-fa8vn03",
+    "source": "branch-1765938493354-po6yy8i",
+    "targetHandle": null,
+    "id": "reactflow__edge-branch-1765938493354-po6yy8icond_1765938513590-fa8vn03-message-1765938617377-kgdmtgf",
+    "target": "message-1765938617377-kgdmtgf"
+  }
+]
+}
