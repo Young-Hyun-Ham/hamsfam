@@ -58,6 +58,7 @@ export default function ChatContainer() {
     initBackendSync: initFirebaseSync,
     systemPrompt,
     setSystemPrompt,
+    syncReady,
   } = useChatbotStore();
 
   const [isSending, setIsSending] = useState(false);
@@ -304,19 +305,25 @@ export default function ChatContainer() {
     setScenarioOpen(true);
   };
 
-  // 최초 세션 생성
+  const didAutoCreateRef = useRef(false);
   useEffect(() => {
-    if (!activeSessionId) {
-      const welcomeMsg: ChatMessage = {
-        id: `welcome-${Date.now()}`,
-        role: "assistant",
-        content:
-          "안녕하세요! 👋\nReact-Flow 빌더로 만든 시나리오를 기반으로 대화할 준비가 되어 있어요.\n아래에 메시지를 입력해 보세요.",
-        createdAt: new Date().toISOString(),
-      };
-      createSession("새 채팅", [welcomeMsg]);
-    }
-  }, [activeSessionId, createSession]);
+    if (!syncReady) return;                 // ✅ 동기화 끝나기 전엔 생성 금지
+    if (didAutoCreateRef.current) return;   // ✅ StrictMode 2회 방지
+    if (activeSessionId) return;            // ✅ 이미 있으면 생성 금지
+    if (sessions.length > 0) return;        // ✅ 세션이 이미 있으면 생성 금지
+
+    didAutoCreateRef.current = true;
+
+    const welcomeMsg: ChatMessage = {
+      id: `welcome-${Date.now()}`,
+      role: "assistant",
+      content:
+        "안녕하세요! 👋\nReact-Flow 빌더로 만든 시나리오를 기반으로 대화할 준비가 되어 있어요.\n아래에 메시지를 입력해 보세요.",
+      createdAt: new Date().toISOString(),
+    };
+
+    createSession("새 채팅", [welcomeMsg]);
+  }, [syncReady, activeSessionId, sessions.length, createSession]);
 
   // 인라인 편집 시작 시 자동 포커스
   useEffect(() => {
@@ -413,7 +420,9 @@ export default function ChatContainer() {
   const handleSend = async (text: string) => {
     if (!text.trim()) return;
 
+    // 1) 세션 보장 + activeSession 확정
     let currentSessionId = activeSessionId;
+
     if (!currentSessionId) {
       const welcomeMsg: ChatMessage = {
         id: `welcome-${Date.now()}`,
@@ -422,27 +431,30 @@ export default function ChatContainer() {
           "새 채팅을 시작했습니다. 시나리오에 맞게 메시지를 입력해 보세요.",
         createdAt: new Date().toISOString(),
       };
+
       currentSessionId = createSession("새 채팅", [welcomeMsg]);
+
+      // createSession 직후 activeSessionId 반영 타이밍 때문에 꼬일 수 있어서 강제 지정
+      setActiveSession(currentSessionId);
     }
 
-    const now = new Date().toISOString();
-
+    const now = Date.now();
     const userMessage: ChatMessage = {
-      id: `user-${now}`,
+      id: `user-${Date.now()}`,
       role: "user",
       content: text,
-      createdAt: now,
+      createdAt: new Date(now).toISOString(),
     };
     addMessageToActive(userMessage);
 
     setIsSending(true);
 
-    const assistantId = `assistant-${Date.now()}`;
+    const assistantId = `assistant-${now+1}`;
     const assistantBase: ChatMessage = {
       id: assistantId,
       role: "assistant",
       content: "",
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(now+1).toISOString(),
     };
     addMessageToActive(assistantBase);
 
@@ -450,129 +462,117 @@ export default function ChatContainer() {
     let showFallbackLoading = false;
     let fallbackPrefixRef = "";
 
-    // 1) 지식관리 answer 먼저 호출 (PLAN 모드)
-    let shouldCallGemini = true; // 기본은 Gemini로(지식 실패/예외 대비)
+    // =========================
+    // 1) 지식관리 answer 먼저 호출
+    // =========================
+    let shouldCallGemini = true;
     try {
-      const backend = (process.env.NEXT_PUBLIC_BACKEND || "firebase").toLowerCase();
-      const answerUrl =
-        backend === "postgres"
-          ? "/api/chatbot/postgres/answer"
-          : "/api/chatbot/firebase/answer";
+      const backend = (process.env.NEXT_PUBLIC_BACKEND ?? "firebase").toLowerCase();
+      const answerUrl = `/api/chatbot/${backend}/answer`;
 
       const projectId =
         process.env.NEXT_PUBLIC_KNOWLEDGE_PROJECT_ID ||
         "81ba67f6-7568-446a-a82e-d0d7473ce437";
 
-      if (projectId) {
-        const ansRes = await fetch(answerUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId,
-            text,
-            locale: "ko",
-            mode: "plan",      // PLAN 모드
-            systemPrompt,      // Gemini에 그대로 전달
-          }),
-        });
+      const ansRes = await fetch(answerUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          text,
+          locale: "ko",
+          mode: "plan",
+          systemPrompt,
+        }),
+      });
 
-        if (ansRes.ok) {
-          const ans = await ansRes.json();
+      if (ansRes.ok) {
+        const ans = await ansRes.json();
+        console.log("Knowledge answer ===================> ", ans)
+        // canned answer
+        if (ans?.answer) {
+          patchMessage(currentSessionId, assistantId, (prev) => ({
+            ...prev,
+            kind: "llm",
+            content: ans.answer,
+            meta: { ...(prev as any)?.meta, loading: false },
+          }));
+          setIsSending(false);
+          textareaRef.current?.focus();
+          return;
+        }
 
-          // 시나리오 우선 처리 (인텐트 매칭 + 시나리오 연결된 경우)
-          const scenarioKey = String(ans?.scenario?.scenarioKey ?? "");
-          const scenarioTitle = String(ans?.scenario?.scenarioTitle ?? "");
-          const hasScenario = Boolean(scenarioKey);
+        // scenario suggest
+        const scenarioKey = String(ans?.scenario?.scenarioKey ?? "");
+        const scenarioTitle = String(ans?.scenario?.scenarioTitle ?? "");
+        const hasScenario = Boolean(scenarioKey);
+        console.log("Knowledge =============================>", scenarioKey, scenarioTitle, hasScenario)
+        if (hasScenario && ans?.shouldCallGemini === false) {
+          patchMessage(currentSessionId, assistantId, (prev) => ({
+            ...prev,
+            kind: "scenario",
+            scenarioKey,
+            scenarioTitle,
+            scenarioSteps: [],
+            scenarioStatus: "linked_suggest",
+            content:
+              ans?.scenario?.confirmMessage ||
+              `[${scenarioTitle}]을 실행 하시겠습니까?`,
+          }));
+          setIsSending(false);
+          textareaRef.current?.focus();
+          return;
+        }
 
-          // PLAN 모드에서도 지식 답변(answer)이 내려올 수 있음(=canned)
-          if (ans?.answer) {
-            patchMessage(currentSessionId!, assistantId, (prev) => ({
-              ...prev,
-              kind: "llm",
-              content: ans.answer,
-              meta: { ...(prev as any)?.meta, loading: false },
-            }));
-            setIsSending(false);
-            textareaRef.current?.focus();
-            return;
-          }
+        shouldCallGemini = Boolean(ans?.shouldCallGemini);
 
-          // 시나리오 연결된 인텐트면: suggest 메시지로 만들고 종료
-          // (Gemini 호출 필요 없는 경우에만 시나리오로 유도)
-          if (hasScenario && ans?.shouldCallGemini === false) {
-            patchMessage(currentSessionId!, assistantId, (prev) => ({
-              ...prev,
-              kind: "scenario",
-              scenarioKey,
-              scenarioTitle,
-              scenarioSteps: [],
-              scenarioStatus: "linked_suggest",
-              content:
-                ans?.scenario?.confirmMessage ||
-                `[${scenarioTitle}]을 실행 하시겠습니까?`,
-            }));
-            setIsSending(false);
-            textareaRef.current?.focus();
-            return;
-          }
+        if (shouldCallGemini) {
+          const reason = ans?.gemini?.reason as
+            | "no_intent"
+            | "below_threshold"
+            | "no_canned"
+            | null
+            | undefined;
 
-          // 이제부터 “Gemini를 호출할지”는 서버가 준 결정을 따른다
-          shouldCallGemini = Boolean(ans?.shouldCallGemini);
-
-          if (shouldCallGemini) {
-            // reason 기반 prefix (서버가 gemini.reason 내려줌)
-            const reason = ans?.gemini?.reason as
-              | "no_intent"
-              | "below_threshold"
-              | "no_canned"
-              | null
-              | undefined;
-
-            // 기존 getGeminiPrefix도 유지 가능(하지만 now는 reason 기반이 더 정확)
-            let prefix = "";
-            if (reason === "no_intent") {
-              prefix = "등록된 의도에 해당하는 답변을 찾지 못해 일반 답변으로 진행합니다.\n\n";
-            } else if (reason === "below_threshold") {
-              prefix = "매칭 정확도가 낮아 일반 답변으로 진행합니다.\n\n";
-            } else if (reason === "no_canned") {
-              prefix = "해당 의도에 연결된 답변/시나리오가 아직 없습니다.\n일반 답변으로 진행합니다.\n\n";
-            } else {
-              // reason이 없으면 기존 로직으로 fallback 문구 생성
-              prefix = getGeminiPrefix(ans) || "일반 답변으로 진행합니다.\n\n";
-            }
-
-            showFallbackLoading = true;
-            fallbackPrefixRef = prefix;
-
-            // prefix + dots(loading) 먼저 보여주기
-            patchMessage(currentSessionId!, assistantId, (prev: any) => ({
-              ...prev,
-              kind: "llm",
-              content: fallbackPrefixRef,
-              meta: { ...(prev?.meta ?? {}), loading: true },
-            }));
+          let prefix = "";
+          if (reason === "no_intent") {
+            prefix = "등록된 의도에 해당하는 답변을 찾지 못해 일반 답변으로 진행합니다.\n\n";
+          } else if (reason === "below_threshold") {
+            prefix = "매칭 정확도가 낮아 일반 답변으로 진행합니다.\n\n";
+          } else if (reason === "no_canned") {
+            prefix = "해당 의도에 연결된 답변/시나리오가 아직 없습니다.\n일반 답변으로 진행합니다.\n\n";
           } else {
-            // shouldCallGemini=false인데 answer도 없고 scenario도 없으면
-            // 정책상 그냥 종료시켜도 되고, 안전하게 Gemini로 보낼 수도 있음.
-            // 여기서는 "안전"을 위해 Gemini로 보냄.
-            shouldCallGemini = true;
+            prefix = getGeminiPrefix(ans) || "일반 답변으로 진행합니다.\n\n";
           }
+
+          showFallbackLoading = true;
+          fallbackPrefixRef = prefix;
+
+          patchMessage(currentSessionId, assistantId, (prev: any) => ({
+            ...prev,
+            kind: "llm",
+            content: fallbackPrefixRef,
+            meta: { ...(prev?.meta ?? {}), loading: true },
+          }));
+        } else {
+          // safety: answer/scenario도 없는데 shouldCallGemini=false면 그냥 gemini로 보냄
+          shouldCallGemini = true;
         }
       }
     } catch (err) {
       console.error("Knowledge answer error:", err);
-      // 지식관리 실패해도 Gemini로 진행
       shouldCallGemini = true;
     }
 
-    // 2) Gemini 스트림: shouldCallGemini일 때만 실행
     if (!shouldCallGemini) {
-      // 혹시 남아있으면 정리
       setIsSending(false);
       textareaRef.current?.focus();
       return;
     }
 
+    // =========================
+    // 2) Gemini 스트림 (SSE/JSONL/Plain 대응)
+    // =========================
     try {
       const res = await fetch("/api/chat/gemini", {
         method: "POST",
@@ -587,66 +587,139 @@ export default function ChatContainer() {
         const msg = await res.text().catch(() => "");
         throw new Error(`Gemini HTTP ${res.status} ${msg}`);
       }
-
-      // prefix가 "보이도록" 아주 짧게만 대기(UX 안정)
-      if (showFallbackLoading) {
-        await sleep(300);
-      }
-
       if (!res.body) throw new Error("No response body");
+
+      if (showFallbackLoading) {
+        await sleep(200);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
-      let done = false;
+      let buffer = "";
       let started = false;
 
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-
-        const chunk = decoder.decode(value || new Uint8Array(), { stream: !done });
-        if (!chunk) continue;
-
-        // 첫 chunk에서 loading만 끄고, prefix 유지한 채 chunk 붙임
+      const appendText = (delta: string) => {
+        if (!delta) return;
         if (!started) {
           started = true;
-
+          // 첫 토큰에서 loading 끄고 prefix 유지
           if (showFallbackLoading) {
-            patchMessage(currentSessionId!, assistantId, (prev: any) => ({
+            patchMessage(currentSessionId, assistantId, (prev: any) => ({
               ...prev,
               kind: "llm",
-              content: (fallbackPrefixRef ?? "") + chunk,
+              content: (fallbackPrefixRef ?? "") + delta,
               meta: { ...(prev?.meta ?? {}), loading: false },
             }));
-            continue;
+            return;
           }
         }
 
-        patchMessage(currentSessionId!, assistantId, (prev) => ({
+        patchMessage(currentSessionId, assistantId, (prev) => ({
           ...prev,
-          content: (prev.content ?? "") + chunk,
+          kind: "llm",
+          content: (prev.content ?? "") + delta,
         }));
+      };
+
+      const flushLines = (final = false) => {
+        // 라인 단위 처리 (SSE: data: ... / JSONL / plain)
+        const lines = buffer.split(/\r?\n/);
+        if (!final) buffer = lines.pop() ?? ""; // 마지막 미완성 라인은 buffer에 남김
+        else buffer = "";
+
+        for (let line of lines) {
+          if (!line) continue;
+
+          // SSE: "data: ..."
+          if (line.startsWith("data:")) {
+            const data = line.slice(5).trim();
+            if (!data) continue;
+            if (data === "[DONE]") return "DONE";
+
+            // JSON이면 파싱해서 텍스트 후보 뽑기
+            if ((data.startsWith("{") && data.endsWith("}")) || (data.startsWith("[") && data.endsWith("]"))) {
+              try {
+                const obj = JSON.parse(data);
+                const delta =
+                  obj?.delta ??
+                  obj?.text ??
+                  obj?.content ??
+                  obj?.message ??
+                  obj?.choices?.[0]?.delta?.content ??
+                  "";
+                if (typeof delta === "string") appendText(delta);
+                continue;
+              } catch {
+                // JSON 파싱 실패면 그냥 텍스트로 처리
+                appendText(data);
+                continue;
+              }
+            }
+
+            // plain data
+            appendText(data);
+            continue;
+          }
+
+          // JSONL (라인 자체가 JSON)
+          if ((line.startsWith("{") && line.endsWith("}")) || (line.startsWith("[") && line.endsWith("]"))) {
+            try {
+              const obj = JSON.parse(line);
+              const delta =
+                obj?.delta ??
+                obj?.text ??
+                obj?.content ??
+                obj?.message ??
+                obj?.choices?.[0]?.delta?.content ??
+                "";
+              if (typeof delta === "string") appendText(delta);
+              continue;
+            } catch {
+              // fallthrough
+            }
+          }
+
+          // 완전 plain 텍스트
+          appendText(line);
+        }
+
+        return "CONTINUE";
+      };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value || new Uint8Array(), { stream: true });
+        if (!chunk) continue;
+
+        buffer += chunk;
+
+        const r = flushLines(false);
+        if (r === "DONE") break;
       }
 
-      // 스트림이 아무 chunk도 못 받고 끝났으면 loading 끄기(안전)
+      // 남은 buffer 처리
+      flushLines(true);
+
+      // 스트림이 아무 것도 안 왔는데 끝났으면 loading만 끄기
       if (showFallbackLoading && !started) {
-        patchMessage(currentSessionId!, assistantId, (prev: any) => ({
+        patchMessage(currentSessionId, assistantId, (prev: any) => ({
           ...prev,
           meta: { ...(prev?.meta ?? {}), loading: false },
         }));
       }
     } catch (err) {
       console.error("Gemini chat error:", err);
-      patchMessage(currentSessionId!, assistantId, (prev: any) => ({
+      patchMessage(currentSessionId, assistantId, (prev: any) => ({
         ...prev,
         meta: { ...(prev?.meta ?? {}), loading: false },
         content: "⚠️ 답변 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
       }));
     } finally {
-      // 혹시 남아있으면 무조건 끔
       if (showFallbackLoading) {
-        patchMessage(currentSessionId!, assistantId, (prev: any) => ({
+        patchMessage(currentSessionId, assistantId, (prev: any) => ({
           ...prev,
           meta: { ...(prev?.meta ?? {}), loading: false },
         }));
@@ -745,6 +818,7 @@ export default function ChatContainer() {
                       {sessions.map((s) => {
                         const isEditing = editingSessionId === s.id;
                         const lastMessage =
+                          s.lastMessagePreview ??
                           s.messages[s.messages.length - 1]?.content ??
                           "메시지 없음";
 

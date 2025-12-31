@@ -3,35 +3,50 @@
 
 import { create } from "zustand";
 import { api } from "@/lib/axios";
-import { ChatbotDoc, ChatMessage, ChatSession, ScenarioRunState } from "../types";
-import { subscribeChatbotSessions } from "../services/chatbotFirebaseService";
-import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
-import { removeUndefinedDeep } from "../utils";
+import type { ChatMessage, ChatSession, ScenarioRunState, ChatbotUserDoc } from "../types";
+import { subscribeMessages, subscribeSessions, subscribeUserDoc } from "../services/chatbotFirebaseService";
+import type { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
 
-// 클라이언트에서 쓸 거라면 NEXT_PUBLIC_ 접두사를 쓰는 게 안전함
 export const DEFAULT_SYSTEM_PROMPT =
   process.env.NEXT_PUBLIC_SYSTEM_PROMPT_KO ??
   "당신은 react-admin 프로젝트의 개발을 돕는 조력자입니다.";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? "firebase";
+const BACKEND = (process.env.NEXT_PUBLIC_BACKEND ?? "firebase").toLowerCase();
 
-export async function saveChatbotSessions(
-  userKey: string, 
-  sessions: ChatSession[],
-  activeSessionId: string | null,
-  systemPrompt: string,
-) {
-  const payload: ChatbotDoc = {
-    sessions,
-    activeSessionId,
-    systemPrompt,
-    updatedAt: new Date().toISOString(),
-  };
-  const safeDoc = removeUndefinedDeep(payload);
-  
-  const { data } = await api.post(`/api/chatbot/${BACKEND}/sessions`, { userKey, data: safeDoc });
-  if (data?.ok === false) throw new Error(data?.message || "save failed");
-  return true;
+// -------- API helpers (firebase/postgres 스위치 유지) --------
+async function apiPatchUser(userKey: string, patch: Partial<ChatbotUserDoc>) {
+  const { data } = await api.patch(`/api/chatbot/${BACKEND}/user`, { userKey, patch });
+  if (data?.ok === false) throw new Error(data?.message || "patch user failed");
+}
+
+async function apiCreateSession(userKey: string, payload: { title: string; createdAt: string }) {
+  const { data } = await api.post(`/api/chatbot/${BACKEND}/sessions`, { userKey, ...payload });
+  if (data?.ok === false) throw new Error(data?.message || "create session failed");
+  return String(data?.sessionId);
+}
+
+async function apiPatchSession(userKey: string, sessionId: string, patch: Partial<ChatSession>) {
+  const { data } = await api.patch(`/api/chatbot/${BACKEND}/sessions/${sessionId}`, { userKey, patch });
+  if (data?.ok === false) throw new Error(data?.message || "patch session failed");
+}
+
+async function apiDeleteSession(userKey: string, sessionId: string) {
+  const { data } = await api.delete(`/api/chatbot/${BACKEND}/sessions/${sessionId}`, { data: { userKey } });
+  if (data?.ok === false) throw new Error(data?.message || "delete session failed");
+}
+
+async function apiCreateMessage(userKey: string, sessionId: string, msg: ChatMessage) {
+  const { data } = await api.post(`/api/chatbot/${BACKEND}/sessions/${sessionId}/messages`, { userKey, message: msg });
+  if (data?.ok === false) throw new Error(data?.message || "create message failed");
+  return String(data?.messageId ?? msg.id);
+}
+
+async function apiPatchMessage(userKey: string, sessionId: string, messageId: string, patch: Partial<ChatMessage>) {
+  const { data } = await api.patch(`/api/chatbot/${BACKEND}/sessions/${sessionId}/messages/${messageId}`, {
+    userKey,
+    patch,
+  });
+  if (data?.ok === false) throw new Error(data?.message || "patch message failed");
 }
 
 export async function fetchShortcutMenuList(params: ShortcutMenuSearchParams = {}): Promise<ShortcutMenu[]> {
@@ -42,38 +57,37 @@ export async function fetchShortcutMenuList(params: ShortcutMenuSearchParams = {
 
 type ChatbotState = {
   userKey: string | null;
+
   sessions: ChatSession[];
   activeSessionId: string | null;
   systemPrompt: string;
 
-  scenarioRuns: Record<string, ScenarioRunState>;
+  syncReady: boolean;
 
+  scenarioRuns: Record<string, ScenarioRunState>;
   saveScenarioRun: (runId: string, patch: Partial<ScenarioRunState>) => void;
   clearScenarioRun: (runId: string) => void;
 
-  // 액션들
   createSession: (title: string, messages?: ChatMessage[]) => string;
   setActiveSession: (id: string) => void;
+
   addMessageToActive: (message: ChatMessage) => void;
-  patchMessage: (
-    sessionId: string,
-    messageId: string,
-    patch: Partial<ChatMessage> | ((prev: ChatMessage) => ChatMessage)
-  ) => void;
+  patchMessage: (sessionId: string, messageId: string, patch: Partial<ChatMessage> | ((prev: ChatMessage) => ChatMessage)) => void;
+
   updateSessionTitle: (id: string, title: string) => void;
   deleteSession: (id: string) => void;
 
-  // system prompt 설정
   setSystemPrompt: (prompt: string) => void;
 
-  // 백엔드(Firebase/Postgres 등) 연동
   initBackendSync: (userKey: string) => void;
   stopBackendSync: () => void;
+
   fetchShortcutMenuList: () => Promise<ShortcutMenu[]>;
 };
 
-// 공용 unsubscribe 핸들
-let unsubscribeBackend: (() => void) | null = null;
+let unsubUser: (() => void) | null = null;
+let unsubSessions: (() => void) | null = null;
+let unsubMessages: (() => void) | null = null;
 
 const useChatbotStore = create<ChatbotState>((set, get) => ({
   userKey: null,
@@ -81,8 +95,9 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
   activeSessionId: null,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
 
-  scenarioRuns: {},
+  syncReady: false,
 
+  scenarioRuns: {},
   saveScenarioRun: (runId, patch) =>
     set((state) => {
       const prev = state.scenarioRuns[runId] ?? {
@@ -94,18 +109,8 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
         currentNodeId: null,
         finished: false,
       };
-
-      return {
-        scenarioRuns: {
-          ...state.scenarioRuns,
-          [runId]: {
-            ...prev,
-            ...patch,
-          },
-        },
-      };
+      return { scenarioRuns: { ...state.scenarioRuns, [runId]: { ...prev, ...patch } } };
     }),
-
   clearScenarioRun: (runId) =>
     set((state) => {
       const next = { ...state.scenarioRuns };
@@ -113,188 +118,193 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
       return { scenarioRuns: next };
     }),
 
-  // ---------- 백엔드 연동 초기화 ----------
   initBackendSync: (userKey: string) => {
-    // 기존 구독 있으면 정리
-    if (unsubscribeBackend) {
-      unsubscribeBackend();
-      unsubscribeBackend = null;
-    }
+    // cleanup
+    unsubUser?.(); unsubUser = null;
+    unsubSessions?.(); unsubSessions = null;
+    unsubMessages?.(); unsubMessages = null;
 
-    unsubscribeBackend = subscribeChatbotSessions(userKey, (data: any) => {
-      if (!data) {
-        // 문서가 아직 없으면 localStorage or 기본값 사용
-        let sp = DEFAULT_SYSTEM_PROMPT;
-        if (typeof window !== "undefined") {
-          const fromLocal = window.localStorage.getItem("systemPrompt");
-          if (fromLocal) sp = fromLocal;
-        }
+    set({ userKey });
 
-        set({
-          userKey,
-          sessions: [],
-          activeSessionId: null,
-          systemPrompt: sp,
-        });
-        return;
-      }
-
-      const sp =
-        data.systemPrompt && data.systemPrompt.trim().length > 0
-          ? data.systemPrompt
-          : DEFAULT_SYSTEM_PROMPT;
-
+    // 1) user doc
+    unsubUser = subscribeUserDoc(userKey, (u) => {
+      const sp = u?.systemPrompt?.trim() ? u.systemPrompt : DEFAULT_SYSTEM_PROMPT;
       set({
-        userKey,
-        sessions: data.sessions || [],
-        activeSessionId:
-          data.activeSessionId ||
-          (data.sessions && data.sessions[0]?.id) ||
-          null,
+        syncReady: true,
         systemPrompt: sp,
+        activeSessionId: u?.activeSessionId ?? null,
       });
 
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("systemPrompt", sp);
+      if (typeof window !== "undefined") window.localStorage.setItem("systemPrompt", sp);
+
+      // activeSession 바뀌면 messages 구독 갈아타기
+      const sid = u?.activeSessionId ?? null;
+      unsubMessages?.(); unsubMessages = null;
+
+      if (sid) {
+        unsubMessages = subscribeMessages(userKey, sid, (msgs) => {
+          set((state) => ({
+            sessions: state.sessions.map((s) => (s.id === sid ? { ...s, messages: msgs } : s)),
+          }));
+        });
       }
+    });
+
+    // 2) sessions list (meta)
+    unsubSessions = subscribeSessions(userKey, (items) => {
+      set((state) => {
+        const activeId = state.activeSessionId ?? items[0]?.id ?? null;
+
+        // active 세션은 기존 messages 유지(구독이 나중에 채워줌)
+        const prevActive = state.sessions.find((s) => s.id === activeId)?.messages ?? [];
+        const merged = items.map((s) =>
+          s.id === activeId ? { ...s, messages: prevActive } : s
+        );
+
+        return { sessions: merged, activeSessionId: activeId };
+      });
     });
   },
 
   stopBackendSync: () => {
-    if (unsubscribeBackend) {
-      unsubscribeBackend();
-      unsubscribeBackend = null;
-    }
-    set({
-      userKey: null,
-      sessions: [],
-      activeSessionId: null,
-      systemPrompt: DEFAULT_SYSTEM_PROMPT,
-    });
+    unsubUser?.(); unsubUser = null;
+    unsubSessions?.(); unsubSessions = null;
+    unsubMessages?.(); unsubMessages = null;
+    set({ userKey: null, sessions: [], activeSessionId: null, systemPrompt: DEFAULT_SYSTEM_PROMPT, syncReady: false });
   },
 
-  // ---------- system prompt 변경 ----------
   setSystemPrompt: (prompt: string) => {
     const value = prompt.trim() || DEFAULT_SYSTEM_PROMPT;
     set({ systemPrompt: value });
+    if (typeof window !== "undefined") window.localStorage.setItem("systemPrompt", value);
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("systemPrompt", value);
-    }
-
-    const { userKey, sessions, activeSessionId } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, value);
-    }
+    const { userKey } = get();
+    if (userKey) apiPatchUser(userKey, { systemPrompt: value }).catch(console.error);
   },
 
-  // ---------- 세션 생성 ----------
   createSession: (title: string, messages: ChatMessage[] = []) => {
     const id = `session-${Date.now()}`;
-    set((state) => {
-      const newSession: ChatSession = {
-        id,
-        title,
-        messages,
-      };
-      const sessions = [...state.sessions, newSession];
-      return { sessions, activeSessionId: id };
-    });
+    const now = new Date().toISOString();
 
-    const { userKey, sessions, activeSessionId, systemPrompt } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
-    }
+    // optimistic
+    set((state) => ({
+      sessions: [
+        { id, title, createdAt: now, updatedAt: now, lastMessagePreview: "", lastMessageAt: "", messageCount: 0, messages: [] },
+        ...state.sessions,
+      ],
+      activeSessionId: id,
+    }));
+
+    const { userKey, systemPrompt } = get();
+    if (!userKey) return id;
+
+    (async () => {
+      // create meta
+      const sessionId = await apiCreateSession(userKey, { title, createdAt: now });
+      if (sessionId !== id) {
+        // 서버가 다른 id를 강제한다면 여기서 매핑 처리(현재는 client id 그대로 쓰는 걸 추천)
+      }
+      // set active + ensure prompt
+      await apiPatchUser(userKey, { activeSessionId: id, systemPrompt });
+
+      // seed messages
+      for (const m of messages) {
+        await apiCreateMessage(userKey, id, m);
+      }
+    })().catch(console.error);
 
     return id;
   },
 
-  // ---------- active 세션 변경 ----------
   setActiveSession: (id: string) => {
     set({ activeSessionId: id });
-    const { userKey, sessions, activeSessionId, systemPrompt } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
-    }
+    const { userKey } = get();
+    if (userKey) apiPatchUser(userKey, { activeSessionId: id }).catch(console.error);
   },
 
-  // ---------- 메시지 추가 ----------
   addMessageToActive: (message: ChatMessage) => {
-    set((state) => {
-      if (!state.activeSessionId) return state;
-      const sessions = state.sessions.map((s) =>
-        s.id === state.activeSessionId
-          ? { ...s, messages: [...s.messages, message] }
-          : s
-      );
-      return { sessions };
-    });
+    const { userKey, activeSessionId } = get();
+    if (!activeSessionId) return;
 
-    const { userKey, sessions, activeSessionId, systemPrompt } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
-    }
+    // optimistic UI (활성 세션만 messages를 들고 있음)
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === activeSessionId ? { ...s, messages: [...s.messages, message] } : s
+      ),
+    }));
+
+    if (!userKey) return;
+
+    // server write (message 1건)
+    apiCreateMessage(userKey, activeSessionId, message).catch(console.error);
   },
 
-  // ---------- 메시지 패치 (스트림) ----------
   patchMessage: (sessionId, messageId, patch) => {
-    set((state) => {
-      const sessions = state.sessions.map((s) => {
+    const { userKey } = get();
+
+    // optimistic
+    set((state) => ({
+      sessions: state.sessions.map((s) => {
         if (s.id !== sessionId) return s;
-        const messages = s.messages.map((m) => {
-          if (m.id !== messageId) return m;
-          if (typeof patch === "function") {
-            return patch(m);
-          }
-          return { ...m, ...patch };
-        });
-        return { ...s, messages };
-      });
-      return { sessions };
-    });
+        return {
+          ...s,
+          messages: s.messages.map((m) => {
+            if (m.id !== messageId) return m;
+            return typeof patch === "function" ? patch(m) : { ...m, ...patch };
+          }),
+        };
+      }),
+    }));
 
-    const { userKey, sessions, activeSessionId, systemPrompt } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
-    }
+    if (!userKey) return;
+
+    // server patch (message 1건)
+    const computed =
+      typeof patch === "function"
+        ? null
+        : (patch as Partial<ChatMessage>);
+
+    // 함수형 patch는 서버에 그대로 못 보내니, 현재 state에서 재계산해서 보내자(최소 구현)
+    const msg =
+      get()
+        .sessions.find((s) => s.id === sessionId)
+        ?.messages.find((m) => m.id === messageId) ?? null;
+
+    if (!msg) return;
+
+    apiPatchMessage(userKey, sessionId, messageId, computed ?? msg).catch(console.error);
   },
 
-  // ---------- 세션 제목 변경 ----------
-  updateSessionTitle: (id, title) => {
+  updateSessionTitle: (id: string, title: string) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) => (s.id === id ? { ...s, title } : s)),
+    }));
+
+    const { userKey } = get();
+    if (!userKey) return;
+    apiPatchSession(userKey, id, { title }).catch(console.error);
+  },
+
+  deleteSession: (id: string) => {
+    const { userKey, activeSessionId } = get();
+
     set((state) => {
-      const sessions = state.sessions.map((s) =>
-        s.id === id ? { ...s, title } : s
-      );
-      return { sessions };
+      const next = state.sessions.filter((s) => s.id !== id);
+      const nextActive = activeSessionId === id ? next[0]?.id ?? null : activeSessionId;
+      return { sessions: next, activeSessionId: nextActive };
     });
 
-    const { userKey, sessions, activeSessionId, systemPrompt } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
-    }
+    if (!userKey) return;
+
+    (async () => {
+      await apiDeleteSession(userKey, id);
+      // active 세션이 삭제된 경우 user doc도 정리
+      const nextActive = get().activeSessionId;
+      await apiPatchUser(userKey, { activeSessionId: nextActive ?? null });
+    })().catch(console.error);
   },
 
-  // ---------- 세션 삭제 ----------
-  deleteSession: (id) => {
-    set((state) => {
-      const sessions = state.sessions.filter((s) => s.id !== id);
-      let activeSessionId = state.activeSessionId;
-      if (activeSessionId === id) {
-        activeSessionId = sessions[0]?.id ?? null;
-      }
-      return { sessions, activeSessionId };
-    });
-
-    const { userKey, sessions, activeSessionId, systemPrompt } = get();
-    if (userKey) {
-      saveChatbotSessions(userKey, sessions, activeSessionId, systemPrompt);
-    }
-  },
-
-  // ---------- shortcut-menu 목록 불러오기 ----------
-  fetchShortcutMenuList: async () => {
-    return await fetchShortcutMenuList({});
-  },
+  fetchShortcutMenuList: () => fetchShortcutMenuList(),
 }));
 
 export default useChatbotStore;

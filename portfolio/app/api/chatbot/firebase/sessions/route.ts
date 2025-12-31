@@ -1,40 +1,58 @@
 // app/api/chatbot/firebase/sessions/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const userKey = searchParams.get("userKey");
+  try {
+    const url = new URL(req.url);
+    const userKey = url.searchParams.get("userKey");
+    if (!userKey) {
+      return NextResponse.json({ ok: false, message: "userKey required" }, { status: 400 });
+    }
 
-  if (!userKey) {
-    return NextResponse.json({ ok: false, message: "userKey required" }, { status: 400 });
+    const snap = await adminDb
+      .collection("chatbot")
+      .doc(userKey)
+      .collection("sessions")
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+    return NextResponse.json({ ok: true, items });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, message: e?.message || "error" }, { status: 500 });
   }
-
-  const snap = await adminDb.collection("chatbot").doc(userKey).get();
-
-  if (!snap.exists) {
-    return NextResponse.json({
-      ok: true,
-      data: {
-        userKey,
-        sessions: [],
-        activeSessionId: null,
-        systemPrompt: "",
-      },
-    });
-  }
-
-  return NextResponse.json({ ok: true, data: snap.data() });
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { userKey, data } = body;
-  if (!userKey || !data) {
-    return NextResponse.json({ ok: false }, { status: 400 });
+  try {
+    const { userKey, title, createdAt } = await req.json();
+    if (!userKey) {
+      return NextResponse.json({ ok: false, message: "userKey required" }, { status: 400 });
+    }
+
+    const sessionId = `session-${Date.now()}`;
+    const now = createdAt ?? new Date().toISOString();
+
+    const ref = adminDb
+      .collection("chatbot")
+      .doc(userKey)
+      .collection("sessions")
+      .doc(sessionId);
+
+    await ref.set({
+      title: title ?? "새 채팅",
+      createdAt: now,
+      updatedAt: now,
+      lastMessagePreview: "",
+      lastMessageAt: "",
+      messageCount: 0,
+      _updatedAtServer: FieldValue.serverTimestamp(),
+    });
+
+    return NextResponse.json({ ok: true, sessionId });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, message: e?.message || "error" }, { status: 500 });
   }
-
-  await adminDb.collection("chatbot").doc(userKey).set(data, { merge: true });
-
-  return NextResponse.json({ ok: true });
 }
