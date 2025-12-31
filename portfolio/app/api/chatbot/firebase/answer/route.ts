@@ -48,7 +48,7 @@ function cosineSimilarity(a: number[], b: number[]) {
   return denom ? dot / denom : 0;
 }
 
-/** ✅ /api/chat/gemini 스트리밍을 끝까지 읽어서 텍스트로 변환 */
+/** /api/chat/gemini 스트리밍을 끝까지 읽어서 텍스트로 변환 */
 async function callGeminiStreamToText(
   req: NextRequest,
   prompt: string,
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     /** 1) 프로젝트 설정 읽기 (intentThreshold) */
-    const projectRef = doc(db, "projects", projectId);
+    const projectRef = doc(db, "knowledge_projects", projectId);
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.exists()
       ? (projectSnap.data() as any)
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
         ? projectData.intentThreshold
         : 0.75;
 
-    /** 2) ✅ 입력 임베딩(진짜) */
+    /** 2) 입력 임베딩 */
     const embedded = await embedText(input);
     const inputVec = embedded.values;
 
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     /** 3) 인텐트 로드 (학습된 것만: embeddingVersion == 1) */
-    const intentsRef = collection(db, "projects", projectId, "intents");
+    const intentsRef = collection(db, "knowledge_projects", projectId, "intents");
     const intentsSnap = await getDocs(
       query(intentsRef, where("embeddingVersion", "==", EMBEDDING_VERSION))
     );

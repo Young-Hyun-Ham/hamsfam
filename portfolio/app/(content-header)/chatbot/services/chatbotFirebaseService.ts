@@ -4,7 +4,6 @@
 import {
   doc,
   onSnapshot,
-  setDoc,
   DocumentData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -20,7 +19,7 @@ export type ChatbotDoc = {
 const COLLECTION = "chatbot";
 
 /**
- * 사용자별 세션 문서 구독
+ * 사용자별 실시간 세션 문서 구독
  */
 export function subscribeChatbotSessions(
   userKey: string,
@@ -28,6 +27,7 @@ export function subscribeChatbotSessions(
 ) {
   const ref = doc(db, COLLECTION, userKey);
 
+  // 실시간 구독(onSnapshot) 시작
   const unsub = onSnapshot(ref, (snap) => {
     if (!snap.exists()) {
       onChange(null);
@@ -43,23 +43,4 @@ export function subscribeChatbotSessions(
   });
 
   return unsub;
-}
-
-/**
- * 세션 / activeSessionId / systemPrompt 저장
- */
-export async function saveChatbotSessions(
-  userKey: string,
-  sessions: ChatSession[],
-  activeSessionId: string | null,
-  systemPrompt: string
-) {
-  const ref = doc(db, COLLECTION, userKey);
-  const payload: ChatbotDoc = {
-    sessions,
-    activeSessionId,
-    systemPrompt,
-    updatedAt: new Date().toISOString(),
-  };
-  await setDoc(ref, payload, { merge: true });
 }
