@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     /** 1) 프로젝트 설정 읽기 (intentThreshold) */
-    const projectRef = doc(db, "knowledge_projects", projectId);
+    const projectRef = doc(db, "projects", projectId);
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.exists()
       ? (projectSnap.data() as any)
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     /** 3) 인텐트 로드 (학습된 것만: embeddingVersion == 1) */
-    const intentsRef = collection(db, "knowledge_projects", projectId, "intents");
+    const intentsRef = collection(db, "projects", projectId, "intents");
     const intentsSnap = await getDocs(
       query(intentsRef, where("embeddingVersion", "==", EMBEDDING_VERSION))
     );

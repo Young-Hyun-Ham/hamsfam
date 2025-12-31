@@ -51,8 +51,20 @@ export interface ChatSession {
   title: string;
   createdAt?: string;
   updatedAt?: string;
+  
+  // 세션 메타
+  lastMessagePreview?: string;
+  lastMessageAt?: string;
+  messageCount?: number;
+
   messages: ChatMessage[];
 }
+
+export type ChatbotUserDoc = {
+  activeSessionId: string | null;
+  systemPrompt: string;
+  updatedAt?: string;
+};
 
 export type ChatbotDoc = {
   sessions: ChatSession[];
