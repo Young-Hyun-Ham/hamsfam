@@ -2,18 +2,43 @@
 "use client";
 
 import { create } from "zustand";
-import { ChatMessage, ChatSession, ScenarioRunState } from "../types";
-import {
-  subscribeChatbotSessions,
-  saveChatbotSessions,
-  fetchShortcutMenuList,
-} from "../services/backendService";
+import { api } from "@/lib/axios";
+import { ChatbotDoc, ChatMessage, ChatSession, ScenarioRunState } from "../types";
+import { subscribeChatbotSessions } from "../services/chatbotFirebaseService";
 import { ShortcutMenu, ShortcutMenuSearchParams } from "../types/shortcutMenu";
+import { removeUndefinedDeep } from "../utils";
 
 // 클라이언트에서 쓸 거라면 NEXT_PUBLIC_ 접두사를 쓰는 게 안전함
 export const DEFAULT_SYSTEM_PROMPT =
   process.env.NEXT_PUBLIC_SYSTEM_PROMPT_KO ??
   "당신은 react-admin 프로젝트의 개발을 돕는 조력자입니다.";
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? "firebase";
+
+export async function saveChatbotSessions(
+  userKey: string, 
+  sessions: ChatSession[],
+  activeSessionId: string | null,
+  systemPrompt: string,
+) {
+  const payload: ChatbotDoc = {
+    sessions,
+    activeSessionId,
+    systemPrompt,
+    updatedAt: new Date().toISOString(),
+  };
+  const safeDoc = removeUndefinedDeep(payload);
+  
+  const { data } = await api.post(`/api/chatbot/${BACKEND}/sessions`, { userKey, data: safeDoc });
+  if (data?.ok === false) throw new Error(data?.message || "save failed");
+  return true;
+}
+
+export async function fetchShortcutMenuList(params: ShortcutMenuSearchParams = {}): Promise<ShortcutMenu[]> {
+  const { data } = await api.get(`/api/chatbot/${BACKEND}/shortcut-menus`, { params });
+  if (data?.ok === false) throw new Error(data?.message || "load shortcut menu failed");
+  return (data?.items ?? []) as ShortcutMenu[];
+}
 
 type ChatbotState = {
   userKey: string | null;
