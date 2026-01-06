@@ -1,0 +1,41 @@
+[
+  {
+    "id": "slotfilling-1765937679841-o6g169g",
+    "type": "slotfilling",
+    "data": {
+      "content": "어느것을 선택 하십니까?",
+      "slot": "data",
+      "replies": [
+        { "value": "1", "display": "A" },
+        { "value": "2", "display": "B" }
+      ]
+    }
+  },
+  {
+    "id": "message-1765937713246-5wsqxkv",
+    "type": "message",
+    "data": { "content": "A: {{A}}\nB: {{B}}\ndata: {{data}}", "replies": [] }
+  },
+  {
+    "id": "branch-1765938493354-po6yy8i",
+    "type": "branch",
+    "data": {
+      "content": "차이가 몰까?",
+      "evaluationType": "BUTTON",
+      "replies": [
+        { "display": "A", "value": "cond_1765938493354" },
+        { "display": "B", "value": "cond_1765938513590-fa8vn03" }
+      ]
+    }
+  },
+  {
+    "id": "message-1765938597984-bgtyak5",
+    "type": "message",
+    "data": { "content": "A 선택", "replies": [] }
+  },
+  {
+    "id": "message-1765938617377-kgdmtgf",
+    "type": "message",
+    "data": { "content": "B선택", "replies": [] }
+  }
+]

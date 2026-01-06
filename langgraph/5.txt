@@ -1,0 +1,91 @@
+{
+  "inputText": "",
+  "slots": { "data": "1" },
+  "vars": { "A": "A", "B": "B", "__last_display__": "A" },
+  "messages": [
+    {
+      "ts": "2026-01-05T07:11:37.052967Z",
+      "role": "user",
+      "content": "1",
+      "meta": { "source": "input" }
+    },
+    {
+      "ts": "2026-01-05T07:11:37.055166Z",
+      "role": "assistant",
+      "content": "어느것을 선택 하십니까?",
+      "meta": {
+        "nodeId": "slotfilling-1765937679841-o6g169g",
+        "type": "slotfilling",
+        "quickReplies": [
+          { "value": "1", "display": "A" },
+          { "value": "2", "display": "B" }
+        ],
+        "slot": "data"
+      }
+    },
+    {
+      "ts": "2026-01-05T07:12:31.048420Z",
+      "role": "assistant",
+      "content": "A: A\nB: B\ndata: 1",
+      "meta": { "nodeId": "message-1765937713246-5wsqxkv", "type": "message" }
+    },
+    {
+      "ts": "2026-01-05T07:12:31.048420Z",
+      "role": "assistant",
+      "content": " 차이가 몰까?",
+      "meta": {
+        "nodeId": "branch-1765938493354-po6yy8i",
+        "type": "branch",
+        "quickReplies": [
+          { "display": "A", "value": "cond_1765938493354" },
+          { "display": "B", "value": "cond_1765938513590-fa8vn03" }
+        ]
+      }
+    }
+  ],
+  "trace": [
+    {
+      "ts": "2026-01-05T07:11:37.055166Z",
+      "nodeId": "slotfilling-1765937679841-o6g169g",
+      "nodeType": "slotfilling",
+      "awaiting": {
+        "kind": "slot",
+        "nodeId": "slotfilling-1765937679841-o6g169g",
+        "slot": "data",
+        "next": "message-1765937713246-5wsqxkv"
+      }
+    },
+    {
+      "ts": "2026-01-05T07:12:31.046417Z",
+      "nodeId": "slotfilling-1765937679841-o6g169g",
+      "nodeType": "awaitingResolved",
+      "kind": "slot",
+      "slot": "data",
+      "value": "1",
+      "next": "message-1765937713246-5wsqxkv"
+    },
+    {
+      "ts": "2026-01-05T07:12:31.048420Z",
+      "nodeId": "message-1765937713246-5wsqxkv",
+      "nodeType": "message",
+      "next": "branch-1765938493354-po6yy8i"
+    },
+    {
+      "ts": "2026-01-05T07:12:31.048420Z",
+      "nodeId": "branch-1765938493354-po6yy8i",
+      "nodeType": "branch",
+      "awaiting": { "kind": "branch", "routesCount": 2 }
+    }
+  ],
+  "cursor": "branch-1765938493354-po6yy8i",
+  "next": "__end__",
+  "awaiting": {
+    "kind": "branch",
+    "nodeId": "branch-1765938493354-po6yy8i",
+    "routes": {
+      "cond_1765938493354": "message-1765938597984-bgtyak5",
+      "cond_1765938513590-fa8vn03": "message-1765938617377-kgdmtgf"
+    }
+  },
+  "turn": 2
+}

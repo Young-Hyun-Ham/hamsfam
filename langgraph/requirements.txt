@@ -27,11 +27,15 @@ python-jose[cryptography]>=3.3.0
 
 # AI ( langchain, langsmith[추적] )
 openai
-langsmith
+langgraph
+# langsmith
 # langchain
 # langchain-community
 # langchain-openai
 # langchain-teddynote
+
+# Jupyter 노트북 환경에서 실행하기 위한 라이브러리
+# ipython
 
 # PostgreSQL 백터 사용을 위한 확장 라이브러리
 pgvector
