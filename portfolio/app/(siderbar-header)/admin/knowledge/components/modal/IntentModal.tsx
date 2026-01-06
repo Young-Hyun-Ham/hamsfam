@@ -193,8 +193,22 @@ export default function IntentModal({
 
   return (
     !open ? null : (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-        <div className="w-full max-w-4xl rounded-lg bg-white shadow-lg">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+        onMouseDown={(e) => {
+          // 오버레이 자체를 눌렀을 때만 닫기 (내부 클릭은 아래에서 막힘)
+          if (e.target === e.currentTarget) onClose();
+        }}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          className="
+            w-full max-w-4xl rounded-lg bg-white shadow-lg
+            max-h-[calc(100dvh-50px)] overflow-hidden flex flex-col
+          "
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
             <button
@@ -207,7 +221,12 @@ export default function IntentModal({
             </button>
           </div>
 
-          <div className="space-y-4 px-4 py-4">
+          <div 
+            className="
+              space-y-4 px-4 py-4
+              flex-1 min-h-0 overflow-auto
+            "
+          >
             {/* 기본 정보 */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
@@ -247,15 +266,7 @@ export default function IntentModal({
               />
             </div>
             
-            <div className="
-              rounded-lg 
-              bg-white 
-              p-3 
-              shadow-sm 
-              ring-1 ring-black/5
-              space-y-4 
-              flex-1 min-h-0 flex flex-col
-            ">
+            <div className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-black/5 space-y-4 flex-1 min-h-0 flex flex-col">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_280px]">
                 <div>
                   <label className="text-[11px] font-semibold text-gray-600">

@@ -12,7 +12,7 @@ type Props = {
   targetType: TargetType;
   projectId: string;
   projectName: string;
-  // (선택) needsEmbedding 카운트 표시용
+  // needsEmbedding 카운트 표시용
   intentNeedCount?: number;
   entityNeedCount?: number;
 
@@ -69,7 +69,7 @@ export default function ConfirmTrainModal({
 
           const list: TrainPreviewItem[] = Array.isArray(data?.items) ? data.items : [];
           setItems(list);
-          // ✅ 기본은 전체 선택(=needsEmbedding true 전체)
+          // 기본은 전체 선택(=needsEmbedding true 전체)
           setSelectedIds(list.map((x) => x.id));
         } catch (e: any) {
           setPreviewError(e?.message ?? "대상 조회 실패");
@@ -80,7 +80,6 @@ export default function ConfirmTrainModal({
     }
   }, [open, isPickable, projectId, targetType]);
   
-
   const title = useMemo(() => {
     if (targetType === "project") return "⚠️ 전체 지식 재학습";
     if (targetType === "intent") return "최근 수정 인텐트 학습";
@@ -105,8 +104,6 @@ export default function ConfirmTrainModal({
     return confirmText.trim() === projectId && doubleCheck;
   }, [isFullTrain, confirmText, projectId, doubleCheck, selectedIds.length, previewLoading, previewError]);
 
-  if (!open) return null;
-
   const toggleAll = () => {
     if (selectedIds.length === items.length) setSelectedIds([]);
     else setSelectedIds(items.map((x) => x.id));
@@ -119,8 +116,19 @@ export default function ConfirmTrainModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onMouseDown={(e) => {
+        // 오버레이 자체를 눌렀을 때만 닫기 (내부 클릭은 아래에서 막힘)
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-lg rounded-xl bg-white shadow-xl"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {/* header */}
         <div className="border-b px-5 py-4">
           <div className="text-sm font-bold text-gray-900">{title}</div>
