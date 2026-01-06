@@ -21,7 +21,7 @@ export default function StudyActionPanel() {
     [projects, selectedProjectId]
   );
 
-  // ✅ 모달 상태
+  // 모달 상태
   const [modalOpen, setModalOpen] = useState(false);
   const [targetType, setTargetType] = useState<TargetType>("project");
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +132,7 @@ export default function StudyActionPanel() {
         </button>
       </div>
 
-      {/* ✅ Confirm Modal */}
+      {/* Confirm Modal */}
       {selectedProject && (
         <ConfirmTrainModal
           open={modalOpen}

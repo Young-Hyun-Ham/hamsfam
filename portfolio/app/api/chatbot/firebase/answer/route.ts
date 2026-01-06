@@ -30,6 +30,14 @@ type MatchedIntent = {
   score: number;
 };
 
+type ScenarioSuggest = {
+  scenarioKey: string;
+  scenarioTitle?: string;
+  confirmEnabled?: boolean;
+  confirmMessage?: string;
+  autoRun?: boolean;
+} | null;
+
 function normalize(v: string) {
   return (v ?? "").toString().replace(/\s+/g, " ").trim();
 }
@@ -96,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     /** 1) 프로젝트 설정 읽기 (intentThreshold) */
-    const projectRef = doc(db, "projects", projectId);
+    const projectRef = doc(db, "knowledge_projects", projectId);
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.exists()
       ? (projectSnap.data() as any)
@@ -110,6 +118,7 @@ export async function POST(req: NextRequest) {
     /** 2) 입력 임베딩 */
     const embedded = await embedText(input);
     const inputVec = embedded.values;
+    // console.log("입력 임베딩:=========>  ", input, inputVec)
 
     // 임베딩이 비어있으면 매칭 불가 → plan 모드면 gemini로
     if (!inputVec?.length) {
@@ -150,7 +159,7 @@ export async function POST(req: NextRequest) {
     }
 
     /** 3) 인텐트 로드 (학습된 것만: embeddingVersion == 1) */
-    const intentsRef = collection(db, "projects", projectId, "intents");
+    const intentsRef = collection(db, "knowledge_projects", projectId, "intents");
     const intentsSnap = await getDocs(
       query(intentsRef, where("embeddingVersion", "==", EMBEDDING_VERSION))
     );
@@ -160,28 +169,27 @@ export async function POST(req: NextRequest) {
     const candidates: Array<{ docId: string; data: any; score: number }> = [];
     intentsSnap.forEach((d) => {
       const data = d.data() as any;
+      // console.log("intent data:=========>  ", data)
 
       if (data?.isFallback) fallbackIntent = { id: d.id, ...data };
 
-      // ✅ embeddingDim 우선, 없으면 embedding.length로 추정
+      // embeddingDim 우선, 없으면 embedding.length로 추정
       const emb: number[] | undefined = Array.isArray(data?.embedding)
         ? data.embedding
         : undefined;
 
       if (!emb || emb.length === 0) return;
 
-      const embDim =
-        typeof data?.embeddingDim === "number" ? data.embeddingDim : emb.length;
+      const embDim = typeof data?.embeddingDim === "number" ? data.embeddingDim : emb.length;
 
-      // ✅ dim mismatch는 비교 불가 → 스킵 (중요)
+      // dim mismatch는 비교 불가 → 스킵 (중요)
       if (embDim !== inputVec.length) return;
-
-      // ✅ 학습 필요 상태면 스킵(옵션: 안정성)
+      // 학습 필요 상태면 스킵(옵션: 안정성)
       if (data?.needsEmbedding === true) return;
-
       const score = cosineSimilarity(inputVec, emb);
       candidates.push({ docId: d.id, data, score });
     });
+    // console.log("매칭 후보들:=========>  ", candidates)
 
     candidates.sort((a, b) => b.score - a.score);
     const top = candidates[0] ?? null;
@@ -212,6 +220,33 @@ export async function POST(req: NextRequest) {
       };
       fallback = true;
     }
+    
+    // hit(매칭된 인텐트 문서 데이터) 잡기
+    const hit = matched?.id ? (matched.id === top?.docId ? top?.data : null) : null;
+    // console.log("매칭된 인텐트 문서 데이터:=========>  ", hit)
+
+    // scenario 내려주기
+    const scenario: ScenarioSuggest = (() => {
+      const src = hit;
+      const key = typeof src?.scenarioKey === "string" ? src.scenarioKey.trim() : "";
+      if (!key) return null;
+
+      const confirmEnabled =
+        typeof src?.confirmEnabled === "boolean" ? src.confirmEnabled : true;
+
+      const confirmMessageRaw =
+        typeof src?.confirmMessage === "string" ? src.confirmMessage.trim() : "";
+
+      return {
+        scenarioKey: key,
+        scenarioTitle: typeof src?.scenarioTitle === "string" ? src.scenarioTitle.trim() : undefined,
+        autoRun: typeof src?.autoRun === "boolean" ? src.autoRun : false,
+        confirmEnabled,
+        // confirmEnabled=true면 confirmMessage 내려주고, 없으면 프론트가 기본문구 사용하게 빈값 허용
+        confirmMessage: confirmEnabled ? (confirmMessageRaw || "") : "",
+      };
+    })();
+    // console.log("시나리오 제안:=========>  ", scenario)
 
     /** 5) 답변 선택 정책 */
     let canned: string | null = null;
@@ -231,18 +266,25 @@ export async function POST(req: NextRequest) {
     let geminiReason: "no_intent" | "below_threshold" | "no_canned" | null =
       null;
 
+    // console.log("답변 선택 정책:======================> ", canned)
     if (canned) {
       answer = canned;
     } else {
-      shouldCallGemini = true;
-
-      if (!matched) geminiReason = "no_intent";
-      else if (fallback) geminiReason = "below_threshold";
-      else geminiReason = "no_canned";
-
-      if (mode === "full") {
-        answer = await callGeminiStreamToText(req, input, body.systemPrompt);
+      // canned가 없어도 scenarioKey가 있으면 Gemini 호출하지 않음(시나리오 suggest)
+      if (scenario?.scenarioKey) {
         shouldCallGemini = false;
+        geminiReason = null;
+      } else {
+        shouldCallGemini = true;
+
+        if (!matched) geminiReason = "no_intent";
+        else if (fallback) geminiReason = "below_threshold";
+        else geminiReason = "no_canned";
+
+        if (mode === "full") {
+          answer = await callGeminiStreamToText(req, input, body.systemPrompt);
+          shouldCallGemini = false;
+        }
       }
     }
 
@@ -252,7 +294,7 @@ export async function POST(req: NextRequest) {
       input,
       intent: matched,
       entities: [],
-      scenario: null,
+      scenario,
       fallback,
       answer,
       shouldCallGemini,
