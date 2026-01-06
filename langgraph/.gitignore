@@ -1,0 +1,17 @@
+
+# Output
+.output
+.netlify
+.wrangler
+/build
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Python
+.venv
+*.pyc
+__pycache__/

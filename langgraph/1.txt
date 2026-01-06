@@ -1,0 +1,17 @@
+-- 
+랭그래프 nodes
+__router__
+slotfilling-1765937679841-o6g169g
+message-1765937713246-5wsqxkv
+branch-1765938493354-po6yy8i
+message-1765938597984-bgtyak5
+message-1765938617377-kgdmtgf
+
+랭그래프 edges
+__router__ -> ['slotfilling-1765937679841-o6g169g']
+slotfilling-1765937679841-o6g169g -> ['message-1765937713246-5wsqxkv']
+message-1765937713246-5wsqxkv -> ['branch-1765938493354-po6yy8i']
+branch-1765938493354-po6yy8i -> [
+  'message-1765938597984-bgtyak5',
+  'message-1765938617377-kgdmtgf'
+]

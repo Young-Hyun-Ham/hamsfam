@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,6 +62,7 @@ def run_scenario_api(req: RunScenarioReq):
         prev_state=req.state,
         action=req.action,
     )
+    print(f"[runScenario] out=============> {out}")
     trace = out.get("trace", []) or []
     slots = out.get("slots", {}) or {}
     awaiting = out.get("awaiting")

@@ -1,0 +1,49 @@
+{
+  "inputText": "1",
+  "slots": {},
+  "vars": { "A": "A", "B": "B" },
+  "messages": [
+    {
+      "ts": "2026-01-05T07:11:37.052967Z",
+      "role": "user",
+      "content": "1",
+      "meta": { "source": "input" }
+    },
+    {
+      "ts": "2026-01-05T07:11:37.055166Z",
+      "role": "assistant",
+      "content": "어느것을 선택 하십니까?",
+      "meta": {
+        "nodeId": "slotfilling-1765937679841-o6g169g",
+        "type": "slotfilling",
+        "quickReplies": [
+          { "value": "1", "display": "A" },
+          { "value": "2", "display": "B" }
+        ],
+        "slot": "data"
+      }
+    }
+  ],
+  "trace": [
+    {
+      "ts": "2026-01-05T07:11:37.055166Z",
+      "nodeId": "slotfilling-1765937679841-o6g169g",
+      "nodeType": "slotfilling",
+      "awaiting": {
+        "kind": "slot",
+        "nodeId": "slotfilling-1765937679841-o6g169g",
+        "slot": "data",
+        "next": "message-1765937713246-5wsqxkv"
+      }
+    }
+  ],
+  "cursor": "slotfilling-1765937679841-o6g169g",
+  "next": "__end__",
+  "awaiting": {
+    "kind": "slot",
+    "nodeId": "slotfilling-1765937679841-o6g169g",
+    "slot": "data",
+    "next": "message-1765937713246-5wsqxkv"
+  },
+  "turn": 1
+}

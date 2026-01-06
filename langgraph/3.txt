@@ -1,0 +1,20 @@
+[
+  {
+    "source": "slotfilling-1765937679841-o6g169g",
+    "target": "message-1765937713246-5wsqxkv"
+  },
+  {
+    "source": "message-1765937713246-5wsqxkv",
+    "target": "branch-1765938493354-po6yy8i"
+  },
+  {
+    "source": "branch-1765938493354-po6yy8i",
+    "sourceHandle": "cond_1765938493354",
+    "target": "message-1765938597984-bgtyak5"
+  },
+  {
+    "source": "branch-1765938493354-po6yy8i",
+    "sourceHandle": "cond_1765938513590-fa8vn03",
+    "target": "message-1765938617377-kgdmtgf"
+  }
+]
