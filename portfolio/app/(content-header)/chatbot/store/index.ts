@@ -183,37 +183,55 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
   },
 
   createSession: (title: string, messages: ChatMessage[] = []) => {
-    const id = `session-${Date.now()}`;
+    const tempId = `session-${Date.now()}`;
     const now = new Date().toISOString();
 
     // optimistic
     set((state) => ({
       sessions: [
-        { id, title, createdAt: now, updatedAt: now, lastMessagePreview: "", lastMessageAt: "", messageCount: 0, messages: [] },
+        {
+          id: tempId,
+          title,
+          createdAt: now,
+          updatedAt: now,
+          lastMessagePreview: "",
+          lastMessageAt: "",
+          messageCount: 0,
+          messages: [],
+        },
         ...state.sessions,
       ],
-      activeSessionId: id,
+      activeSessionId: tempId,
     }));
 
     const { userKey, systemPrompt } = get();
-    if (!userKey) return id;
+    if (!userKey) return tempId;
 
     (async () => {
-      // create meta
-      const sessionId = await apiCreateSession(userKey, { title, createdAt: now });
-      if (sessionId !== id) {
-        // 서버가 다른 id를 강제한다면 여기서 매핑 처리(현재는 client id 그대로 쓰는 걸 추천)
-      }
-      // set active + ensure prompt
-      await apiPatchUser(userKey, { activeSessionId: id, systemPrompt });
+      // ✅ 서버가 최종 id를 결정(파이어스토어 addDoc이면 보통 여기서 자동 id가 옴)
+      const serverId = await apiCreateSession(userKey, { title, createdAt: now });
+      const finalId = serverId || tempId;
 
-      // seed messages
+      // ✅ 서버 id가 tempId와 다르면: 로컬 state에서 id 교체
+      if (finalId !== tempId) {
+        set((state) => ({
+          sessions: state.sessions.map((s) =>
+            s.id === tempId ? { ...s, id: finalId } : s
+          ),
+          activeSessionId: state.activeSessionId === tempId ? finalId : state.activeSessionId,
+        }));
+      }
+
+      // ✅ activeSessionId도 "최종 id"로 저장해야 중복 생성이 안 남
+      await apiPatchUser(userKey, { activeSessionId: finalId, systemPrompt });
+
+      // ✅ seed messages도 최종 id로 저장
       for (const m of messages) {
-        await apiCreateMessage(userKey, id, m);
+        await apiCreateMessage(userKey, finalId, m);
       }
     })().catch(console.error);
 
-    return id;
+    return tempId; // UI는 즉시 tempId로 동작, 이후 finalId로 치환됨
   },
 
   setActiveSession: (id: string) => {

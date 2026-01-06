@@ -26,6 +26,7 @@ type PanelConfig = {
 };
 
 type Props = {
+  isPanelOpen?: boolean;
   onSelectPreset?: (preset: PresetItem, panelId: PanelId) => void;
 };
 
@@ -36,7 +37,7 @@ const PANEL_LABELS: Record<PanelId, string> = {
   execution: "Execution",
 };
 
-export default function ScenarioMenuPanel({ onSelectPreset }: Props) {
+export default function ScenarioMenuPanel({ isPanelOpen, onSelectPreset }: Props) {
   const { fetchShortcutMenuList } = useChatbotStore();
 
   // 어떤 패널이 선택됐는지
@@ -149,6 +150,10 @@ export default function ScenarioMenuPanel({ onSelectPreset }: Props) {
     : [];
 
   const handleSelect = (item: PresetItem) => {
+    if (isPanelOpen === false) {
+      alert("채팅방이 생성된 후에 시나리오를 선택할 수 있습니다.");
+      return;
+    }
     onSelectPreset?.(item, activePanelId);
     // 필요하면 선택 후 닫기
     // setOpen(false);
