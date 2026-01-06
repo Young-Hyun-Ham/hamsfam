@@ -4,6 +4,16 @@
 ```bash 
 git clone https://github.com/Young-Hyun-Ham/hamsfam.git
 cd ./portfolio
+
+/portfolio> pnpm -v
+# 버전이 나오면 install 실행 오류 혹은 버전이 안나오면 아래 실행
+/portfolio> npm install -g pnpm
+# npm 오류 발생 시 
+# window powershell 관리자실행
+/> Set-ExecutionPolicy RemoteSigned 
+# mac
+/> brew install node
+
 /portfolio> pnpm install
 /portfolio> pnpm run build
 /portfolio> pnpm dev

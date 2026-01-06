@@ -159,10 +159,10 @@ export default function ChatContainer() {
       scenarioKey,
       scenarioTitle,
       scenarioSteps: steps,
-      scenarioStatus: "done", // ✅ 완료 표시
+      scenarioStatus: "done", // 완료 표시
     };
 
-    // ✅ 이미 존재하는 시나리오 메시지가 있으면 거기에 덮어쓰기
+    // 이미 존재하는 시나리오 메시지가 있으면 거기에 덮어쓰기
     if (runId && activeSessionId) {
       patchMessage(activeSessionId, runId, (prev) => ({
         ...prev,
@@ -305,25 +305,33 @@ export default function ChatContainer() {
     setScenarioOpen(true);
   };
 
-  const didAutoCreateRef = useRef(false);
   useEffect(() => {
-    if (!syncReady) return;                 // ✅ 동기화 끝나기 전엔 생성 금지
-    if (didAutoCreateRef.current) return;   // ✅ StrictMode 2회 방지
-    if (activeSessionId) return;            // ✅ 이미 있으면 생성 금지
-    if (sessions.length > 0) return;        // ✅ 세션이 이미 있으면 생성 금지
+    if (!activeSessionId || activeSessionId === "" || activeSessionId == null) {
+      setIsSending(true);
+    } else {
+      setIsSending(false);
+    }
+  }, [activeSessionId]);
 
-    didAutoCreateRef.current = true;
+  // const didAutoCreateRef = useRef(false);
+  // useEffect(() => {
+  //   if (!syncReady) return;                 // 동기화 끝나기 전엔 생성 금지
+  //   if (didAutoCreateRef.current) return;   // StrictMode 2회 방지
+  //   if (activeSessionId) return;            // 이미 있으면 생성 금지
+  //   if (sessions.length > 0) return;        // 세션이 이미 있으면 생성 금지
 
-    const welcomeMsg: ChatMessage = {
-      id: `welcome-${Date.now()}`,
-      role: "assistant",
-      content:
-        "안녕하세요! 👋\nReact-Flow 빌더로 만든 시나리오를 기반으로 대화할 준비가 되어 있어요.\n아래에 메시지를 입력해 보세요.",
-      createdAt: new Date().toISOString(),
-    };
+  //   didAutoCreateRef.current = true;
 
-    createSession("새 채팅", [welcomeMsg]);
-  }, [syncReady, activeSessionId, sessions.length, createSession]);
+  //   const welcomeMsg: ChatMessage = {
+  //     id: `welcome-${Date.now()}`,
+  //     role: "assistant",
+  //     content:
+  //       "안녕하세요! 👋\nReact-Flow 빌더로 만든 시나리오를 기반으로 대화할 준비가 되어 있어요.\n아래에 메시지를 입력해 보세요.",
+  //     createdAt: new Date().toISOString(),
+  //   };
+
+  //   createSession("새 채팅", [welcomeMsg]);
+  // }, [syncReady, activeSessionId, sessions.length, createSession]);
 
   // 인라인 편집 시작 시 자동 포커스
   useEffect(() => {
@@ -350,7 +358,7 @@ export default function ChatContainer() {
       id: `welcome-${Date.now()}`,
       role: "assistant",
       content:
-        "새 채팅을 시작했습니다. 시나리오에 맞게 메시지를 입력해 보세요.",
+        "새 채팅을 시작했습니다. 아래에 메시지를 입력해 보세요.",
       createdAt: new Date().toISOString(),
     };
     createSession("새 채팅", [welcomeMsg]);
@@ -810,8 +818,8 @@ export default function ChatContainer() {
               <div className="mt-1 pl-3 pr-1 text-xs text-gray-600 flex-1 min-h-0">
                 <div className="max-h-full overflow-y-auto overflow-x-hidden">
                   {sessions.length === 0 ? (
-                    <div className="text-gray-400">
-                      저장된 채팅이 없습니다.
+                    <div className="flex h-full items-center justify-center text-sm text-gray-400">
+                      좌측에서 “새 채팅”을 눌러 대화를 시작하세요.
                     </div>
                   ) : (
                     <ul className="space-y-1">
@@ -988,6 +996,7 @@ export default function ChatContainer() {
 
         {/* shortcut 메뉴 패널 */}
         <ScenarioMenuPanel
+          isPanelOpen={activeSessionId ? true : false}
           onSelectPreset={(preset) => {
             const key = preset.scenarioKey ?? "";
             if (!key) return;
