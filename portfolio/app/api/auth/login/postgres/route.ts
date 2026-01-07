@@ -1,3 +1,4 @@
+// app/api/auth/login/postgres/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, verifyPassword } from "@/lib/utils/password";
 import { db } from "@/lib/postgresql";
@@ -6,6 +7,7 @@ import { signAccessToken, signRefreshToken } from "@/lib/oauth";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
+  console.log("/auth/login/postgres [ POST ] 호출됨.");
   try {
     const { email, password } = await req.json();
 
@@ -32,12 +34,12 @@ export async function POST(req: NextRequest) {
     }
 
     const accessToken = signAccessToken({
-      uid: user.id,
+      id: user.id,
+      sub: user.sub,
       email: user.email,
       username: user.name,
       roles: user.roles,
       provider: user.provider,
-      provider_id: user.sub,
     });
     
     const jti = crypto.randomUUID();

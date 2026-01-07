@@ -39,6 +39,7 @@ type GoogleIDPayload = JWTPayload & {
  * @tag oauth
  */
 export async function GET(req: Request) {
+  console.log("/oauth/google/callback [ GET ] 호출됨.");
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
@@ -117,12 +118,12 @@ export async function GET(req: Request) {
         
   // 4) 우리 JWT 발급 + 쿠키 세팅
   const access = signAccessToken({
-    uid: user.id,
+    id: user.id,
+    sub: user.sub,
     email: user.email,
     username: user.name,
     roles,
     provider: user.provider,
-    provider_id: user.sub,
   });
   const jti = crypto.randomUUID();
   const refresh = signRefreshToken({ sub: user.id, jti });

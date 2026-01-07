@@ -1,3 +1,4 @@
+// lib/session.ts
 import "server-only";
 import { cookies } from "next/headers";
 import { jwtVerify, type JWTPayload  } from "jose";
@@ -18,15 +19,14 @@ export async function getUserServer(): Promise<User | null> {
       issuer: undefined, audience: undefined, // 필요시 설정
     });
     const p = payload as JwtUserPayload;
-    if (!p.uid || !p.email) return null;
-
+    if (!p.id || !p.email) return null;
     const user: User = {
-      uid: p.uid,
+      id: p.id,
+      sub: p.sub,
       email: p.email,
       username: p.username ?? '',
       roles: p.roles ?? [''],
       provider: p.provider,
-      provider_id: p.provider_id,
     };
     return user;
   } catch {

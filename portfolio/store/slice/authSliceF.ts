@@ -10,6 +10,7 @@ export const createAuthSlice = (set: any, get: any) => ({
   loginWithGoogle: async () => {
     try {
       set({ loginType: "google" });
+      localStorage.setItem("loginType", "google");
       await signInWithPopup(get().auth, new GoogleAuthProvider());
     } catch (error) {
       console.error("Login with Google failed:", error);
@@ -20,8 +21,10 @@ export const createAuthSlice = (set: any, get: any) => ({
   loginWithEmail: async (email: string, password: string) => {
     try {
       set({ loginType: "email" });
-      const { user, accessToken }  = await firebaseLoginApi(email, password);
-
+      const { user, accessToken } = await firebaseLoginApi(email, password);
+      
+      // 새로고침 복구를 위해 저장
+      localStorage.setItem("loginType", "email");
       // 공통 세션 세팅
       set({ user, token: accessToken, authChecked: true });
       await get().setUserAndLoadData(user);

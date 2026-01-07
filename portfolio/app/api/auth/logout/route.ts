@@ -1,3 +1,4 @@
+// app/api/auth/logout/route.ts
 import { clearTokenCookie } from "@/lib/cookies";
 import { NextRequest, NextResponse } from "next/server";
 

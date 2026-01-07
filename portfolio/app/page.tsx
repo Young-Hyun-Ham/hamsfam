@@ -4,5 +4,6 @@ import RootClient from '@/components/RootClient';
 
 export default async function RootPage() {
   const user = await getUserServer();
+  // console.log("RootPage user =======================> ", user)
   return <RootClient initialUser={user} />;
 }

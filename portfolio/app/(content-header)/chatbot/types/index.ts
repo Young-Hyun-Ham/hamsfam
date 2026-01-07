@@ -72,3 +72,25 @@ export type ChatbotDoc = {
   systemPrompt: string;
   updatedAt?: string;
 };
+
+
+
+export type AnyNode = {
+  id: string;
+  type: string;
+  data: any;
+};
+
+export type AnyEdge = {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+};
+
+export type ChatStep = {
+  id: string;
+  role: "bot" | "user";
+  text: string;
+};
