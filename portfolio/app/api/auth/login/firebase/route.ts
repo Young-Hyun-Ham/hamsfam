@@ -1,4 +1,4 @@
-// app/api/auth/firebase-login/route.ts
+// app/api/auth/login/firebase/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword } from "@/lib/utils/password";
 import { isCrossSite, setAccessTokenCookie, setRefreshTokenCookie } from "@/lib/cookies";
@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function POST(req: NextRequest) {
+  console.log("/auth/login/firebase [ POST ] 호출됨.");
   try {
     const { email, password } = await req.json();
     if (!email || !password) {
@@ -58,12 +59,12 @@ export async function POST(req: NextRequest) {
     // 3) Access / Refresh 토큰 생성
     // ================================
     const accessToken = signAccessToken({
-      uid: userId,
+      id: userId,
+      sub: userSub,
       email: userEmail,
       username: userName,
       roles: userRoles,
       provider: userProvider,
-      provider_id: userSub,
     });
 
     const jti = crypto.randomUUID();

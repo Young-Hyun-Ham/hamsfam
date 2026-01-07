@@ -1,3 +1,4 @@
+// app/api/auth/refresh/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
 import { signJwt, verifyJwt } from "@/lib/utils/jwt";
@@ -7,6 +8,7 @@ import { signAccessToken, signRefreshToken } from "@/lib/oauth";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
+  console.log("/auth/refresh [ POST ] 호출됨.");
   try {
     const { data } = await req.json();
     // 요청 쿠키 스토어 가져오기
@@ -82,12 +84,12 @@ export async function POST(req: NextRequest) {
           
     // 4) 우리 JWT 발급 + 쿠키 세팅
     const accessToken = signAccessToken({
-      uid: user.id,
+      id: user.id,
+      sub: user.sub,
       email: user.email,
       username: user.name,
       roles,
       provider: user.provider,
-      provider_id: user.sub,
     });
 
     const res = NextResponse.json({

@@ -1,4 +1,4 @@
-// app/api/auth/me/route.ts
+// app/api/auth/me/postgres/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
 import { verifyJwt } from "@/lib/utils/jwt";

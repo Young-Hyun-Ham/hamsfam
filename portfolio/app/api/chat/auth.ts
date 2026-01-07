@@ -3,12 +3,12 @@ import * as jwt from 'jsonwebtoken';
 const SECRET: jwt.Secret = process.env.JWT_SECRET || 'dev';
 
 export type JwtPayload = { 
-  uid: string;
+  id: string;
+  sub: string | null;
   email: string;
   username: string;
   roles?: string | null;
   provider?: string | null;
-  provider_id?: string | null;
 };
 
 // 토큰 발급
@@ -26,8 +26,8 @@ export function verifyToken(token?: string): JwtPayload | null {
   try {
     const decoded = jwt.verify(token, SECRET);
     if (typeof decoded === 'string') return null;
-    const { uid, email, username, provider, roles, provider_id } = decoded as jwt.JwtPayload & JwtPayload;
-    return { uid, email, username, roles, provider, provider_id };
+    const { id, sub, email, username, provider, roles } = decoded as jwt.JwtPayload & JwtPayload;
+    return { id, sub, email, username, roles, provider };
   } catch {
     return null;
   }

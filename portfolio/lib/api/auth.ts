@@ -1,16 +1,9 @@
 // lib/api/auth.ts
 
-export type AppUser = {
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl?: string;
-  isTestUser?: boolean;
-  accessToken: string;
-};
+import { User } from "@/types/user";
 
 type LoginResponse = {
-  user: AppUser;
+  user: User;
   accessToken: string;
 };
 
@@ -62,8 +55,23 @@ export async function loginWithTestIdApi(testId: string): Promise<LoginResponse>
 }
 
 // 토큰으로 현재 유저 조회
-export async function getMeApi(token: string): Promise<AppUser> {
-  const res = await fetch('/api/auth/me', {
+export async function postgresGetMeApi(token: string): Promise<User> {
+  const res = await fetch('/api/auth/me/postgres', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error('Unauthorized');
+  }
+
+  return res.json();
+}
+
+// 토큰으로 현재 유저 조회
+export async function firebaseGetMeApi(token: string): Promise<User> {
+  const res = await fetch('/api/auth/me/firebase', {
     headers: {
       Authorization: `Bearer ${token}`,
     },

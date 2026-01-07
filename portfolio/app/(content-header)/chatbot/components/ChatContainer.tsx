@@ -496,7 +496,7 @@ export default function ChatContainer() {
 
       if (ansRes.ok) {
         const ans = await ansRes.json();
-        console.log("Knowledge answer ===================> ", ans)
+        // console.log("Knowledge answer ===================> ", ans)
         // canned answer
         if (ans?.answer) {
           patchMessage(currentSessionId, assistantId, (prev) => ({

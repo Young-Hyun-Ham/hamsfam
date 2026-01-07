@@ -7,52 +7,8 @@ import * as builderBackendService from "../../builder/services/backendService";
 import ScenarioNodeControls from "./ScenarioNodeControls";
 import { makeStepId, resolveTemplate } from "../utils";
 import useChatbotStore from "../store";
-
-type AnyNode = {
-  id: string;
-  type: string;
-  data: any;
-};
-
-type AnyEdge = {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-};
-
-export type ChatStep = {
-  id: string;
-  role: "bot" | "user";
-  text: string;
-};
-
-type ScenarioEmulatorProps = {
-  scenarioKey: string;
-  scenarioTitle?: string;
-  onHistoryAppend?: (payload: {
-    scenarioKey: string;
-    scenarioTitle?: string;
-    steps: ChatStep[];
-    runId?: string;
-  }) => void;
-
-  // 어떤 실행/채팅 메시지와 연결된 에뮬레이터인지 구분하는 key
-  scenarioRunId: string;
-  // 진행 상황을 채팅으로 올려보내기 위한 콜백 추가
-  onProgress?: (payload: {
-    runId: string;
-    steps: ChatStep[];
-    finished: boolean;
-  }) => void;
-
-  // 재시작(초기화) 시 부모에게 알려줄 콜백
-  onResetRun?: (runId: string) => void;
-  // 메시지에 저장된 실행 로그를 초기값으로 받기
-  initialSteps?: ChatStep[];
-  initialFinished?: boolean;
-};
+import { AnyEdge, AnyNode, ChatStep } from "../types";
+import { useEngineLogger } from "../utils/engine";
 
 // 루트 노드 찾기
 function findRootNode(nodes: AnyNode[], edges: AnyEdge[]): AnyNode | null {
@@ -80,6 +36,32 @@ function findNextNode(
   const first = candidates[0];
   return nodes.find((n) => n.id === first.target) ?? null;
 }
+
+type ScenarioEmulatorProps = {
+  scenarioKey: string;
+  scenarioTitle?: string;
+  onHistoryAppend?: (payload: {
+    scenarioKey: string;
+    scenarioTitle?: string;
+    steps: ChatStep[];
+    runId?: string;
+  }) => void;
+
+  // 어떤 실행/채팅 메시지와 연결된 에뮬레이터인지 구분하는 key
+  scenarioRunId: string;
+  // 진행 상황을 채팅으로 올려보내기 위한 콜백 추가
+  onProgress?: (payload: {
+    runId: string;
+    steps: ChatStep[];
+    finished: boolean;
+  }) => void;
+
+  // 재시작(초기화) 시 부모에게 알려줄 콜백
+  onResetRun?: (runId: string) => void;
+  // 메시지에 저장된 실행 로그를 초기값으로 받기
+  initialSteps?: ChatStep[];
+  initialFinished?: boolean;
+};
 
 export default function ScenarioEmulator({
   scenarioKey,
@@ -127,6 +109,24 @@ export default function ScenarioEmulator({
 
   // 한 번만 store 에서 복원했는지 여부
   const [hydratedFromStore, setHydratedFromStore] = useState(false);
+
+  // ==============================================================================
+  // 엔진 관련
+  console.log("userinfo =====> ", user);
+  const userId = user?.uid ?? user?.id ?? "guest";
+  const engineProps = { nodes, edges, scenarioKey, scenarioRunId, userId };
+  const { logToEngine, resetEngineState } = useEngineLogger();
+  useEffect(() => {
+    if (!scenarioRunId) return;
+    if (!nodes.length || !edges.length) return;
+
+    // run 시작 시점에 엔진 상태 초기화
+    resetEngineState();
+    logToEngine({ text: "" }, engineProps, );
+  }, [scenarioRunId, nodes.length, edges.length]);
+
+  // =============================================================================
+
 
   // nodes / rootNode 는 기존 코드에 이미 있음
   useEffect(() => {
@@ -720,6 +720,10 @@ export default function ScenarioEmulator({
         },
       ]);
     }
+
+    logToEngine({
+      action: { type: "reply", value: "continue", display: "continue" },
+    }, engineProps);
   };
 
   // branch 노드 후 분기 선택 핸들러
@@ -773,6 +777,10 @@ export default function ScenarioEmulator({
         },
       ]);
     }
+
+    logToEngine({
+      action: { type: "reply", value: reply.value, display: reply.display },
+    }, engineProps);
   };
 
   // 폼 노드 제출 후 핸들러
@@ -874,6 +882,10 @@ export default function ScenarioEmulator({
         },
       ]);
     }
+
+    logToEngine({
+      action: { type: "reply", value: formValues, display: "form" },
+    }, engineProps);
   };
 
   // 링크 노드 후 대화 계속하기 핸들러
@@ -897,6 +909,10 @@ export default function ScenarioEmulator({
         },
       ]);
     }
+
+    logToEngine({
+      action: { type: "reply", value: "continue", display: "continue" },
+    }, engineProps);
   };
 
   // iframe 노드 후 대화 계속하기 핸들러
@@ -941,6 +957,10 @@ export default function ScenarioEmulator({
         },
       ]);
     }
+
+    logToEngine({
+      action: { type: "reply", value: "continue", display: "continue" },
+    }, engineProps);
   };
 
   // slotFilling 노드: quick reply 클릭 시
@@ -978,6 +998,10 @@ export default function ScenarioEmulator({
     if (next.type === "message") {
       setSteps((prev) => [...prev, { id: makeStepId(next.id), role: "bot", text: next.data?.content ?? "" }]);
     }
+
+    logToEngine({
+      action: { type: "reply", value: reply.value, display: reply.display },
+    }, engineProps);
   };
   // ==============================================================================
   // handler 메소드 모음 end

@@ -16,9 +16,10 @@ import {
 import { locales } from "@/lib/locales";
 import { createAuthSlice as createFirebaseAuthSlice } from "@/store/slice/authSliceF";
 import { createAuthSlice as createPostgresAuthSlice } from "@/store/slice/authSliceP";
-import { getMeApi } from '@/lib/api/auth';
+import { postgresGetMeApi, firebaseGetMeApi } from '@/lib/api/auth';
 import { createUISlice } from "@/store/slice/uiSlice";
 import { NavItem, SidebarMenu } from "@/types/nav";
+import { User } from "@/types/user";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND ?? 'firebase';
 
@@ -41,7 +42,7 @@ export const useStore: any = create((set: any, get: any) => ({
   sidebarMenus: [],
   setSidebarMenus: (data: SidebarMenu) => { set({ sidebarMenus: data }) },
 
-  setUser: (user: any) => { set({ user }); },
+  setUser: (user: User) => { set({ user }); },
   setRoles: (role: string) => {
     const user = get().user;
     if (!user) return;
@@ -81,11 +82,11 @@ export const useStore: any = create((set: any, get: any) => ({
   setUserAndLoadData: async (user: any) => {
     set({ user });
     const includeAdminAccount = process.env.NEXT_PUBLIC_ADMIN_ACCOUNT ?? [''];
-
+    console.log("setUserAndLoadData start ======>", user)
     /* ---------------------------------------------------
-   * Firebase 로그인 사용자 Firestore upsert 처리
-   * ---------------------------------------------------*/
-    if (BACKEND === "firebase" && user?.uid && user.loginType === "google") {
+    * Firebase 로그인 사용자 Firestore upsert 처리
+    * ---------------------------------------------------*/
+    if (BACKEND === "firebase" && user?.uid) {
       try {
         const usersRef = collection(get().db, "users");
         const userRef = doc(usersRef, user.uid);
@@ -115,6 +116,8 @@ export const useStore: any = create((set: any, get: any) => ({
             { merge: true }
           );
         }
+        console.log("setUserAndLoadData =======> ", snap.data())
+        set({ user: snap.data() });
       } catch (err) {
         console.error("🔥 Firestore 사용자 upsert 실패:", err);
       }
@@ -253,9 +256,10 @@ export const useStore: any = create((set: any, get: any) => ({
       // 2) 저장된 토큰 있으면 백엔드에서 me 조회
       const savedToken = typeof window !== 'undefined' ? get().token : null;
 
+      // 토큰으로 유저 복원 시도
       const restoreUserFromToken = async () => {
         try {
-          const me = await getMeApi(savedToken ?? "");
+          const me = await postgresGetMeApi(savedToken ?? "");
           set({ user: me, token: me.accessToken, authChecked: true });
           await get().setUserAndLoadData(me);
         } catch (e) {
@@ -280,6 +284,21 @@ export const useStore: any = create((set: any, get: any) => ({
         restoreUserFromToken();
       }
     } else {
+      const savedLoginType = typeof window !== "undefined" ? localStorage.getItem("loginType") : null;
+      const savedToken = typeof window !== 'undefined' ? get().token : null;
+      // console.log("initAuth: savedToken =", savedToken);
+      const restoreFromCookie = async () => {
+        try {
+          const me = await firebaseGetMeApi(savedToken ?? "");
+          set({ user: me, authChecked: true, loginType: "email" });
+          await get().setUserAndLoadData(me);
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      
+      // 1) testId 우선
       if (testId) {
         console.log(`Attempting auto login with test ID: ${testId}`);
 
@@ -294,6 +313,25 @@ export const useStore: any = create((set: any, get: any) => ({
         }, 0);
       }
 
+      // 2) 이전에 email 로그인 이력이 있으면 쿠키 복구 먼저 시도
+      if (savedLoginType === "email") {
+        restoreFromCookie().then((ok) => {
+          if (ok) return;
+
+          // 실패하면 Firebase Auth 흐름으로
+          onAuthStateChanged(get().auth, async (fbUser) => {
+            if (fbUser) {
+              set({ authChecked: true, loginType: "google" });
+              await get().setUserAndLoadData(fbUser);
+            } else {
+              get().clearUserAndData();
+            }
+          });
+        });
+        return;
+      }
+
+      // 3) 기본은 Firebase Auth
       onAuthStateChanged(get().auth, async (user) => {
         console.log("Firebase Auth state changed:", user);
         // 이미 테스트 사용자로 로그인되어 있으면 Firebase Auth 상태 변경 무시
@@ -305,7 +343,7 @@ export const useStore: any = create((set: any, get: any) => ({
 
         if (user) {
           // console.log("User logged in via Firebase Auth:========= > ", user);
-          set({ authChecked: true });
+          set({ authChecked: true, loginType: "google" });
           get().setUserAndLoadData(user);
         } else {
           // 로그아웃 시에도 URL 파라미터 체크 로직을 다시 타지 않도록 clearUserAndData만 호출

@@ -7,6 +7,7 @@ import { useStore } from "@/store";
 
 export default function MainPage() {
   const user = useStore((s: any) => s.user);
+  console.log("MainPage user: =========================> ", user);
   const displayName =
     user?.displayName ?? user?.user?.displayName ?? "손님";
   const email = user?.email ?? user?.user?.email ?? "";

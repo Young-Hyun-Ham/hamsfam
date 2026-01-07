@@ -1,10 +1,11 @@
 // store/slice/authSliceP.ts
-import { AppUser, postgresLoginApi, loginWithTestIdApi, logoutApi } from '@/lib/api/auth';
+import { postgresLoginApi, loginWithTestIdApi, logoutApi } from '@/lib/api/auth';
 import { api } from '@/lib/axios';
+import { User } from '@/types/user';
 
 type AuthState = {
   token: string | null;
-  setAuth: (user: any, token: string) => void;
+  setAuth: (user: User, token: string) => void;
   // Google OAuth 시작 (A안 – 팝업/리다이렉트용)
   loginWithGoogle: () => Promise<void>;
   // 일반 아이디/비밀번호 로그인
