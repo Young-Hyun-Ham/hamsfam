@@ -74,6 +74,7 @@ export function subscribeMessages(
         scenarioTitle: d.scenarioTitle,
         scenarioStatus: d.scenarioStatus,
         scenarioSteps: d.scenarioSteps ?? [],
+        scenarioRunState: d.scenarioRunState ?? null,
       };
     });
     onChange(list);

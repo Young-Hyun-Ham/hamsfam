@@ -156,7 +156,7 @@ export default function ScenarioMenuPanel({ isPanelOpen, onSelectPreset }: Props
     }
     onSelectPreset?.(item, activePanelId);
     // 필요하면 선택 후 닫기
-    // setOpen(false);
+    setOpen(false);
   };
 
   const handleClickChip = (id: PanelId) => {

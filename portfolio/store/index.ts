@@ -82,7 +82,7 @@ export const useStore: any = create((set: any, get: any) => ({
   setUserAndLoadData: async (user: any) => {
     set({ user });
     const includeAdminAccount = process.env.NEXT_PUBLIC_ADMIN_ACCOUNT ?? [''];
-    console.log("setUserAndLoadData start ======>", user)
+    
     /* ---------------------------------------------------
     * Firebase 로그인 사용자 Firestore upsert 처리
     * ---------------------------------------------------*/
@@ -116,7 +116,6 @@ export const useStore: any = create((set: any, get: any) => ({
             { merge: true }
           );
         }
-        console.log("setUserAndLoadData =======> ", snap.data())
         set({ user: snap.data() });
       } catch (err) {
         console.error("🔥 Firestore 사용자 upsert 실패:", err);
@@ -333,7 +332,7 @@ export const useStore: any = create((set: any, get: any) => ({
 
       // 3) 기본은 Firebase Auth
       onAuthStateChanged(get().auth, async (user) => {
-        console.log("Firebase Auth state changed:", user);
+        // console.log("Firebase Auth state changed:", user);
         // 이미 테스트 사용자로 로그인되어 있으면 Firebase Auth 상태 변경 무시
         if (get().user?.isTestUser) {
           console.log("Already logged in as test user, ignoring Firebase Auth state change.");

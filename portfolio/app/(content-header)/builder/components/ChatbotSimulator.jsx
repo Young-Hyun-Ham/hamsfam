@@ -97,8 +97,6 @@ function ChatbotSimulator({ nodes, edges, isVisible, isExpanded, setIsExpanded }
    * 2. 'selectedRow' 슬롯에 클릭된 행의 데이터 저장
    * 3. 다음 노드로 진행
    */
-
-
   const handleFormElementApiCall = useCallback(async (clickedElement) => {
     if (!currentNode || currentNode.type !== 'form') {
       return;

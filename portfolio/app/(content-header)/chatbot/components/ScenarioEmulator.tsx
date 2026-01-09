@@ -54,6 +54,10 @@ type ScenarioEmulatorProps = {
     runId: string;
     steps: ChatStep[];
     finished: boolean;
+    currentNodeId: string | null;
+    slotValues: Record<string, any>;
+    formValues: Record<string, any>;
+    resetting?: boolean;
   }) => void;
 
   // 재시작(초기화) 시 부모에게 알려줄 콜백
@@ -61,6 +65,9 @@ type ScenarioEmulatorProps = {
   // 메시지에 저장된 실행 로그를 초기값으로 받기
   initialSteps?: ChatStep[];
   initialFinished?: boolean;
+  initialCurrentNodeId?: string | null;
+  initialSlotValues?: Record<string, any>;
+  initialFormValues?: Record<string, any>;
 };
 
 export default function ScenarioEmulator({
@@ -72,6 +79,9 @@ export default function ScenarioEmulator({
   onResetRun, 
   initialSteps,
   initialFinished,
+  initialCurrentNodeId,
+  initialSlotValues,
+  initialFormValues,
 }: ScenarioEmulatorProps) {
   const user = useStore((s: any) => s.user);
   const backend = useStore((s: any) => s.backend);
@@ -103,17 +113,59 @@ export default function ScenarioEmulator({
   // 초기값을 props 에서 받아서 시작
   const [currentNode, setCurrentNode] = useState<AnyNode | null>(null);
   const [steps, setSteps] = useState<ChatStep[]>(initialSteps ?? []);
-  const [formValues, setFormValues] = useState<Record<string, any>>({});
-  const [slotValues, setSlotValues] = useState<Record<string, any>>({});
+  const [formValues, setFormValues] = useState<Record<string, any>>(initialFormValues ?? {});
+  const [slotValues, setSlotValues] = useState<Record<string, any>>(initialSlotValues ?? {});
   const [finished, setFinished] = useState(initialFinished ?? false);
 
   // 한 번만 store 에서 복원했는지 여부
   const [hydratedFromStore, setHydratedFromStore] = useState(false);
 
+  const hydratedRef = useRef(false);
+  const initNodeRef = useRef(false);
+
+  // nodes 로딩 후 initialCurrentNodeId 적용
+  useEffect(() => {
+    if (!nodes?.length) return;
+    if (initNodeRef.current) return;
+
+    // ✅ 복원 우선순위: persistedRun > props(initial) > root
+    const restoreNodeId =
+      persistedRun?.currentNodeId ??
+      initialCurrentNodeId ??
+      null;
+
+    if (restoreNodeId) {
+      const found = nodes.find((n) => n.id === restoreNodeId);
+      setCurrentNode(found ?? rootNode);
+    } else {
+      setCurrentNode(rootNode);
+    }
+
+    // slot/form도 여기서 “최초 1회”만 세팅
+    if (persistedRun) {
+      setSlotValues(persistedRun.slotValues ?? {});
+      setFormValues(persistedRun.formValues ?? {});
+    } else {
+      setSlotValues(initialSlotValues ?? {});
+      setFormValues(initialFormValues ?? {});
+    }
+
+    hydratedRef.current = true;
+    initNodeRef.current = true;
+    setHydratedFromStore(true); // persistedRun 복원 케이스도 hydration 완료로 처리
+  }, [
+    nodes?.length,
+    rootNode,
+    persistedRun,
+    initialCurrentNodeId,
+    initialSlotValues,
+    initialFormValues,
+  ]);
+
   // ==============================================================================
   // 엔진 관련
-  console.log("userinfo =====> ", user);
-  const userId = user?.uid ?? user?.id ?? "guest";
+  // console.log("userinfo =====> ", user);
+  const userId = user?.uid ?? user?.id ?? user?.sub ?? "guest";
   const engineProps = { nodes, edges, scenarioKey, scenarioRunId, userId };
   const { logToEngine, resetEngineState } = useEngineLogger();
   useEffect(() => {
@@ -127,29 +179,43 @@ export default function ScenarioEmulator({
 
   // =============================================================================
 
-
-  // nodes / rootNode 는 기존 코드에 이미 있음
+  // persistedRun이 없을 때, ChatContainer에서 준 initial 상태로 복원
   useEffect(() => {
     if (!scenarioRunId) return;
     if (hydratedFromStore) return;
-    if (!persistedRun) return;
-    // 빌더 노드 로딩이 아직 안 끝났으면 rootNode 가 null 일 수 있으니 그때는 대기
-    if (!nodes || !nodes.length) return;
+    if (persistedRun) return;              // store가 있으면 store 우선
+    if (!nodes || !nodes.length) return;   // 노드 로딩 전이면 대기
 
-    setHydratedFromStore(true);
+    // initialSteps는 이미 useState 초기값으로 들어가도 되지만,
+    // 재오픈 시 확실히 맞추려면 여기서도 세팅해도 됨
+    if (initialSteps) setSteps(initialSteps);
+    if (typeof initialFinished === "boolean") setFinished(initialFinished);
 
-    setSteps(persistedRun.steps || []);
-    setFormValues(persistedRun.formValues || {});
-    setSlotValues(persistedRun.slotValues || {});
-    setFinished(persistedRun.finished ?? false);
+    setFormValues(initialFormValues ?? {});
+    setSlotValues(initialSlotValues ?? {});
 
-    if (persistedRun.currentNodeId) {
-      const found = nodes.find((n) => n.id === persistedRun.currentNodeId);
+    const id = initialCurrentNodeId ?? null;
+    if (id) {
+      const found = nodes.find((n) => n.id === id);
       setCurrentNode(found ?? rootNode);
     } else {
+      // currentNodeId가 없으면 root로(정상)
       setCurrentNode(rootNode);
     }
-  }, [scenarioRunId, hydratedFromStore, persistedRun, nodes, rootNode]);
+
+    setHydratedFromStore(true);
+  }, [
+    scenarioRunId,
+    hydratedFromStore,
+    persistedRun,
+    nodes,
+    rootNode,
+    initialSteps,
+    initialFinished,
+    initialCurrentNodeId,
+    initialSlotValues,
+    initialFormValues,
+  ]);
 
   const lastProgressRef = useRef<{
     stepsLen: number;
@@ -159,29 +225,39 @@ export default function ScenarioEmulator({
   useEffect(() => {
     if (!scenarioRunId || !onProgress) return;
 
-    // 이전 실행 기록(persistedRun)이 있는데
-    // 아직 복구(hydratedFromStore) 전 + 비어있는 초기 상태라면 부모로 보내지 않음
-    if (persistedRun && !hydratedFromStore) {
-      if (steps.length === 0 && !finished) {
-        return;
-      }
-    }
+    // resetScenario()가 수동으로 onProgress를 쏜 직후에는 자동 progress 저장을 1회 막는다
+    if (resetInFlightRef.current) return;
 
-    const last = lastProgressRef.current;
-    // steps 길이와 finished 둘 다 이전과 같으면 다시 호출 안 함
-    if (last && last.stepsLen === steps.length && last.finished === finished) {
-      return;
-    }
+    // mount 시 빈값 덮어쓰기 방지
+    if (!hydratedRef.current) return;
 
-    lastProgressRef.current = {
-      stepsLen: steps.length,
-      finished,
-    };
+    // currentNode가 없으면 보내지 않음
+    const nodeId = currentNode?.id ?? null;
+    if (!nodeId) return;
+
+    // “아무 진행도 없는 첫 마운트”에서 빈 slot/form으로 덮어쓰기 방지
+    // (여기 조건은 상황에 맞게 조정 가능)
+    const hasAnyStep = (steps?.length ?? 0) > 0;
+    const hasAnyState =
+      (Object.keys(slotValues ?? {}).length > 0) ||
+      (Object.keys(formValues ?? {}).length > 0);
+
+    // steps도 없고 slot/form도 비었으면 => 이건 저장할 가치가 없는 초기 상태
+    if (!hasAnyStep && !hasAnyState && !persistedRun) return;
+
+    // 현재 slotValues 기준으로 steps를 "치환본"으로 만든다
+    const resolvedSteps: ChatStep[] = steps.map((s) => ({
+      ...s,
+      text: resolveTemplate(s.text, slotValues),
+    }));
 
     onProgress({
       runId: scenarioRunId,
-      steps,
+      steps: resolvedSteps,
       finished,
+      currentNodeId: currentNode?.id ?? null,
+      slotValues,
+      formValues,
     });
   }, [
     scenarioRunId,
@@ -190,6 +266,7 @@ export default function ScenarioEmulator({
     onProgress,
     persistedRun,
     hydratedFromStore,
+    slotValues,
   ]);
   
   useEffect(() => {
@@ -201,12 +278,17 @@ export default function ScenarioEmulator({
     if (persistedRun && !hydratedFromStore) {
       return;
     }
+
+    const resolvedSteps: ChatStep[] = steps.map((s) => ({
+      ...s,
+      text: resolveTemplate(s.text, slotValues),
+    }));
     
     // 새 실행(run) 이거나, 이미 복원한 후에는 정상적으로 저장
     saveScenarioRun(scenarioRunId, {
       scenarioKey,
       scenarioTitle,
-      steps,
+      steps: resolvedSteps,
       formValues,
       slotValues,
       currentNodeId: currentNode?.id ?? null,
@@ -225,7 +307,10 @@ export default function ScenarioEmulator({
     hydratedFromStore,
   ]);
 
+  const resetInFlightRef = useRef(false);
   function resetScenario() {
+    resetInFlightRef.current = true;
+
     setCurrentNode(rootNode);
     setSteps([]);
     setFormValues({});
@@ -236,13 +321,33 @@ export default function ScenarioEmulator({
     if (scenarioRunId) {
       clearScenarioRun(scenarioRunId);
     }
+    
+    // ChatContainer에 "이건 reset이야"라고 알려서
+    // handleScenarioProgress의 빈값 방어 로직을 우회하게 만든다.
+    if (scenarioRunId && onProgress) {
+      onProgress({
+        runId: scenarioRunId,
+        steps: [],
+        finished: false,
+        currentNodeId: rootNode?.id ?? null,  // null 말고 root id를 보내는 게 핵심
+        slotValues: {},
+        formValues: {},
+        resetting: true,
+      });
+    }
+
     // 부모(ChatContainer)에게 "이 runId 다시 시작했어" 알려주기
     if (onResetRun) {
       onResetRun(scenarioRunId);
     }
+
+    // 다음 tick에서 자동 progress 다시 허용
+    queueMicrotask(() => {
+      resetInFlightRef.current = false;
+    });
   }
 
-  // 👇 끝났을 때 한 번만 부모에게 실행 결과 전달
+  // 끝났을 때 한 번만 부모에게 실행 결과 전달
   useEffect(() => {
     if (!finished) return;
     if (!steps.length) return;
@@ -603,7 +708,7 @@ export default function ScenarioEmulator({
 
           accumulated += chunkText;
 
-          // 🔹 마지막 LLM 말풍선을 누적 텍스트로 계속 갱신
+          // 마지막 LLM 말풍선을 누적 텍스트로 계속 갱신
           setSteps((prev) =>
             prev.map((s) =>
               s.id === stepId
@@ -796,13 +901,45 @@ export default function ScenarioEmulator({
 
     // 이 폼에서 사용한 값들을 한 객체로 모으기
     const formObject: Record<string, any> = {};
+    // console.log("formSlotKey ======> ", formSlotKey);
+    // console.log("formObject ======> ", formObject);
+
+    // 폼에서 grid 엘리먼트 찾기(있으면 별도 포맷)
+    const gridEl = elements.find((el) => el?.type === "grid");
+    const gridLabel = gridEl?.label || gridEl?.name || "Grid";
+
+    // 보기 좋은 값 포맷 유틸
+    const formatAny = (v: any): any => {
+      if (v === null || v === undefined) return "";
+      if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+      if (Array.isArray(v)) return v.map((x) => formatAny(x)).filter(Boolean).join(", ");
+      try {
+        return JSON.stringify(v, null, 2); // 객체는 pretty json
+      } catch {
+        return String(v);
+      }
+    };
+    
+    const formatSelectedRow = (row: any, displayKeys: { key: string; label: string }[]) => {
+      if (!row) return "";
+      // 1) displayKeys 우선
+      const displayLine =
+        (displayKeys ?? [])
+          .map((c) => row?.[c.key])
+          .filter((x) => x !== undefined && x !== null && String(x).trim() !== "")
+          .join(" / ") || "";
+
+      // 2) 없으면 id라도
+      return displayLine || (row?.id ? String(row.id) : "");
+    };
 
     // 1) summaryParts 만들면서 formObject 채우기
     for (const el of elements) {
       const value = formValues[el.name];
 
       if (value !== undefined && value !== null && value !== "") {
-        summaryParts.push(`${el.label || el.name}: ${value}`);
+        // const label = el.label || el.name;
+        // summaryParts.push(`${label}: ${value}`);
         formObject[el.name] = value;
       }
 
@@ -810,33 +947,70 @@ export default function ScenarioEmulator({
       if (el.type === "search") {
         await runSearchElement(el);
       }
+      // grid 는 아래에서 한 번에 포맷할 거라 여기서는 skip
+      if (el.type === "grid") continue;
+
+      // 값이 없는 건 스킵
+      if (value === undefined || value === null || value === "") continue;
+
+      // checkbox/array 등 대응
+      const label = el.label || el.name;
+      summaryParts.push(`${label}: ${formatAny(value)}`);
+    }
+
+    // grid가 있다면 “New Grid 아래 블록”을 만든다
+    if (gridEl) {
+      const picked = formValues[gridEl.name]; // {id, ...row} 형태
+      const displayKeys: { key: string; label: string }[] = gridEl.displayKeys ?? [];
+
+      const selectedLine = picked ? formatSelectedRow(picked, displayKeys) : "";
+      const gridDataJson = picked ? formatAny(picked) : "";
+
+      const blockLines: string[] = [];
+      blockLines.push(`${gridLabel}:`);
+      blockLines.push(`- 선택된 행: ${selectedLine || "(선택 없음)"}`);
+      // if (picked) {
+      //   blockLines.push(`- 그리드 데이터:\n${gridDataJson}`);
+      // }
+
+      // 다른 입력값들도 “New Grid 아래에” 붙이고 싶으면 같이 넣기
+      // (현재 summaryParts에 담긴 것들을 block으로 합쳐버림)
+      if (summaryParts.length > 0) {
+        blockLines.push(`- 입력값:`);
+        summaryParts.forEach((line) => blockLines.push(`  - ${line}`));
+      }
+
+      // 최종 사용자 step 텍스트는 grid 블록만 남기기
+      summaryParts.length = 0;
+      summaryParts.push(blockLines.join("\n"));
     }
 
     // 2) formSlotKey 가 있으면, 이 폼 전체 값을 하나의 slot에 저장
     if (formSlotKey) {
+      const pickedRow = gridEl ? formValues[gridEl.name] : null;
+      const hasPickedRow =
+        pickedRow && typeof pickedRow === "object" && Object.keys(pickedRow).length > 0;
+
+      const selectedRow = hasPickedRow ? pickedRow : null;
+      const selectedRowId = selectedRow?.id ?? null;
+      
       setSlotValues((prev: any) => {
-        const prevFormdatas = prev[formSlotKey] || {};
-
-        // 기존에 하던 gridData 처리 유지
-        const selectedGridData = formValues.gridData;
-        const fallbackGridData = prev.scenarios;
-        const finalGridData =
-          selectedGridData && Object.keys(selectedGridData).length > 0
-            ? selectedGridData
-            : fallbackGridData;
-
-        const mergedFormdatas: any = {
-          ...prevFormdatas,
-          ...formValues,
-        };
-
-        if (finalGridData) {
-          mergedFormdatas.gridData = finalGridData;
-        }
+        const prevFormSlot = prev?.[formSlotKey] ?? {};
 
         return {
           ...prev,
-          [formSlotKey]: mergedFormdatas,
+
+          // ✅ 전역 슬롯
+          selectedRow,
+          selectedRowId,
+
+          // ✅ 폼 슬롯(newgriddata)
+          [formSlotKey]: {
+            ...prevFormSlot,
+            ...formObject,     // ✅ "현재 폼에서 만든 데이터"만 저장
+            selectedRow,
+            selectedRowId,
+          },
         };
       });
     }
@@ -849,7 +1023,7 @@ export default function ScenarioEmulator({
         role: "user",
         text:
           summaryParts.length > 0
-            ? summaryParts.join(", ")
+            ? summaryParts.join("\n")
             : "폼을 제출했습니다.",
       },
     ]);
@@ -887,6 +1061,10 @@ export default function ScenarioEmulator({
       action: { type: "reply", value: formValues, display: "form" },
     }, engineProps);
   };
+
+  useEffect(() => {
+    console.log("[slotValues updated]", slotValues);
+  }, [slotValues]);
 
   // 링크 노드 후 대화 계속하기 핸들러
   const handleNextFromLink = () => {

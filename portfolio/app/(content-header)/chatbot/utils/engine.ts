@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import type { AnyEdge, AnyNode } from "../types";
+import { api } from "@/lib/axios";
 
 // 엔진 로깅 관련
 const engineBase = process.env.NEXT_PUBLIC_ENGINE_BASE || "http://localhost:8000";
@@ -23,15 +24,13 @@ export function useEngineLogger() {
   const engineStateRef = useRef<any>(null);
 
   const logToEngine = useCallback(async (payload: LogPayload, params: LogToEngineParams) => {
+    return;
     const { nodes, edges, scenarioKey, scenarioRunId, userId } = params;
 
     if (!nodes.length || !edges.length) return;
 
     try {
-      const res = await fetch(`${engineBase}/runScenario`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      const { data } = await api.post(`${engineBase}/runScenario`, {
           userId,
           scenarioId: scenarioKey,
           nodes,
@@ -43,10 +42,7 @@ export function useEngineLogger() {
             scenarioId: scenarioKey,
           },
           action: payload.action ?? null,
-        }),
-      });
-
-      const data = await res.json().catch(() => null);
+        });
       if (data?.state) engineStateRef.current = data.state;
     } catch {
       // 로깅 실패는 UX에 영향 주면 안됨 → 무시

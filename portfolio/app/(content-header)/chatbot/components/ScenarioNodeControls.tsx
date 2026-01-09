@@ -3,7 +3,7 @@
 
 import React from "react";
 import { useModal } from '@/providers/ModalProvider';
-import { resolveTemplate } from "../utils";
+import { normalizeOptionsKey, resolveTemplate } from "../utils";
 
 type AnyNode = {
   id: string;
@@ -66,7 +66,7 @@ export default function ScenarioNodeControls({
     );
   }
 
-  // 🔹 LLM 노드: 스트림 끝나면 "계속" 버튼으로 다음 노드로 이동
+  // LLM 노드: 스트림 끝나면 "계속" 버튼으로 다음 노드로 이동
   if (currentNode.type === "llm") {
     return (
       <div className="mt-3 flex justify-end">
@@ -143,225 +143,246 @@ export default function ScenarioNodeControls({
 
     return (
       <form onSubmit={onSubmitForm} className="mt-3 space-y-3 text-xs">
-        {elements.map((el) => {
-          const commonLabel = (
-            <label className="mb-1 font-medium text-gray-700">
-              {el.label || el.name}
-            </label>
-          );
-
-          // element.type 에 따라 다른 UI 렌더
-          switch (el.type) {
-            case "input":
-            case "search": {
-              return (
-                <div key={el.id} className="flex flex-col">
-                  {commonLabel}
-                  <input
-                    type="text"
-                    className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
-                              focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    placeholder={el.placeholder || ""}
-                    value={formValues[el.name] ?? ""}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        [el.name]: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
+        <div
+          className="min-w-0 flex-1 overflow-auto pr-1"
+          style={{
+            // 에뮬 패널 높이에 따라 적당히 제한 (필요시 조정)
+            maxHeight: "260px",
+          }}
+        >
+          <div className="space-y-3">
+            {elements.map((el) => {
+              const commonLabel = (
+                <label className="mb-1 font-medium text-gray-700">
+                  {el.label || el.name}
+                </label>
               );
-            }
 
-            case "date": {
-              return (
-                <div key={el.id} className="flex flex-col">
-                  {commonLabel}
-                  <input
-                    type="date"
-                    className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
-                              focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    value={formValues[el.name] ?? ""}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        [el.name]: e.target.value,
-                      }))
+              // element.type 에 따라 다른 UI 렌더
+              switch (el.type) {
+                case "input":
+                case "search": {
+                  return (
+                    <div key={el.id} className="flex flex-col">
+                      {commonLabel}
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
+                                  focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                        placeholder={el.placeholder || ""}
+                        value={formValues[el.name] ?? ""}
+                        onChange={(e) =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            [el.name]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  );
+                }
+
+                case "date": {
+                  return (
+                    <div key={el.id} className="flex flex-col">
+                      {commonLabel}
+                      <input
+                        type="date"
+                        className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
+                                  focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                        value={formValues[el.name] ?? ""}
+                        onChange={(e) =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            [el.name]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  );
+                }
+
+                case "checkbox": {
+                  const selected: string[] = formValues[el.name] ?? [];
+                  const options: string[] = el.options ?? [];
+
+                  const toggle = (opt: string) => {
+                    setFormValues((prev) => {
+                      const cur: string[] = prev[el.name] ?? [];
+                      const exists = cur.includes(opt);
+                      const next = exists
+                        ? cur.filter((v) => v !== opt)
+                        : [...cur, opt];
+                      return { ...prev, [el.name]: next };
+                    });
+                  };
+
+                  return (
+                    <div key={el.id} className="flex flex-col">
+                      {commonLabel}
+                      <div className="space-y-1">
+                        {options.map((opt) => (
+                          <label
+                            key={opt}
+                            className="flex items-center gap-2 text-[11px] text-gray-700"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-3 w-3 rounded border-gray-300 text-emerald-600"
+                              checked={selected.includes(opt)}
+                              onChange={() => toggle(opt)}
+                            />
+                            <span>{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                case "dropbox": {
+                  let options: string[] = el.options ?? [];
+                  if (options.length === 0) {
+                    try {
+                      const optionsSlotKey = el.optionsSlot;
+                      const slotData = resolveTemplate(normalizeOptionsKey(optionsSlotKey), slotValues);
+                      const parsed = JSON.parse(slotData);
+                      options = Array.isArray(parsed) ? parsed.map(String) : [];
+                    } catch {
+                      options = [];
                     }
-                  />
-                </div>
-              );
-            }
+                  }
 
-            case "checkbox": {
-              const selected: string[] = formValues[el.name] ?? [];
-              const options: string[] = el.options ?? [];
-
-              const toggle = (opt: string) => {
-                setFormValues((prev) => {
-                  const cur: string[] = prev[el.name] ?? [];
-                  const exists = cur.includes(opt);
-                  const next = exists
-                    ? cur.filter((v) => v !== opt)
-                    : [...cur, opt];
-                  return { ...prev, [el.name]: next };
-                });
-              };
-
-              return (
-                <div key={el.id} className="flex flex-col">
-                  {commonLabel}
-                  <div className="space-y-1">
-                    {options.map((opt) => (
-                      <label
-                        key={opt}
-                        className="flex items-center gap-2 text-[11px] text-gray-700"
+                  return (
+                    <div key={el.id} className="flex flex-col">
+                      {commonLabel}
+                      <select
+                        className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
+                                  bg-white focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                        value={formValues[el.name] ?? ""}
+                        onChange={(e) =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            [el.name]: e.target.value,
+                          }))
+                        }
                       >
-                        <input
-                          type="checkbox"
-                          className="h-3 w-3 rounded border-gray-300 text-emerald-600"
-                          checked={selected.includes(opt)}
-                          onChange={() => toggle(opt)}
-                        />
-                        <span>{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              );
-            }
+                        <option value="">Select...</option>
+                        {options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
 
-            case "dropbox": {
-              const options: string[] = el.options ?? [];
-              return (
-                <div key={el.id} className="flex flex-col">
-                  {commonLabel}
-                  <select
-                    className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
-                              bg-white focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    value={formValues[el.name] ?? ""}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        [el.name]: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Select...</option>
-                    {options.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              );
-            }
+                case "grid": {
+                  // console.log("grid ====================> ", slotValues);
+                  const rows =
+                    el.optionsSlot && slotValues[el.optionsSlot]
+                      ? slotValues[el.optionsSlot]
+                      : el.data ?? [];
+                  const displayKeys: { key: string; label: string }[] =
+                    el.displayKeys ?? [];
+                  const selectedRowId = formValues[el.name]?.id ?? null;
 
-            case "grid": {
-              const rows =
-                el.optionsSlot && slotValues[el.optionsSlot]
-                  ? slotValues[el.optionsSlot]
-                  : el.data ?? [];
-              const displayKeys: { key: string; label: string }[] =
-                el.displayKeys ?? [];
-              const selectedRowId = formValues[el.name]?.id ?? null;
-
-              return (
-                <div key={el.id} className="flex flex-col">
-                  {commonLabel}
-                  <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
-                    <table className="min-w-full border-collapse text-[11px]">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {displayKeys.map((col: any) => (
-                            <th
-                              key={col.key}
-                              className="border-b border-gray-200 px-2 py-1 text-left font-medium text-gray-700"
-                            >
-                              {col.label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((row: any, idx: number) => {
-                          const rowId = row.id ?? idx;
-                          const isSelected = selectedRowId === rowId;
-                          return (
-                            <tr
-                              key={rowId}
-                              className={
-                                "cursor-pointer hover:bg-emerald-50 " +
-                                (isSelected ? "bg-emerald-50" : "")
-                              }
-                              onClick={() =>
-                                setFormValues((prev) => ({
-                                  ...prev,
-                                  [el.name]: { id: rowId, ...row },
-                                }))
-                              }
-                            >
+                  return (
+                    <div key={el.id} className="flex flex-col">
+                      {commonLabel}
+                      <div className="min-w-0 overflow-x-auto rounded-md border border-gray-200 bg-white">
+                        <table className="min-w-full border-collapse text-[11px]">
+                          <thead className="bg-gray-50">
+                            <tr>
                               {displayKeys.map((col: any) => (
-                                <td
+                                <th
                                   key={col.key}
-                                  className="border-b border-gray-100 px-2 py-1"
+                                  className="border-b border-gray-200 px-2 py-1 text-left font-medium text-gray-700"
                                 >
-                                  {row[col.key]}
-                                </td>
+                                  {col.label}
+                                </th>
                               ))}
                             </tr>
-                          );
-                        })}
-                        {(!rows || rows.length === 0) && (
-                          <tr>
-                            <td
-                              className="px-2 py-2 text-center text-gray-400"
-                              colSpan={displayKeys.length || 1}
-                            >
-                              데이터가 없습니다.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  {formValues[el.name] && (
-                    <div className="mt-1 text-[10px] text-emerald-700">
-                      선택된 행:{" "}
-                      {displayKeys
-                        .map((col) => formValues[el.name][col.key])
-                        .filter(Boolean)
-                        .join(" / ")}
+                          </thead>
+                          <tbody>
+                            {rows.map((row: any, idx: number) => {
+                              const rowId = row.id ?? idx;
+                              const isSelected = selectedRowId === rowId;
+                              return (
+                                <tr
+                                  key={rowId}
+                                  className={
+                                    "cursor-pointer hover:bg-emerald-50 " +
+                                    (isSelected ? "bg-emerald-50" : "")
+                                  }
+                                  onClick={() =>
+                                    setFormValues((prev) => ({
+                                      ...prev,
+                                      [el.name]: { id: rowId, ...row },
+                                    }))
+                                  }
+                                >
+                                  {displayKeys.map((col: any) => (
+                                    <td
+                                      key={col.key}
+                                      className="border-b border-gray-100 px-2 py-1"
+                                    >
+                                      {row[col.key]}
+                                    </td>
+                                  ))}
+                                </tr>
+                              );
+                            })}
+                            {(!rows || rows.length === 0) && (
+                              <tr>
+                                <td
+                                  className="px-2 py-2 text-center text-gray-400"
+                                  colSpan={displayKeys.length || 1}
+                                >
+                                  데이터가 없습니다.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      {formValues[el.name] && (
+                        <div className="mt-1 text-[10px] text-emerald-700">
+                          선택된 행:{" "}
+                          {displayKeys
+                            .map((col) => formValues[el.name][col.key])
+                            .filter(Boolean)
+                            .join(" / ")}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            }
+                  );
+                }
 
-            default: {
-              return (
-                <div key={el.id} className="flex flex-col">
-                  {commonLabel}
-                  <input
-                    type="text"
-                    className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
-                              focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    value={formValues[el.name] ?? ""}
-                    onChange={(e) =>
-                      setFormValues((prev) => ({
-                        ...prev,
-                        [el.name]: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              );
-            }
-          }
-        })}
-
+                default: {
+                  return (
+                    <div key={el.id} className="flex flex-col">
+                      {commonLabel}
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs
+                                  focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                        value={formValues[el.name] ?? ""}
+                        onChange={(e) =>
+                          setFormValues((prev) => ({
+                            ...prev,
+                            [el.name]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  );
+                }
+              }
+            })}
+          </div>
+        </div>
         <div className="flex justify-end gap-2 pt-1">
           <button
             type="submit"
