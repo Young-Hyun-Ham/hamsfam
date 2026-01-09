@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ChatMessage, ScenarioStep } from "../types";
+import { resolveTemplate } from "../utils";
+import useChatbotStore from "../store";
 
 function LoadingDots({ label = "처리중" }: { label?: string }) {
   return (
@@ -40,6 +42,9 @@ export default function ChatMessageItem({
   onScenarioReject,
 }: Props) {
   const isAssistant = message.role === "assistant";
+  
+  const run = useChatbotStore((s) => s.scenarioRuns[message.id]);
+  const slotSnapshot = run?.slotValues ?? {};
 
   if (message.kind === "scenario" && message.scenarioKey) {
     const [open, setOpen] = useState(false);
@@ -81,7 +86,10 @@ export default function ChatMessageItem({
     const detailText =
       steps.length > 0
         ? steps
-            .map((s) => (s.role === "bot" ? `봇: ${s.text}` : `사용자: ${s.text}`))
+            .map((s) => {
+              const rendered = resolveTemplate(s.text, slotSnapshot);
+              return s.role === "bot" ? `봇: ${rendered}` : `사용자: ${rendered}`;
+            })
             .join("\n")
         : message.content;
 
@@ -99,7 +107,6 @@ export default function ChatMessageItem({
             </div>
 
             <div className="flex items-center gap-1">
-              {/* ✅ 연계는 언제나 클릭 불가(완료/취소 포함) */}
               {!isLinked ? (
                 <button
                   type="button"
@@ -138,7 +145,6 @@ export default function ChatMessageItem({
             </div>
           </div>
 
-          {/* ✅ 연계: 실행제안일 때만 예/아니오 */}
           {status === "linked_suggest" && (
             <div className="mt-2 rounded-md bg-white/70 px-2 py-2 text-[12px] text-emerald-900">
               <div className="whitespace-pre-wrap">{message.content}</div>
@@ -174,7 +180,7 @@ export default function ChatMessageItem({
           )}
 
           {open && (
-            <div className="mt-2 rounded-md bg-emerald-100/70 px-2 py-1.5 text-[11px] text-emerald-900 whitespace-pre-wrap">
+            <div className="mt-2 rounded-md bg-emerald-100/70 px-2 py-1.5 text-[11px] text-emerald-900 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
               {detailText}
             </div>
           )}

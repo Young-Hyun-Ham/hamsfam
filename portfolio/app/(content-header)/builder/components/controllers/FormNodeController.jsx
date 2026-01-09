@@ -107,7 +107,7 @@ function ElementEditor({ element, index, onUpdate, onDelete, onGridCellChange })
         <>
           {element.type === 'dropbox' && (
             <div className={styles.formGroup}>
-              <label>Options Slot</label>
+              <label>Options Slot key</label>
               <input
                 type="text"
                 placeholder="Bind to array in slot"
@@ -179,7 +179,7 @@ function ElementEditor({ element, index, onUpdate, onDelete, onGridCellChange })
           <div className={styles.formGroup}>
             <label>Headers (JSON) <span style={{ fontWeight: 'normal', color: '#888' }}>(Optional)</span></label>
             <textarea
-              value={element.apiConfig?.headers || '{}'}
+              value={element.apiConfig?.headers || '{"Content-Type":"application/json"}'}
               onChange={(e) => handleApiConfigChange('headers', e.target.value)}
               rows={4}
             />

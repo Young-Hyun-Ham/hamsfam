@@ -42,8 +42,9 @@ export type ChatMessage = {
   scenarioTitle?: string;
   /** 에뮬레이터에서 실제로 돌린 로그 */
   scenarioSteps?: ScenarioStep[];
-  
   scenarioStatus?: ChatScenarioStatus;
+  
+  scenarioRunState?: Omit<ScenarioRunState, "steps">; 
 };
 
 export interface ChatSession {

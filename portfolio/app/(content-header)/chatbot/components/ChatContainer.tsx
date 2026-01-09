@@ -32,6 +32,7 @@ import { SettingsIcon } from "lucide-react";
 
 import ScenarioEmulator from "./ScenarioEmulator";
 import { sleep } from "../utils";
+import { api } from "@/lib/axios";
 
 type ScenarioPanelData = {
   title: string;
@@ -199,34 +200,73 @@ export default function ChatContainer() {
     }));
   };
 
-  // 
-  const handleScenarioProgress = useCallback(
-    ({
-      runId,
-      steps,
-      finished,
-    }: {
-      runId: string;
-      steps: ScenarioStep[];
-      finished: boolean;
-    }) => {
-      if (!activeSessionId) return;
+  const handleScenarioProgress = useCallback(({
+    runId,
+    steps,
+    finished,
+    currentNodeId,
+    slotValues,
+    formValues,
+    resetting,
+  }: {
+    runId: string;
+    steps: ScenarioStep[];
+    finished: boolean;
+    slotValues: any;
+    formValues: any;
+    currentNodeId: string | null;
+    resetting?: boolean;
+  }) => {
+    if (!activeSessionId) return;
 
-      patchMessage(activeSessionId, runId, (prev) => ({
+    patchMessage(activeSessionId, runId, (prev) => {
+      const prevState: any = (prev as any).scenarioRunState ?? null;
+
+      // “초기화성” progress 방지:
+      // currentNodeId가 없고 slot/form이 비어있으면 => 기존 값을 유지
+      const incomingEmpty =
+        !currentNodeId &&
+        (!slotValues || Object.keys(slotValues).length === 0) &&
+        (!formValues || Object.keys(formValues).length === 0);
+
+      // 초기화(reset) 이벤트면 방어 로직을 무시하고 바로 덮어쓴다
+      const shouldKeepPrevState = !resetting && incomingEmpty;
+
+      return {
         ...prev,
+
         // 빈 steps로 덮어쓰지 않기
         scenarioSteps: steps.length > 0 ? steps : prev.scenarioSteps ?? [],
+
         // 한번 done이면 다시 running 으로 돌아가지 않게
         scenarioStatus: finished
           ? "done"
           : prev.scenarioStatus === "done"
           ? "done"
           : "running",
-      }));
-    },
-    [activeSessionId, patchMessage],
-  );
 
+        scenarioRunState: {
+          scenarioKey: prev.scenarioKey ?? "",
+          scenarioTitle: prev.scenarioTitle,
+
+          // 빈 값이 들어오면 기존 값을 유지해서 덮어쓰기 방지
+          currentNodeId: shouldKeepPrevState
+            ? (prevState?.currentNodeId ?? currentNodeId)
+            : currentNodeId,
+
+          slotValues: shouldKeepPrevState
+            ? (prevState?.slotValues ?? slotValues)
+            : slotValues,
+
+          formValues: shouldKeepPrevState
+            ? (prevState?.formValues ?? formValues)
+            : formValues,
+
+          finished,
+        },
+      };
+    });
+  }, [activeSessionId, patchMessage]);
 
   // 1) 새 실행 (shortcut 메뉴에서만 사용)
   const startNewScenarioRun = ({ scenarioKey, scenarioTitle }: {
@@ -283,6 +323,9 @@ export default function ChatContainer() {
     initialFinished?: boolean;
   }) => {
     setCurrentScenarioRunId(runId);
+
+    const runState = messages.find(m => m.id === runId)?.scenarioRunState;
+
     // 여기서는 상태를 "running" 으로 바꾸거나 clear 하지 않는다
     setScenarioData({
       title: scenarioTitle || "시나리오 실행",
@@ -297,6 +340,10 @@ export default function ChatContainer() {
           // 메시지에 저장된 실행 로그를 그대로 넘겨줌
           initialSteps={initialSteps}
           initialFinished={initialFinished}
+
+          initialCurrentNodeId={runState?.currentNodeId ?? null}
+          initialSlotValues={runState?.slotValues ?? {}}
+          initialFormValues={runState?.formValues ?? {}}
           // 재시작 시 메시지 상태 강제 리셋
           onResetRun={handleScenarioResetRun}
         />
@@ -482,90 +529,84 @@ export default function ChatContainer() {
         process.env.NEXT_PUBLIC_KNOWLEDGE_PROJECT_ID ||
         "81ba67f6-7568-446a-a82e-d0d7473ce437";
 
-      const ansRes = await fetch(answerUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          text,
-          locale: "ko",
-          mode: "plan",
-          systemPrompt,
-        }),
-      });
+      const ansPayload = {
+        projectId,
+        text,
+        locale: "ko",
+        mode: "plan",
+        systemPrompt,
+      };
+      const { data: ans } = await api.post(answerUrl, ansPayload);
 
-      if (ansRes.ok) {
-        const ans = await ansRes.json();
-        // console.log("Knowledge answer ===================> ", ans)
-        // canned answer
-        if (ans?.answer) {
-          patchMessage(currentSessionId, assistantId, (prev) => ({
-            ...prev,
-            kind: "llm",
-            content: ans.answer,
-            meta: { ...(prev as any)?.meta, loading: false },
-          }));
-          setIsSending(false);
-          textareaRef.current?.focus();
-          return;
-        }
+      // console.log("Knowledge answer ===================> ", ans)
+      // canned answer
+      if (ans?.answer) {
+        patchMessage(currentSessionId, assistantId, (prev) => ({
+          ...prev,
+          kind: "llm",
+          content: ans.answer,
+          meta: { ...(prev as any)?.meta, loading: false },
+        }));
+        setIsSending(false);
+        textareaRef.current?.focus();
+        return;
+      }
 
-        // scenario suggest
-        const scenarioKey = String(ans?.scenario?.scenarioKey ?? "");
-        const scenarioTitle = String(ans?.scenario?.scenarioTitle ?? "");
-        const hasScenario = Boolean(scenarioKey);
-        console.log("Knowledge =============================>", scenarioKey, scenarioTitle, hasScenario)
-        if (hasScenario && ans?.shouldCallGemini === false) {
-          patchMessage(currentSessionId, assistantId, (prev) => ({
-            ...prev,
-            kind: "scenario",
-            scenarioKey,
-            scenarioTitle,
-            scenarioSteps: [],
-            scenarioStatus: "linked_suggest",
-            content:
-              ans?.scenario?.confirmMessage ||
-              `[${scenarioTitle}]을 실행 하시겠습니까?`,
-          }));
-          setIsSending(false);
-          textareaRef.current?.focus();
-          return;
-        }
+      // scenario suggest
+      const scenarioKey = String(ans?.scenario?.scenarioKey ?? "");
+      const scenarioTitle = String(ans?.scenario?.scenarioTitle ?? "");
+      const hasScenario = Boolean(scenarioKey);
+      // console.log("Knowledge =============================>", scenarioKey, scenarioTitle, hasScenario)
+      if (hasScenario && ans?.shouldCallGemini === false) {
+        patchMessage(currentSessionId, assistantId, (prev) => ({
+          ...prev,
+          kind: "scenario",
+          scenarioKey,
+          scenarioTitle,
+          scenarioSteps: [],
+          scenarioStatus: "linked_suggest",
+          content:
+            ans?.scenario?.confirmMessage ||
+            `[${scenarioTitle}]을 실행 하시겠습니까?`,
+        }));
+        setIsSending(false);
+        textareaRef.current?.focus();
+        return;
+      }
 
-        shouldCallGemini = Boolean(ans?.shouldCallGemini);
+      shouldCallGemini = Boolean(ans?.shouldCallGemini);
 
-        if (shouldCallGemini) {
-          const reason = ans?.gemini?.reason as
-            | "no_intent"
-            | "below_threshold"
-            | "no_canned"
-            | null
-            | undefined;
+      if (shouldCallGemini) {
+        const reason = ans?.gemini?.reason as
+          | "no_intent"
+          | "below_threshold"
+          | "no_canned"
+          | null
+          | undefined;
 
-          let prefix = "";
-          if (reason === "no_intent") {
-            prefix = "등록된 의도에 해당하는 답변을 찾지 못해 일반 답변으로 진행합니다.\n\n";
-          } else if (reason === "below_threshold") {
-            prefix = "매칭 정확도가 낮아 일반 답변으로 진행합니다.\n\n";
-          } else if (reason === "no_canned") {
-            prefix = "해당 의도에 연결된 답변/시나리오가 아직 없습니다.\n일반 답변으로 진행합니다.\n\n";
-          } else {
-            prefix = getGeminiPrefix(ans) || "일반 답변으로 진행합니다.\n\n";
-          }
-
-          showFallbackLoading = true;
-          fallbackPrefixRef = prefix;
-
-          patchMessage(currentSessionId, assistantId, (prev: any) => ({
-            ...prev,
-            kind: "llm",
-            content: fallbackPrefixRef,
-            meta: { ...(prev?.meta ?? {}), loading: true },
-          }));
+        let prefix = "";
+        if (reason === "no_intent") {
+          prefix = "등록된 의도에 해당하는 답변을 찾지 못해 일반 답변으로 진행합니다.\n\n";
+        } else if (reason === "below_threshold") {
+          prefix = "매칭 정확도가 낮아 일반 답변으로 진행합니다.\n\n";
+        } else if (reason === "no_canned") {
+          prefix = "해당 의도에 연결된 답변/시나리오가 아직 없습니다.\n일반 답변으로 진행합니다.\n\n";
         } else {
-          // safety: answer/scenario도 없는데 shouldCallGemini=false면 그냥 gemini로 보냄
-          shouldCallGemini = true;
+          prefix = getGeminiPrefix(ans) || "일반 답변으로 진행합니다.\n\n";
         }
+
+        showFallbackLoading = true;
+        fallbackPrefixRef = prefix;
+
+        patchMessage(currentSessionId, assistantId, (prev: any) => ({
+          ...prev,
+          kind: "llm",
+          content: fallbackPrefixRef,
+          meta: { ...(prev?.meta ?? {}), loading: true },
+        }));
+      } else {
+        // safety: answer/scenario도 없는데 shouldCallGemini=false면 그냥 gemini로 보냄
+        shouldCallGemini = true;
       }
     } catch (err) {
       console.error("Knowledge answer error:", err);
@@ -580,6 +621,7 @@ export default function ChatContainer() {
 
     // =========================
     // 2) Gemini 스트림 (SSE/JSONL/Plain 대응)
+    // 스트리밍을 위해 fetch 사용
     // =========================
     try {
       const res = await fetch("/api/chat/gemini", {
