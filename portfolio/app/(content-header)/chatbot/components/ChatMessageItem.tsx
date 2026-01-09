@@ -1,3 +1,4 @@
+// app/(content-header)/chatbot/components/ChatMessageItem.tsx
 "use client";
 
 import { useState } from "react";
@@ -41,14 +42,13 @@ export default function ChatMessageItem({
   onScenarioAccept,
   onScenarioReject,
 }: Props) {
+  const [open, setOpen] = useState(false);
   const isAssistant = message.role === "assistant";
   
   const run = useChatbotStore((s) => s.scenarioRuns[message.id]);
   const slotSnapshot = run?.slotValues ?? {};
 
   if (message.kind === "scenario" && message.scenarioKey) {
-    const [open, setOpen] = useState(false);
-
     const title = message.scenarioTitle || "시나리오";
     const steps: ScenarioStep[] = message.scenarioSteps ?? [];
 
