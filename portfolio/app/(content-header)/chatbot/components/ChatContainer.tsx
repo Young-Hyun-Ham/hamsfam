@@ -356,6 +356,8 @@ export default function ChatContainer() {
       setIsSending(true);
     } else {
       setIsSending(false);
+      // 시나리오 에뮬 패널 닫기
+      setScenarioOpen(false);
     }
   }, [activeSessionId]);
 
@@ -380,6 +382,7 @@ export default function ChatContainer() {
   }, [user, initFirebaseSync]);
 
   const handleNewChat = () => {
+
     const welcomeMsg: ChatMessage = {
       id: `welcome-${Date.now()}`,
       role: "assistant",
