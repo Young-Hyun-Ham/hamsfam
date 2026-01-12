@@ -28,6 +28,9 @@ export interface KnowledgeIntent {
   createdAt: string;
   updatedAt: string;
 
+  scenarioKey: string;
+  scenarioTitle: string;
+
   needsEmbedding?: boolean;
   embeddingUpdatedAt?: string;
   embeddingVersion?: number;

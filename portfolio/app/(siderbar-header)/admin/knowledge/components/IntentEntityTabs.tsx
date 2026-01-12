@@ -167,7 +167,10 @@ export default function IntentEntityTabs({
           <button
             type="button"
             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
-            onClick={() => setSettingsOpen((v) => !v)}
+            onClick={() => {
+              if (!project?.id) return;
+              setSettingsOpen((v) => !v)}
+            }
             aria-label="프로젝트 설정"
             title="프로젝트 설정"
           >
@@ -479,11 +482,16 @@ export default function IntentEntityTabs({
         onClose={() => setIntentModalOpen(false)}
         onSubmit={async (payload) => {
           if (!project) return;
-          console.log("인텐트 저장 데이터=============>", payload);
+          // console.log("인텐트 저장 데이터=============>", payload);
+          const newPayload = {
+            ...payload,
+            scenarioKey: payload.selectedScenario?.id ?? null,
+            scenarioTitle: payload.selectedScenario?.name ?? null,
+          };
           if (intentMode === "create") {
-            await createIntent(project.id, payload);
+            await createIntent(project.id, newPayload);
           } else if (intentEditing) {
-            await updateIntent(project.id, intentEditing.id, payload);
+            await updateIntent(project.id, intentEditing.id, newPayload);
           }
         }}
       />
@@ -495,7 +503,7 @@ export default function IntentEntityTabs({
         onClose={() => setEntityModalOpen(false)}
         onSubmit={async (payload) => {
           if (!project) return;
-          console.log("엔티티 저장 데이터=============>", payload);
+          // console.log("엔티티 저장 데이터=============>", payload);
           if (entityMode === "create") {
             await createEntity(project.id, payload);
           } else if (entityEditing) {

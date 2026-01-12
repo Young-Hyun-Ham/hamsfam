@@ -102,6 +102,8 @@ export async function POST(req: Request, { params }: Params) {
 
     const name = String(body?.name ?? "").trim();
     const displayName = String(body?.displayName ?? "").trim();
+    const scenarioKey = String(body?.scenarioKey ?? "").trim();
+    const scenarioTitle = String(body?.scenarioTitle ?? "").trim();
 
     if (!name) {
       return NextResponse.json({ message: "name is required" }, { status: 400 });
@@ -116,6 +118,8 @@ export async function POST(req: Request, { params }: Params) {
       name,
       displayName: displayName || name,
       description: body?.description ? String(body.description) : "",
+      scenarioKey,
+      scenarioTitle,
       trainingPhrases: Array.isArray(body?.trainingPhrases)
         ? body.trainingPhrases.map((x: any) => String(x))
         : [],

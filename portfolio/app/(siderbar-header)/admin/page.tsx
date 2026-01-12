@@ -18,7 +18,7 @@ export default function MainDashboardPage() {
   const provider =
     user?.providerData?.[0]?.providerId ?? user?.providerId ?? "-";
   const displayName =
-    user?.displayName ?? user?.user?.displayName ?? "손님";
+    user?.displayName ?? user?.user?.displayName ?? "관리자";
   const email = user?.email ?? user?.user?.email ?? "-";
   const photoURL =
     user?.photoURL ??

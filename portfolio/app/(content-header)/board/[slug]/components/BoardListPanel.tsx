@@ -126,7 +126,7 @@ export default function BoardListPanel({
               w-full
               rounded-2xl
               bg-white
-              px-4 py-3
+              px-4 py-2
               text-sm font-medium text-gray-700
               shadow-[0_10px_28px_rgba(0,0,0,0.08)]
               ring-1 ring-black/5
