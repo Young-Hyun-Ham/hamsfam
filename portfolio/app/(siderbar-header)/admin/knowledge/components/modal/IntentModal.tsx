@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import type { KnowledgeIntent } from "../../types";
+import ScenarioPickerModal from "./ScenarioPickerModal";
 
 type Mode = "create" | "edit";
+
+type SelectedScenario = { id: string; name: string };
 
 type PhraseRow = {
   id: string;
@@ -23,6 +27,10 @@ type Props = {
     description?: string;
     trainingPhrases: string[];
     isFallback: boolean;
+    selectedScenario: {
+      id: string; 
+      name: string;
+    }
   }) => Promise<void> | void;
 };
 
@@ -74,6 +82,11 @@ export default function IntentModal({
     () => (mode === "create" ? "인텐트 추가" : "인텐트 수정"),
     [mode]
   );
+  
+  const [scenarioModalOpen, setScenarioModalOpen] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<SelectedScenario>(
+    initial?.scenarioKey ? { id: initial.scenarioKey, name: initial.scenarioTitle ?? "" } : {id: "", name: ""}
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -83,6 +96,7 @@ export default function IntentModal({
     setDisplayName(it?.displayName ?? "");
     setDescription(it?.description ?? "");
     setIsFallback(Boolean(it?.isFallback ?? false));
+    setSelectedScenario({id: it?.scenarioKey ?? "", name: it?.scenarioTitle ?? ""});
 
     const phrases = uniq((it?.trainingPhrases ?? []).map(String));
     const list: PhraseRow[] = phrases.map((p) => ({
@@ -425,6 +439,50 @@ export default function IntentModal({
               </div>
             </div>
 
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-semibold text-gray-700">
+                연결 시나리오
+              </label>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                    placeholder="시나리오를 선택하세요"
+                    value={
+                      selectedScenario.id
+                        ? `${selectedScenario.name} (${selectedScenario.id})`
+                        : ""
+                    }
+                    readOnly
+                  />
+                  {selectedScenario && (
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 hover:bg-gray-100"
+                      onClick={() => setSelectedScenario({id: "", name: ""})}
+                      title="선택 해제"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+                  onClick={() => setScenarioModalOpen(true)}
+                  title="시나리오 검색"
+                >
+                  <Search size={16} />
+                </button>
+              </div>
+
+              <p className="mt-1 text-[11px] text-gray-500">
+                선택한 시나리오 ID가 인텐트 문서에 저장됩니다.
+              </p>
+            </div>
+
             <label className="flex items-center gap-2 text-xs text-gray-700">
               <input
                 type="checkbox"
@@ -458,6 +516,7 @@ export default function IntentModal({
                     description: description.trim(),
                     trainingPhrases: trainingPhrases,
                     isFallback,
+                    selectedScenario,
                   });
                   onClose();
                 } finally {
@@ -469,6 +528,15 @@ export default function IntentModal({
             </button>
           </div>
         </div>
+
+        {/* scenario modal */}
+        <ScenarioPickerModal
+          open={scenarioModalOpen}
+          projectId={initial?.projectId ?? null}
+          initialSelectedId={selectedScenario?.id ?? null}
+          onClose={() => setScenarioModalOpen(false)}
+          onSelect={(s) => setSelectedScenario({ id: s.id, name: s.name })}
+        />
       </div>
     )
   );

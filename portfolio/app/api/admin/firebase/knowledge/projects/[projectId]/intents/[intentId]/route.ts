@@ -30,6 +30,8 @@ export async function PATCH(req: Request, { params }: Params) {
   if (body?.name != null) patch.name = String(body.name).trim();
   if (body?.displayName != null) patch.displayName = String(body.displayName).trim();
   if (body?.description != null) patch.description = String(body.description);
+  if (body?.scenarioKey != null) patch.scenarioKey = String(body.scenarioKey);
+  if (body?.scenarioTitle != null) patch.scenarioTitle = String(body.scenarioTitle);
   if (body?.trainingPhrases != null) {
     patch.trainingPhrases = Array.isArray(body.trainingPhrases)
       ? body.trainingPhrases.map((x: any) => String(x))

@@ -34,7 +34,7 @@ export default function ConfirmDeleteProjectModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl overflow-hidden">
+      <div className="w-full max-w-xl rounded-xl bg-white shadow-xl overflow-hidden">
         <div className="border-b px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>

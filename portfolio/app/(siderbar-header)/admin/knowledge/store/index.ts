@@ -193,11 +193,11 @@ const useKnowledgeStore = create<KnowledgeState>()(
     deleteProject: async (projectId) => {
       set({ loading: true, error: null });
       try {
-        axiosRequestJSON<{ ok: boolean }>({
+        await axiosRequestJSON<{ ok: boolean }>({
           method: "DELETE",
           url: `${BASE}/projects/${projectId}`,
         });
-        await get().selectProject(projectId);
+        await get().fetchProjects();
       } catch (e: any) {
         set({ error: e?.message ?? "프로젝트 삭제 오류" });
       } finally {

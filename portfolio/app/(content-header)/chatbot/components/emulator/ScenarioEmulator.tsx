@@ -86,7 +86,8 @@ export default function ScenarioEmulator({
   // =============================================================================
   // 3) 로컬 상태
   // =============================================================================
-  const rootNode = useMemo(() => findRootNode(nodes, edges), [nodes, edges]);
+  // const rootNode = useMemo(() => findRootNode(nodes, edges), [nodes, edges]);
+  const rootNode = findRootNode(nodes, edges);
 
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(initialCurrentNodeId ?? null);
   const [steps, setSteps] = useState<ChatStep[]>(initialSteps ?? []);
@@ -95,10 +96,11 @@ export default function ScenarioEmulator({
   const [finished, setFinished] = useState<boolean>(initialFinished ?? false);
   const [llmDone, setLlmDone] = useState(false);
 
-  const currentNode = useMemo(
-    () => nodes.find((n) => n.id === currentNodeId) ?? null,
-    [nodes, currentNodeId],
-  );
+  // const currentNode = useMemo(
+  //   () => nodes.find((n) => n.id === currentNodeId) ?? null,
+  //   [nodes, currentNodeId],
+  // );
+  const currentNode = nodes.find((n) => n.id === currentNodeId) ?? null;
 
   // =============================================================================
   // 4) hydration (persisted > initial > root) - 1회만
