@@ -127,12 +127,22 @@ export default function ScenarioMenuPanel({ isPanelOpen, onSelectPreset }: Props
           });
         });
 
-        setPanelConfigs((prev) =>
-          prev.map((p) => ({
-            ...p,
-            items: grouped[p.id],
-          })),
-        );
+        // items가 있는 패널만 남김
+        const nextConfigs: PanelConfig[] = (["process", "search", "execution"] as PanelId[])
+          .map((id) => ({
+            id,
+            label: PANEL_LABELS[id],
+            items: grouped[id],
+          }))
+          .filter((p) => p.items.length > 0);
+          
+        setPanelConfigs(nextConfigs);
+
+        // activePanelId가 사라졌으면 첫 패널로 보정
+        if (!nextConfigs.some((p) => p.id === activePanelId)) {
+          setActivePanelId(nextConfigs[0]?.id ?? "process");
+          setOpen(false); // 선택된 패널이 바뀌면 드롭다운 닫는게 안전
+        }
       } catch (e) {
         console.error("shortcut-menu 로딩 실패:", e);
       } finally {

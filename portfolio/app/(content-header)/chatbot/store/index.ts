@@ -208,7 +208,7 @@ const useChatbotStore = create<ChatbotState>((set, get) => ({
     if (!userKey) return tempId;
 
     (async () => {
-      // ✅ 서버가 최종 id를 결정(파이어스토어 addDoc이면 보통 여기서 자동 id가 옴)
+      // ✅ 서버가 최종 id를 결정
       const serverId = await apiCreateSession(userKey, { title, createdAt: now });
       const finalId = serverId || tempId;
 

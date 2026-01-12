@@ -1,7 +1,8 @@
+// app/(content-header)/chatbot/components/emulator/ScenarioEmulator.tsx
 "use client";
 
-// app/(content-header)/chatbot/components/emulator/ScenarioEmulator.tsx
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useStore } from "@/store"
 import ScenarioNodeControls from "../ScenarioNodeControls";
 import useChatbotStore from "../../store";
 import type { AnyNode, ChatStep } from "../../types";
@@ -122,28 +123,32 @@ export default function ScenarioEmulator({
   // 5) 엔진 로깅
   // =============================================================================
   const { logToEngine } = useEngineLogger();
+  const { user } = useStore();
   const engineProps = useMemo(
     () => ({
       nodes,
       edges,
       scenarioKey,
       scenarioRunId,
-      userId: "dev", // 현 동작 유지(기존과 동일)
+      userId: user.id,
     }),
     [nodes, edges, scenarioKey, scenarioRunId],
   );
 
   // =============================================================================
-  // 6) step push 유틸
+  // 6) step push 유틸 
+  // text에 {{key}} 그래도 디비에 저장 하고 싶으면?
+  // - resolveTemplate(text, slotValues) 제거
+  // - display에서 치환 - ChatMessageItem.tsx에서 detailText를 resolveTemplate() 함수를 사용해서 치환 처리
   // =============================================================================
   const pushBotStep = useCallback((id: string, text: string) => {
-    setSteps((prev) => [...prev, { id, role: "bot", text }]);
+    setSteps((prev) => [...prev, { id, role: "bot", text: resolveTemplate(text, slotValues) }]);
   }, []);
 
   const pushBotStepOnce = useCallback((id: string, text: string) => {
     setSteps((prev) => {
       if (prev.some((s) => s.id === id)) return prev;
-      return [...prev, { id, role: "bot", text }];
+      return [...prev, { id, role: "bot", text: resolveTemplate(text, slotValues) }];
     });
   }, []);
 
