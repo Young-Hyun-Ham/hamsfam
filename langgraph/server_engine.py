@@ -27,6 +27,8 @@ class RunAction(BaseModel):
     display: Optional[str] = "" # meta용
     
 class RunScenarioReq(BaseModel):
+    userId: str
+    scenarioId: Optional[str] = None
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     text: str = ""
@@ -47,22 +49,55 @@ def append_event(evt: dict):
     EVENT_FILE.parent.mkdir(parents=True, exist_ok=True)
     with EVENT_FILE.open("a", encoding="utf-8") as f:
         f.write(json.dumps(evt, ensure_ascii=False) + "\n")
+
+# from langgraph.graph import StateGraph, END
+# from typing_extensions import TypedDict
+# class EngineState(TypedDict, total=False):
+#     inputText: str
+#     runId: str
+#     userId: str
+#     scenarioId: str
+
+# @app.post("/langgraphTest")
+# def langgraph_test(req: RunScenarioReq):
+#     run_id = (req.state or {}).get("runId") or str(uuid.uuid4())
+#     print(f"[langgraphTest] runId=============> {run_id, req.userId, req.scenarioId}")
+
+#     g = StateGraph(EngineState)
+#     ####################
+#     # workflow
+#     ####################
+#     g.add_nodes("workflow")
+
+#     first = req.nodes[0]["id"]
+#     g.set_entry_point(first)
+
+#     g.add_edge(req.nodes[-1]["id"], END)
+
+#     chain = g.compile()
+#     print("chain nodes:", chain.nodes)
+#     print("===================================================")
+#     final_state = chain.invoke({})
+#     print("final_state:", final_state)
+
+#     return {"ok": True, "message": "LangGraph", "runId": run_id}
         
 @app.post("/runScenario")
 def run_scenario_api(req: RunScenarioReq):
     run_id = (req.state or {}).get("runId") or str(uuid.uuid4())
-    print(f"[runScenario] runId=============> {run_id}")
-    print(f"[runScenario] req.nodes=============> {req.nodes}")
-    print(f"[runScenario] req.edges=============> {req.edges}")
+    # print(f"[runScenario] runId=============> {run_id}")
+    # print(f"[runScenario] req.nodes=============> {req.nodes}")
+    # print(f"[runScenario] req.edges=============> {req.edges}")
     # 실행
     out: EngineState = run_builder_flow(
+        user_id=req.userId,
         nodes=req.nodes,
         edges=req.edges,
         input_text=req.text,
         prev_state=req.state,
         action=req.action,
     )
-    print(f"[runScenario] out=============> {out}")
+    # print(f"[runScenario] out=============> {out}")
     trace = out.get("trace", []) or []
     slots = out.get("slots", {}) or {}
     awaiting = out.get("awaiting")
@@ -72,6 +107,29 @@ def run_scenario_api(req: RunScenarioReq):
     for t in trace:
         if t.get("nodeType") == "awaitingResolved" and t.get("kind") == "branch":
             branchPicked[t.get("nodeId", "branch")] = t.get("value")
+
+    # 이벤트 기록
+    scenario_id = (
+        req.scenarioId
+        or (req.state or {}).get("scenarioId")
+        or "unknown"
+    )
+
+    evt = {
+        "ts": utc_iso(),
+        "userId": req.userId,
+        "scenarioId": scenario_id,
+        "runId": run_id,
+        "turn": int(out.get("turn", 0) or 0),
+        "steps": len(trace),
+        "awaitingKind": (awaiting or {}).get("kind") if awaiting else None,
+        "awaitingNodeId": (awaiting or {}).get("nodeId") if awaiting else None,
+        "slots": slots,
+        "branchPicked": branchPicked,
+        "ended": True if not awaiting else False,
+    }
+    append_event(evt)
+    # --------------------------------------------------------------------------------------
 
     return {
         "ok": True,

@@ -1,0 +1,234 @@
+{
+  "version": "1.0.0",
+  "locale": "ko-KR",
+  "categories": [
+    {
+      "id": "strength",
+      "name": "근력/저항",
+      "description": "근육을 강화하고 체형/기초대사량을 개선하는 운동",
+      "subtypes": [
+        {
+          "id": "strength_bodyweight_basic",
+          "name": "맨몸 근력(기초)",
+          "examples": ["스쿼트", "푸시업", "런지", "플랭크"],
+          "intensity_range": [2, 4],
+          "equipment": ["none"],
+          "space": "small",
+          "time_min": 10,
+          "goals": ["근력", "체형", "자세", "기초체력"],
+          "profile_tags": ["beginner_friendly", "home_friendly", "routine_friendly"],
+          "contra_tags": ["wrist_sensitive", "knee_sensitive"]
+        },
+        {
+          "id": "strength_bodyweight_calisthenics",
+          "name": "맨몸 근력(칼리스테닉스)",
+          "examples": ["풀업", "딥스", "피스톨 스쿼트", "프론트레버 진행"],
+          "intensity_range": [4, 5],
+          "equipment": ["pullup_bar_optional"],
+          "space": "medium",
+          "time_min": 20,
+          "goals": ["근력", "기술", "체형"],
+          "profile_tags": ["skill_seeking", "challenge_seeking", "progress_tracking"],
+          "contra_tags": ["shoulder_sensitive", "wrist_sensitive"]
+        },
+        {
+          "id": "strength_dumbbell",
+          "name": "덤벨/케틀벨 근력",
+          "examples": ["덤벨 로우", "숄더프레스", "스윙", "고블릿 스쿼트"],
+          "intensity_range": [3, 5],
+          "equipment": ["dumbbell_or_kettlebell"],
+          "space": "small",
+          "time_min": 15,
+          "goals": ["근력", "체형", "기초대사량"],
+          "profile_tags": ["efficient", "progressive_overload", "home_gym_light"],
+          "contra_tags": ["lower_back_sensitive"]
+        },
+        {
+          "id": "strength_gym_machine_freeweight",
+          "name": "헬스장 머신/프리웨이트",
+          "examples": ["스미스", "레그프레스", "벤치프레스", "데드리프트"],
+          "intensity_range": [3, 5],
+          "equipment": ["gym"],
+          "space": "gym",
+          "time_min": 40,
+          "goals": ["근비대", "근력", "체형"],
+          "profile_tags": ["data_driven", "long_session_ok", "structured_program"],
+          "contra_tags": ["injury_rehab_needed"]
+        }
+      ]
+    },
+    {
+      "id": "cardio",
+      "name": "유산소/심폐",
+      "description": "심폐지구력과 체지방 감량에 유리한 운동",
+      "subtypes": [
+        {
+          "id": "cardio_liss_walk",
+          "name": "LISS(걷기/가벼운 유산소)",
+          "examples": ["빠르게 걷기", "경사 걷기", "가벼운 자전거"],
+          "intensity_range": [1, 3],
+          "equipment": ["none_or_treadmill"],
+          "space": "any",
+          "time_min": 20,
+          "goals": ["감량", "컨디션", "회복", "스트레스완화"],
+          "profile_tags": ["low_stress", "sustainable", "busy_friendly"],
+          "contra_tags": []
+        },
+        {
+          "id": "cardio_hiIT",
+          "name": "HIIT(고강도 인터벌)",
+          "examples": ["버피 인터벌", "스프린트", "타바타"],
+          "intensity_range": [4, 5],
+          "equipment": ["none_optional"],
+          "space": "small",
+          "time_min": 10,
+          "goals": ["감량", "심폐", "시간효율"],
+          "profile_tags": ["time_crunched", "high_intensity_preference", "competitive"],
+          "contra_tags": ["knee_sensitive", "beginner_caution", "cardio_risk"]
+        },
+        {
+          "id": "cardio_steady_run_cycle",
+          "name": "지속주/사이클",
+          "examples": ["조깅", "러닝", "사이클"],
+          "intensity_range": [2, 4],
+          "equipment": ["shoes_optional"],
+          "space": "outdoor_or_gym",
+          "time_min": 25,
+          "goals": ["심폐", "감량", "지구력"],
+          "profile_tags": ["endurance_seeking", "outdoor_preference"],
+          "contra_tags": ["knee_sensitive", "ankle_sensitive"]
+        }
+      ]
+    },
+    {
+      "id": "mobility",
+      "name": "유연성/모빌리티",
+      "description": "관절가동범위, 자세, 회복을 돕는 운동",
+      "subtypes": [
+        {
+          "id": "mobility_stretching",
+          "name": "스트레칭(정적/동적)",
+          "examples": ["햄스트링", "고관절", "흉추 회전"],
+          "intensity_range": [1, 2],
+          "equipment": ["none_optional"],
+          "space": "small",
+          "time_min": 8,
+          "goals": ["유연성", "회복", "통증완화", "자세"],
+          "profile_tags": ["recovery_focused", "stress_relief", "beginner_friendly"],
+          "contra_tags": []
+        },
+        {
+          "id": "mobility_yoga",
+          "name": "요가",
+          "examples": ["빈야사", "하타", "리스트러티브"],
+          "intensity_range": [1, 4],
+          "equipment": ["mat_optional"],
+          "space": "small",
+          "time_min": 15,
+          "goals": ["유연성", "코어", "호흡", "마음안정"],
+          "profile_tags": ["mind_body", "routine_friendly", "stress_relief"],
+          "contra_tags": ["wrist_sensitive"]
+        },
+        {
+          "id": "mobility_pilates",
+          "name": "필라테스(매트/소도구)",
+          "examples": ["브릿지", "데드버그", "클램쉘"],
+          "intensity_range": [2, 4],
+          "equipment": ["mat_optional", "mini_band_optional"],
+          "space": "small",
+          "time_min": 20,
+          "goals": ["코어", "자세", "근지구력"],
+          "profile_tags": ["posture_seeking", "controlled_movement", "low_impact"],
+          "contra_tags": ["neck_sensitive_caution"]
+        }
+      ]
+    },
+    {
+      "id": "skill_sport",
+      "name": "기술/스포츠",
+      "description": "재미/기술 습득/경쟁 요소가 있는 활동",
+      "subtypes": [
+        {
+          "id": "sport_racket",
+          "name": "라켓 스포츠",
+          "examples": ["배드민턴", "테니스", "탁구"],
+          "intensity_range": [2, 5],
+          "equipment": ["court_optional"],
+          "space": "sport_facility",
+          "time_min": 40,
+          "goals": ["재미", "심폐", "민첩", "사회성"],
+          "profile_tags": ["social", "fun_first", "competitive_optional"],
+          "contra_tags": ["shoulder_sensitive", "ankle_sensitive"]
+        },
+        {
+          "id": "sport_martial_arts",
+          "name": "격투/무술",
+          "examples": ["복싱", "주짓수", "태권도"],
+          "intensity_range": [3, 5],
+          "equipment": ["gym_optional"],
+          "space": "sport_facility",
+          "time_min": 50,
+          "goals": ["심폐", "전신", "자신감", "기술"],
+          "profile_tags": ["challenge_seeking", "structured_class", "coach_preference"],
+          "contra_tags": ["injury_risk_higher"]
+        },
+        {
+          "id": "sport_dance",
+          "name": "댄스/에어로빅",
+          "examples": ["줌바", "케이팝댄스", "스텝에어로빅"],
+          "intensity_range": [2, 5],
+          "equipment": ["none"],
+          "space": "small_or_class",
+          "time_min": 20,
+          "goals": ["감량", "심폐", "재미", "리듬"],
+          "profile_tags": ["music_motivated", "fun_first", "group_class"],
+          "contra_tags": ["knee_sensitive_caution"]
+        }
+      ]
+    },
+    {
+      "id": "recovery",
+      "name": "회복/컨디셔닝",
+      "description": "피로 관리, 통증 예방, 생활 컨디션 개선",
+      "subtypes": [
+        {
+          "id": "recovery_breathing_meditation",
+          "name": "호흡/명상",
+          "examples": ["박스호흡", "바디스캔", "짧은 명상"],
+          "intensity_range": [1, 1],
+          "equipment": ["none"],
+          "space": "any",
+          "time_min": 5,
+          "goals": ["스트레스완화", "수면", "집중"],
+          "profile_tags": ["stress_relief", "low_energy", "sleep_support"],
+          "contra_tags": []
+        },
+        {
+          "id": "recovery_myofascial_release",
+          "name": "폼롤러/마사지(근막이완)",
+          "examples": ["종아리 롤링", "대퇴사두 롤링", "등 상부"],
+          "intensity_range": [1, 2],
+          "equipment": ["foam_roller_optional"],
+          "space": "small",
+          "time_min": 8,
+          "goals": ["회복", "통증완화", "가동성"],
+          "profile_tags": ["recovery_focused", "desk_worker_friendly"],
+          "contra_tags": ["acute_injury_caution"]
+        }
+      ]
+    }
+  ],
+  "scales": {
+    "intensity": {
+      "min": 1,
+      "max": 5,
+      "labels": {
+        "1": "아주 가벼움",
+        "2": "가벼움",
+        "3": "보통",
+        "4": "힘듦",
+        "5": "매우 힘듦"
+      }
+    }
+  }
+}

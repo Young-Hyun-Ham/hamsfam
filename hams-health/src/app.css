@@ -1,0 +1,36 @@
+:root{
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --panel-2: #f1f3f8;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: rgba(17,24,39,0.10);
+
+  --brand: #22c55e;
+  --brand-2:#3b82f6;
+
+  --shadow: 0 10px 30px rgba(17,24,39,0.08);
+}
+
+html.dark{
+  --bg:#0b1020;
+  --panel:#0f1730;
+  --panel-2:#111b36;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --border: rgba(229,231,235,0.10);
+
+  --brand:#34d399;
+  --brand-2:#60a5fa;
+
+  --shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, Noto Sans KR, Helvetica, Arial;
+  background: var(--bg);
+  color: var(--text);
+}
+*{ box-sizing: border-box; }
+button{ -webkit-tap-highlight-color: transparent; }

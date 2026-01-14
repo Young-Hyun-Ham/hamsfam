@@ -41,7 +41,8 @@ export default function ConnectLayout({
     return pathname === "/board" || 
           pathname.startsWith("/board/") || 
           pathname === "/ai-chat" || 
-          pathname.startsWith("/ai-chat/")
+          pathname.startsWith("/ai-chat/") || 
+          pathname === "/link" 
     ;
   }, [pathname]);
 

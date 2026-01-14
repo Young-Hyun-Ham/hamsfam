@@ -436,6 +436,7 @@ def get_compiled_app(nodes, edges):
     return app
 
 def run_builder_flow(
+    user_id: str,
     nodes: List[BuilderNode],
     edges: List[BuilderEdge],
     input_text: str,
@@ -469,6 +470,7 @@ def run_builder_flow(
     for i, t in enumerate(turn_trace, start=1):
         _append_jsonl(RUN_TRACE_FILE, {
             "ts": t.get("ts"),
+            "userId": user_id,
             "runId": out.get("runId"),
             "turn": out.get("turn"),
             "stepInTurn": i,
@@ -479,26 +481,26 @@ def run_builder_flow(
         })
 
     # events 저장
-    awaiting = out.get("awaiting") or None
-    counts = Counter((t.get("nodeType") or "unknown") for t in turn_trace)
+    # awaiting = out.get("awaiting") or None
+    # counts = Counter((t.get("nodeType") or "unknown") for t in turn_trace)
 
-    ended = (out.get("next") == "__end__") or (out.get("cursor") is None and not awaiting)
+    # ended = (out.get("next") == "__end__") or (out.get("cursor") is None and not awaiting)
 
-    _append_jsonl(RUN_EVENTS_FILE, {
-        "ts": now_iso(),
-        "scenarioId": out.get("vars", {}).get("__scenarioId__") or "builder-sample",
-        "runId": out.get("runId"),
-        "turn": out.get("turn"),
-        "steps": len(turn_trace),
-        "awaitingKind": (awaiting or {}).get("kind") if awaiting else None,
-        "awaitingNodeId": (awaiting or {}).get("nodeId") if awaiting else None,
-        "slots": out.get("slots") or {},
-        "branchPicked": out.get("vars", {}).get("__branchPicked__") or {},
-        "ended": bool(ended),
+    # _append_jsonl(RUN_EVENTS_FILE, {
+    #     "ts": now_iso(),
+    #     "scenarioId": out.get("vars", {}).get("__scenarioId__") or "builder-sample",
+    #     "runId": out.get("runId"),
+    #     "turn": out.get("turn"),
+    #     "steps": len(turn_trace),
+    #     "awaitingKind": (awaiting or {}).get("kind") if awaiting else None,
+    #     "awaitingNodeId": (awaiting or {}).get("nodeId") if awaiting else None,
+    #     "slots": out.get("slots") or {},
+    #     "branchPicked": out.get("vars", {}).get("__branchPicked__") or {},
+    #     "ended": bool(ended),
 
-        # message 통계도 여기서 바로 뽑힘
-        "executedCountsByType": dict(counts),
-    })
+    #     # message 통계도 여기서 바로 뽑힘
+    #     "executedCountsByType": dict(counts),
+    # })
     # ------------------------------------
 
     return out
