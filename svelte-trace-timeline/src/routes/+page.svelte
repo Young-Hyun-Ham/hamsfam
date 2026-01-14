@@ -21,64 +21,200 @@
 
   // ---------- Builder Flow (너가 준 데이터) ----------
   const nodes = [
-    {
-      id: "slotfilling-1765937679841-o6g169g",
-      type: "slotfilling",
-      data: {
-        content: "어느것을 선택 하십니까?",
-        slot: "data",
-        replies: [
-          { value: "1", display: "A" },
-          { value: "2", display: "B" }
-        ]
-      }
+  {
+    "dragging": false,
+    "type": "slotfilling",
+    "height": 330,
+    "width": 250,
+    "data": {
+      "id": "slotfilling-1765937679841-o6g169g",
+      "replies": [
+        {
+          "value": "1",
+          "display": "A"
+        },
+        {
+          "value": "2",
+          "display": "B"
+        }
+      ],
+      "content": "어느것을 선택 하십니까?",
+      "slot": "data"
     },
-    {
-      id: "message-1765937713246-5wsqxkv",
-      type: "message",
-      data: {
-        content: "A: {{A}}\nB: {{B}}\ndata: {{data}}",
-        replies: []
-      }
+    "positionAbsolute": {
+      "x": 60.49676106081051,
+      "y": 41.21010310653256
     },
-    {
-      id: "branch-1765938493354-po6yy8i",
-      type: "branch",
-      data: {
-        content: "차이가 몰까?",
-        evaluationType: "BUTTON",
-        replies: [
-          { display: "A", value: "cond_1765938493354" },
-          { display: "B", value: "cond_1765938513590-fa8vn03" }
-        ]
-      }
-    },
-    {
-      id: "message-1765938597984-bgtyak5",
-      type: "message",
-      data: { content: "A 선택", replies: [] }
-    },
-    {
-      id: "message-1765938617377-kgdmtgf",
-      type: "message",
-      data: { content: "B선택", replies: [] }
+    "id": "slotfilling-1765937679841-o6g169g",
+    "selected": false,
+    "position": {
+      "x": 60.49676106081051,
+      "y": 41.21010310653256
     }
-  ];
+  },
+  {
+    "type": "message",
+    "dragging": false,
+    "selected": false,
+    "position": {
+      "x": 363.5552309544835,
+      "y": 40.27447024854297
+    },
+    "data": {
+      "id": "message-1765937713246-5wsqxkv",
+      "content": "A: {{A}}\nB: {{B}}\ndata: {{data}}",
+      "chainNext": false,
+      "replies": []
+    },
+    "width": 250,
+    "id": "message-1765937713246-5wsqxkv",
+    "positionAbsolute": {
+      "x": 363.5552309544835,
+      "y": 40.27447024854297
+    },
+    "height": 165
+  },
+  {
+    "type": "branch",
+    "position": {
+      "x": 119.31745069698133,
+      "y": 524.6590815006363
+    },
+    "dragging": false,
+    "id": "branch-1765938493354-po6yy8i",
+    "positionAbsolute": {
+      "x": 119.31745069698133,
+      "y": 524.6590815006363
+    },
+    "width": 250,
+    "data": {
+      "conditions": [
+        {
+          "slot": "",
+          "valueType": "value",
+          "operator": "==",
+          "value": "",
+          "id": "cond-1765938493354"
+        }
+      ],
+      "replies": [
+        {
+          "value": "cond_1765938493354",
+          "display": "A"
+        },
+        {
+          "value": "cond_1765938513590-fa8vn03",
+          "display": "B"
+        }
+      ],
+      "evaluationType": "BUTTON",
+      "content": "차이가 몰까?",
+      "id": "branch-1765938493354-po6yy8i"
+    },
+    "height": 321,
+    "selected": false
+  },
+  {
+    "data": {
+      "replies": [],
+      "chainNext": false,
+      "id": "message-1765938597984-bgtyak5",
+      "content": "A 선택"
+    },
+    "dragging": false,
+    "type": "message",
+    "width": 250,
+    "id": "message-1765938597984-bgtyak5",
+    "selected": false,
+    "height": 165,
+    "position": {
+      "x": 563.5391461770574,
+      "y": 285.19562600817375
+    },
+    "positionAbsolute": {
+      "x": 563.5391461770574,
+      "y": 285.19562600817375
+    }
+  },
+  {
+    "positionAbsolute": {
+      "x": 566.2525411126676,
+      "y": 693.487732980601
+    },
+    "dragging": false,
+    "width": 250,
+    "position": {
+      "y": 693.487732980601,
+      "x": 566.2525411126676
+    },
+    "type": "message",
+    "data": {
+      "id": "message-1765938617377-kgdmtgf",
+      "replies": [],
+      "content": "B선택",
+      "chainNext": false
+    },
+    "height": 165,
+    "selected": false,
+    "id": "message-1765938617377-kgdmtgf"
+  },
+  {
+    "id": "message-1767944530460-fq13e0i",
+    "type": "message",
+    "position": {
+      "x": 896.7148742393979,
+      "y": 308.1355745618315
+    },
+    "data": {
+      "id": "message-1767944530460-fq13e0i",
+      "content": "data = {{data}}",
+      "replies": [],
+      "chainNext": false
+    },
+    "width": 250,
+    "height": 165,
+    "selected": false,
+    "dragging": false
+  }
+]
 
   const edges = [
-    { source: "slotfilling-1765937679841-o6g169g", target: "message-1765937713246-5wsqxkv" },
-    { source: "message-1765937713246-5wsqxkv", target: "branch-1765938493354-po6yy8i" },
-    {
-      source: "branch-1765938493354-po6yy8i",
-      sourceHandle: "cond_1765938493354",
-      target: "message-1765938597984-bgtyak5"
-    },
-    {
-      source: "branch-1765938493354-po6yy8i",
-      sourceHandle: "cond_1765938513590-fa8vn03",
-      target: "message-1765938617377-kgdmtgf"
-    }
-  ];
+  {
+    "target": "message-1765937713246-5wsqxkv",
+    "sourceHandle": null,
+    "targetHandle": null,
+    "id": "reactflow__edge-slotfilling-1765937679841-o6g169g-message-1765937713246-5wsqxkv",
+    "source": "slotfilling-1765937679841-o6g169g"
+  },
+  {
+    "sourceHandle": null,
+    "source": "message-1765937713246-5wsqxkv",
+    "target": "branch-1765938493354-po6yy8i",
+    "id": "reactflow__edge-message-1765937713246-5wsqxkv-branch-1765938493354-po6yy8i",
+    "targetHandle": null
+  },
+  {
+    "targetHandle": null,
+    "sourceHandle": "cond_1765938493354",
+    "id": "reactflow__edge-branch-1765938493354-po6yy8icond_1765938493354-message-1765938597984-bgtyak5",
+    "target": "message-1765938597984-bgtyak5",
+    "source": "branch-1765938493354-po6yy8i"
+  },
+  {
+    "source": "branch-1765938493354-po6yy8i",
+    "targetHandle": null,
+    "sourceHandle": "cond_1765938513590-fa8vn03",
+    "id": "reactflow__edge-branch-1765938493354-po6yy8icond_1765938513590-fa8vn03-message-1765938617377-kgdmtgf",
+    "target": "message-1765938617377-kgdmtgf"
+  },
+  {
+    "source": "message-1765938597984-bgtyak5",
+    "sourceHandle": null,
+    "target": "message-1767944530460-fq13e0i",
+    "targetHandle": null,
+    "id": "reactflow__edge-message-1765938597984-bgtyak5-message-1767944530460-fq13e0i"
+  }
+]
 
   // ---------- UI State ----------
   let inputText = "";

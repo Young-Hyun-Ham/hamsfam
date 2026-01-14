@@ -1,0 +1,108 @@
+{
+  "version": "1.0.0",
+  "profile_tag_catalog": [
+    { "tag": "routine_friendly", "name": "계획/루틴 선호", "desc": "정해진 루틴이 있어야 편함" },
+    { "tag": "spontaneous", "name": "즉흥/기분형", "desc": "그날 컨디션에 따라 선택" },
+
+    { "tag": "guided_instruction", "name": "가이드 선호", "desc": "순서/설명을 따라가는 걸 선호" },
+    { "tag": "follow_along", "name": "따라하기 선호", "desc": "설명 최소, 바로 따라하는 스타일" },
+
+    { "tag": "progress_tracking", "name": "기록/성장형", "desc": "기록/수치/누적이 동기" },
+    { "tag": "fun_first", "name": "재미 우선", "desc": "지루하면 못 함, 재미가 동기" },
+
+    { "tag": "goal_oriented", "name": "목표 지향", "desc": "목표가 있으면 더 잘함" },
+    { "tag": "low_pressure", "name": "부담 회피", "desc": "압박감이 있으면 하기 싫어짐" },
+
+    { "tag": "time_crunched", "name": "짧게 자주", "desc": "10~15분 단위가 잘 맞음" },
+    { "tag": "long_session_ok", "name": "길게 몰아서", "desc": "30분+ 세션도 괜찮음" },
+
+    { "tag": "restart_planner", "name": "재시작 계획형", "desc": "쉬면 다시 계획 세워 복귀" },
+    { "tag": "flow_flexible", "name": "흐름 복귀형", "desc": "무리 없이 천천히 복귀" },
+
+    { "tag": "high_intensity_preference", "name": "고강도 선호", "desc": "땀/힘듦이 운동 느낌" },
+    { "tag": "low_impact", "name": "저부하 선호", "desc": "개운/무리없음 선호" },
+
+    { "tag": "soreness_positive", "name": "근육통 긍정", "desc": "근육통이 오면 성취감" },
+    { "tag": "soreness_averse", "name": "근육통 회피", "desc": "근육통이 부담이 됨" },
+
+    { "tag": "form_focused", "name": "자세/정확도", "desc": "자세 설명이 가장 중요" },
+    { "tag": "tempo_motivated", "name": "리듬/템포", "desc": "리듬/템포가 중요(음악/박자)" },
+
+    { "tag": "coach_cues", "name": "코칭 포인트", "desc": "무릎/골반/호흡 등 포인트 안내 선호" },
+    { "tag": "minimal_guidance", "name": "설명 최소", "desc": "말 적고 바로 따라하기" },
+
+    { "tag": "motivation_low", "name": "귀찮음 장벽", "desc": "시작 장벽이 높음(귀찮음)" },
+    { "tag": "boredom_sensitive", "name": "지루함 장벽", "desc": "재미 없으면 중단" },
+    { "tag": "intensity_sensitive", "name": "강도 장벽", "desc": "너무 힘들면 중단" },
+    { "tag": "needs_structure", "name": "구조/가이드 필요", "desc": "무엇을 해야 할지 모르면 멈춤" },
+
+    { "tag": "personalization_seeking", "name": "개인맞춤 기대", "desc": "나에게 맞춘 추천을 원함" },
+    { "tag": "habit_building", "name": "습관 만들기", "desc": "꾸준함을 만드는 게 목표" },
+    { "tag": "quick_results", "name": "짧고 확실", "desc": "짧은 시간에 성취를 원함" },
+    { "tag": "stress_relief", "name": "스트레스 해소", "desc": "마음/스트레스 완화를 원함" }
+  ],
+  "answer_to_tag_weights": {
+    "q1": {
+      "plan": { "add": { "routine_friendly": 2, "restart_planner": 1 } },
+      "mood": { "add": { "spontaneous": 2, "flow_flexible": 1 } }
+    },
+    "q2": {
+      "guided": { "add": { "guided_instruction": 2, "needs_structure": 1 } },
+      "follow": { "add": { "follow_along": 2, "minimal_guidance": 1 } }
+    },
+    "q3": {
+      "progress": { "add": { "progress_tracking": 2, "goal_oriented": 1 } },
+      "fun": { "add": { "fun_first": 2, "boredom_sensitive": 1 } }
+    },
+    "q4": {
+      "goal": { "add": { "goal_oriented": 2, "progress_tracking": 1 } },
+      "pressure": { "add": { "low_pressure": 2, "flow_flexible": 1 } }
+    },
+    "q5": {
+      "short": { "add": { "time_crunched": 2, "habit_building": 1 } },
+      "long": { "add": { "long_session_ok": 2, "structured_program": 1 } }
+    },
+    "q6": {
+      "restart": { "add": { "restart_planner": 2, "routine_friendly": 1 } },
+      "flow": { "add": { "flow_flexible": 2, "low_pressure": 1 } }
+    },
+    "q7": {
+      "hard": { "add": { "high_intensity_preference": 2, "progress_tracking": 1 }, "avoid": { "low_impact": 1 } },
+      "easy": { "add": { "low_impact": 2, "stress_relief": 1 }, "avoid": { "high_intensity_preference": 1 } }
+    },
+    "q8": {
+      "proud": { "add": { "soreness_positive": 2, "high_intensity_preference": 1 } },
+      "burden": { "add": { "soreness_averse": 2, "intensity_sensitive": 1 }, "avoid": { "high_intensity_preference": 1 } }
+    },
+    "q9": {
+      "form": { "add": { "form_focused": 2, "coach_cues": 1 } },
+      "tempo": { "add": { "tempo_motivated": 2, "fun_first": 1 } }
+    },
+    "q10": {
+      "coach": { "add": { "coach_cues": 2, "guided_instruction": 1 } },
+      "minimal": { "add": { "minimal_guidance": 2, "follow_along": 1 } }
+    },
+    "q11": {
+      "lazy": { "add": { "motivation_low": 2, "time_crunched": 1 }, "recommend_bias": { "quick_results": 1 } },
+      "boring": { "add": { "boredom_sensitive": 2, "fun_first": 1 }, "avoid": { "monotony": 1 } },
+      "too_hard": { "add": { "intensity_sensitive": 2, "low_impact": 1 }, "avoid": { "high_intensity_preference": 2 } },
+      "lost": { "add": { "needs_structure": 2, "guided_instruction": 1 }, "recommend_bias": { "personalization_seeking": 1 } }
+    },
+    "q12": {
+      "personal": { "add": { "personalization_seeking": 2, "needs_structure": 1 } },
+      "habit": { "add": { "habit_building": 2, "routine_friendly": 1 } },
+      "quick": { "add": { "quick_results": 2, "time_crunched": 1 } },
+      "relief": { "add": { "stress_relief": 2, "low_impact": 1 } }
+    }
+  },
+  "scoring_rules": {
+    "weight_scale": { "primary": 2, "secondary": 1 },
+    "normalize": { "method": "minmax", "target_range": [0, 1] },
+    "recommendation": {
+      "match_score": "sum(userTagScore[tag] * subtypeHasTag[tag])",
+      "penalty": "sum(userAvoidScore[tag] * subtypeHasTag[tag])",
+      "goal_bonus": "if subtype.goals intersects userGoals then +0.5~+1.5",
+      "final": "match_score - penalty + goal_bonus"
+    }
+  }
+}

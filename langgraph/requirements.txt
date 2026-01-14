@@ -28,7 +28,7 @@ python-jose[cryptography]>=3.3.0
 # AI ( langchain, langsmith[추적] )
 openai
 langgraph
-# langsmith
+langsmith # langsmith 추적 기능 사용을 위한 라이브러리
 # langchain
 # langchain-community
 # langchain-openai
