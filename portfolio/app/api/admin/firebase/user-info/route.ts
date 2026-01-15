@@ -1,7 +1,7 @@
 // app/api/admin/firebase/user-info/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { toDateTimeString } from "@/lib/utils/Utils";
+import { toDateTimeString } from "@/lib/utils/utils";
 import bcrypt from "bcryptjs";
 import { FieldValue } from "firebase-admin/firestore";
 

@@ -1,8 +1,10 @@
 // app/(sidebar-header)/admin/board/components/BoardListPanel.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAdminBoardStore } from "../store";
+import BoardUnlockModal from "./modal/BoardUnlockModal";
+import { AdminBoardRow } from "../types";
 
 function badge(category: string) {
   const base = "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1";
@@ -18,13 +20,33 @@ function badge(category: string) {
   }
 }
 
-export default function BoardListPanel() {
-  const rows = useAdminBoardStore((s) => s.rows);
-  const paging = useAdminBoardStore((s) => s.paging);
-
-  const open = useAdminBoardStore((s) => s.open);
-
+export default function BoardListPanel({ items }: { items: AdminBoardRow[] }) {
+  const { 
+    paging,
+    open,
+    close,
+  } = useAdminBoardStore();
+  
+  const [rows, setRows] = useState<AdminBoardRow[]>(items ?? []);
+  const [openUnlock, setOpenUnlock] = useState<Boolean>(false);
+  const [targetId, setTargetId] = useState<string>("");
+  const [targetType, setTargetType] = useState<"detail" | "edit" | "delete" | null>(null);
   const empty = useMemo(() => rows.length === 0, [rows.length]);
+
+  useEffect(() => {
+    setRows(items);
+  }, [items]);
+
+  function guardedOpen(args: { type: "detail" | "edit" | "delete"; id: string; hasPassword?: boolean }) {
+    setTargetId(args.id);
+    setTargetType(args.type);
+
+    if (args.hasPassword) {
+      setOpenUnlock(true);
+    } else {
+      setOpenUnlock(false);
+    }
+  }
 
   return (
     <div className="min-h-0">
@@ -41,34 +63,33 @@ export default function BoardListPanel() {
           </div>
         ) : (
           <div className="space-y-3">
-            {rows.map((r) => (
+            {rows.map((r, i) => (
               <div
-                key={r.id}
+                key={r.id ?? i}
                 className="group rounded-3xl bg-white p-4 shadow-sm shadow-black/5 ring-1 ring-black/5
                            hover:shadow-lg hover:shadow-black/10 transition"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className={badge(r.category)}>{r.category}</span>
-                      {r.isSecret ? (
+                    <div 
+                      className="flex items-center gap-2"
+                      onClick={() => {
+                        r.hasPassword ? 
+                          guardedOpen({type: "detail", id: r.id, hasPassword: true}) : 
+                          open({ type: "detail", id: r.id })
+                      }}
+                    >
+                      <span className={badge(r.slug)}>{r.slug}</span>
+                      {r.hasPassword ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 ring-1 ring-black/5">
                           🔒 비밀글
                         </span>
-                      ) : null}
+                      ) : (
+                        <div className="truncate small-text text-base font-semibold text-gray-900 group-hover:text-emerald-700 transition">
+                          {r.title}
+                        </div>
+                      )}
                     </div>
-
-                    <button
-                      onClick={() => open({ type: "detail", id: r.id })}
-                      className="mt-2 block w-full text-left"
-                    >
-                      <div className="truncate text-base font-semibold text-gray-900 group-hover:text-emerald-700 transition">
-                        {r.title}
-                      </div>
-                      {/* <div className="mt-1 line-clamp-2 text-sm text-gray-600 whitespace-pre-wrap">
-                        {r.content}
-                      </div> */}
-                    </button>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                       <span>작성자: {r.authorName}</span>
@@ -85,16 +106,24 @@ export default function BoardListPanel() {
 
                   <div className="shrink-0 flex items-center gap-2">
                     <button
-                      onClick={() => open({ type: "edit", id: r.id })}
+                      onClick={() => {
+                        r.hasPassword ? 
+                          guardedOpen({type: "edit", id: r.id, hasPassword: true}) : 
+                          open({ type: "edit", id: r.id })
+                      }}
                       className="rounded-full bg-white px-3 py-2 text-xs font-medium text-gray-700
-                                 shadow-sm ring-1 ring-black/5 hover:bg-gray-50"
+                                 shadow-sm ring-1 ring-black/5 hover:bg-gray-50 cursor-pointer"
                     >
                       수정
                     </button>
                     <button
-                      onClick={() => open({ type: "delete", id: r.id })}
+                      onClick={() => {
+                        r.hasPassword ? 
+                          guardedOpen({type: "delete", id: r.id, hasPassword: true}) : 
+                          open({ type: "delete", id: r.id })
+                      }}
                       className="rounded-full bg-rose-600 px-3 py-2 text-xs font-medium text-white
-                                 shadow-sm shadow-rose-600/20 ring-1 ring-rose-700/30 hover:bg-rose-700"
+                                 shadow-sm shadow-rose-600/20 ring-1 ring-rose-700/30 hover:bg-rose-700 cursor-pointer"
                     >
                       삭제
                     </button>
@@ -105,6 +134,15 @@ export default function BoardListPanel() {
           </div>
         )}
       </div>
+      
+      {openUnlock && (
+        <BoardUnlockModal
+          id={targetId}
+          type={targetType}
+          isOpen={openUnlock}
+          onClose={close}
+        />
+      )}
     </div>
   );
 }

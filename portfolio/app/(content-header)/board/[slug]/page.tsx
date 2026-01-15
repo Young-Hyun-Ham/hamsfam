@@ -74,12 +74,12 @@ export default function PublicBoardPage() {
 
           {/* Right (Detail) - 슬라이드 + 페이드 */}
           <div
-  className={[
-    "h-full rounded-2xl bg-white shadow-sm transition-all duration-300 ease-out min-h-0 min-w-0 overflow-visible",
-    detailOpen
-      ? "w-7/12 translate-x-0 opacity-100"
-      : "w-0 translate-x-6 opacity-0 pointer-events-none",
-  ].join(" ")}
+            className={[
+              "h-full rounded-2xl bg-white shadow-sm transition-all duration-300 ease-out min-h-0 min-w-0 overflow-visible",
+              detailOpen
+                ? "w-7/12 translate-x-0 opacity-100"
+                : "w-0 translate-x-6 opacity-0 pointer-events-none",
+            ].join(" ")}
             aria-hidden={!detailOpen}
           >
             <BoardDetailPanel selected={selected} />

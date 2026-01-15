@@ -11,15 +11,32 @@ type Props = {
 };
 
 export default function BoardDeleteModal({ open, id, onClose }: Props) {
-  const getById = useAdminBoardStore((s) => s.getById);
-  const del = useAdminBoardStore((s) => s.deleteRow);
+  const {
+    getById,
+    deleteRow,
+  } = useAdminBoardStore();
 
   const row = useMemo(() => (open && id ? getById(id) : undefined), [open, id, getById]);
   const [typed, setTyped] = useState("");
-
-  if (!open) return null;
+  const [deleting, setDeleting] = useState(false);
 
   const can = row ? typed.trim() === row.id.trim() : false;
+
+  async function onDelete() {
+    if (!row) return;
+    if (!can) return;
+
+    try {
+      setDeleting(true);
+      // deleteRow가 동기/비동기 어떤 형태든 안전하게 처리
+      await Promise.resolve(deleteRow(row.id));
+    } finally {
+      setDeleting(false);
+      onClose();
+    }
+  }
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
@@ -58,21 +75,21 @@ export default function BoardDeleteModal({ open, id, onClose }: Props) {
 
         <div className="border-t border-gray-100 px-6 py-4">
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="rounded-2xl bg-white px-4 py-2 text-sm shadow-sm ring-1 ring-black/5 hover:bg-gray-50">
+            <button 
+              onClick={onClose}
+              disabled={deleting}
+              className="rounded-2xl bg-white px-4 py-2 text-sm shadow-sm ring-1 ring-black/5 hover:bg-gray-50"
+            >
               취소
             </button>
             <button
               disabled={!can}
-              onClick={() => {
-                if (!row) return;
-                del(row.id);
-                onClose();
-              }}
+              onClick={onDelete}
               className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-medium text-white
                          shadow-lg shadow-rose-600/20 ring-1 ring-rose-700/30 hover:bg-rose-700
                          disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              삭제
+              {deleting ? "처리중..." : "삭제"}
             </button>
           </div>
         </div>

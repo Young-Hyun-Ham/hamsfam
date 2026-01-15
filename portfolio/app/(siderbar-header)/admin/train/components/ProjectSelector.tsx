@@ -4,7 +4,7 @@
 import { ChevronDown } from "lucide-react";
 import useStudyStore from "../store";
 import type { StudyProjectSummary } from "../types";
-import { formatDate } from "@/lib/utils/Utils"
+import { formatDate } from "@/lib/utils/utils"
 
 export default function ProjectSelector() {
   const { projects, selectedProjectId, setSelectedProjectId } = useStudyStore();

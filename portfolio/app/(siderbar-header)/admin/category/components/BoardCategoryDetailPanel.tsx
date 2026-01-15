@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import useAdminBoardCategoryStore from "../store";
-import { toDateTimeString } from "@/lib/utils/Utils";
+import { toDateTimeString } from "@/lib/utils/utils";
 
 export default function BoardCategoryDetailPanel() {
   const { items, selectedId, openEdit } = useAdminBoardCategoryStore();

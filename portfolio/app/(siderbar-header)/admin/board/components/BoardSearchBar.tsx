@@ -31,14 +31,13 @@ export default function BoardSearchBar() {
 
       <div className="w-full md:w-44">
         <select
-          value={query.category}
-          onChange={(e) => setQuery({ category: e.target.value as any })}
+          value={query.slug}
+          onChange={(e) => setQuery({ slug: e.target.value as any })}
           className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm
                      shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-4 focus:ring-emerald-100"
         >
           <option value="all">전체</option>
           <option value="notice">공지</option>
-          <option value="faq">FAQ</option>
           <option value="qna">QnA</option>
           <option value="general">일반</option>
         </select>

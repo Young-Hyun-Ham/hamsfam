@@ -63,7 +63,7 @@ export default function BoardDetailModal({ open, id, onClose }: Props) {
                 <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
                     <div className="text-xs text-gray-500">카테고리</div>
-                    <div className="mt-1 text-sm text-gray-900">{row.category}</div>
+                    <div className="mt-1 text-sm text-gray-900">{row.slug}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">작성자</div>
@@ -87,7 +87,7 @@ export default function BoardDetailModal({ open, id, onClose }: Props) {
                       #{t}
                     </span>
                   ))}
-                  {row.isSecret ? (
+                  {row.hasPassword ? (
                     <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700 ring-1 ring-black/5">🔒 비밀글</span>
                   ) : null}
                 </div>

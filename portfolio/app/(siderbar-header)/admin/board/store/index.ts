@@ -2,46 +2,21 @@
 "use client";
 
 import { create } from "zustand";
-import type { AdminBoardCategory, AdminBoardRow, BoardQuery, Paging } from "../types";
+import type { AdminBoardRow, BoardQuery, ModalState, Paging, ParamProps } from "../types";
 import { api } from "@/lib/axios";
+import { normalize } from "@/lib/utils/utils";
 
-function iso(d: Date) {
-  return d.toISOString();
-}
+export function selectFilteredPosts(items: AdminBoardRow[], query: BoardQuery) {
+  const kw = normalize(query.keyword).toLowerCase();
+  const tag = normalize(query.tag).toLowerCase();
 
-function makeMock(count = 57): AdminBoardRow[] {
-  const cats = ["notice", "faq", "qna", "general"] as const;
-  return Array.from({ length: count }).map((_, i) => {
-    const n = count - i;
-    return {
-      id: String(1000 + n),
-      category: cats[n % cats.length],
-      title: `샘플 게시글 ${n}`,
-      content: `샘플 내용 ${n}\n\n관리자 보드 퍼블리싱 테스트입니다.`,
-      tags: n % 3 === 0 ? ["alpha", "beta"] : n % 3 === 1 ? ["qna"] : [],
-      authorName: n % 4 === 0 ? "익명" : "관리자",
-      isSecret: n % 10 === 0,
-      createdAt: iso(new Date(Date.now() - n * 1000 * 60 * 60)),
-      updatedAt: iso(new Date(Date.now() - n * 1000 * 60 * 20)),
-    };
+  return items.filter((it) => {
+    const hay = `${it.title} ${it.content} ${(it.tags ?? []).join(" ")}`.toLowerCase();
+    const okKw = kw ? hay.includes(kw) : true;
+    const okTag = tag ? (it.tags ?? []).some((t) => t.toLowerCase() === tag) : true;
+    return okKw && okTag;
   });
 }
-
-type ModalState =
-  | { type: null }
-  | { type: "create" }
-  | { type: "edit"; id: string }
-  | { type: "detail"; id: string }
-  | { type: "delete"; id: string };
-
-type ParamProps = {
-    page: number;
-    size: number;
-    total: number;
-    keyword?: string;
-    tag?: string;
-    category?: "all" | AdminBoardCategory;
-};
 
 type State = {
   // data
@@ -64,34 +39,17 @@ type State = {
 
   // crud (mock)
   fetchList: (params?: ParamProps) => void;
-  createRow: (payload: Pick<AdminBoardRow, "category" | "title" | "content" | "tags" | "isSecret">) => void;
-  updateRow: (id: string, payload: Partial<Pick<AdminBoardRow, "category" | "title" | "content" | "tags" | "isSecret">>) => void;
+  createRow: (payload: Pick<AdminBoardRow, "slug" | "title" | "content" | "tags" | "password">) => void;
+  updateRow: (id: string, payload: Partial<Pick<AdminBoardRow, "slug" | "title" | "content" | "tags">>) => void;
   deleteRow: (id: string) => void;
 
   // selectors
   getById: (id: string) => AdminBoardRow | undefined;
 };
 
-function filterRows(all: AdminBoardRow[], q: BoardQuery) {
-  const kw = q.keyword.trim().toLowerCase();
-  const tag = q.tag.trim().toLowerCase();
-
-  return all.filter((r) => {
-    if (q.category !== "all" && r.category !== q.category) return false;
-
-    if (kw) {
-      const hay = `${r.title}\n${r.content}\n${(r.tags ?? []).join(" ")}`.toLowerCase();
-      if (!hay.includes(kw)) return false;
-    }
-
-    if (tag) {
-      const tags = (r.tags ?? []).map((t) => t.toLowerCase());
-      if (!tags.includes(tag)) return false;
-    }
-
-    return true;
-  });
-}
+const backend = process.env.NEXT_PUBLIC_BACKEND ?? "firebase";
+const PAGE_SIZE = 10;
+const PAGE_NUM = 1;
 
 function paginate(rows: AdminBoardRow[], page: number, size: number) {
   const start = (page - 1) * size;
@@ -101,8 +59,8 @@ function paginate(rows: AdminBoardRow[], page: number, size: number) {
 export const useAdminBoardStore = create<State>((set, get) => ({
   // all: [],
   rows: [],
-  paging: { page: 1, size: 10, total: 0 },
-  query: { keyword: "", tag: "", category: "all" },
+  paging: { page: PAGE_NUM, size: PAGE_SIZE, total: 0 },
+  query: { keyword: "", tag: "", slug: "all" },
 
   selectedId: null,
   modal: { type: null },
@@ -120,22 +78,23 @@ export const useAdminBoardStore = create<State>((set, get) => ({
   //   });
   // },
 
-  setQuery: (patch) => {
-    const next = { ...get().query, ...patch };
-    const all = get().rows;
-    const filtered = filterRows(all, next);
-    const size = get().paging.size;
-    const page = 1;
-    set({
-      query: next,
-      paging: { page, size, total: filtered.length },
-      rows: paginate(filtered, page, size),
-    });
-  },
+  setQuery: (q) => set({ query: { ...get().query, ...q } }),
+  // setQuery: (patch) => {
+  //   const next = { ...get().query, ...patch };
+  //   const all = get().rows;
+  //   const filtered = filterRows(all, next);
+  //   const size = get().paging.size ?? 10;
+  //   const page = get().paging.page ?? 1;
+  //   set({
+  //     query: next,
+  //     paging: { page, size, total: filtered.length },
+  //     rows: paginate(filtered, page, size),
+  //   });
+  // },
 
   setPage: (page) => {
     const { size } = get().paging;
-    const filtered = filterRows(get().rows, get().query);
+    const filtered = selectFilteredPosts(get().rows, get().query);
     const totalPages = Math.max(1, Math.ceil(filtered.length / size));
     const nextPage = Math.min(Math.max(1, page), totalPages);
     set({
@@ -145,31 +104,34 @@ export const useAdminBoardStore = create<State>((set, get) => ({
   },
 
   open: (m) => set({ modal: m, selectedId: "id" in m ? m.id : null }),
-  close: () => set({ modal: { type: null } }),
+  close: () => set({ modal: { type: null }, selectedId: null }),
 
   fetchList: async (payload) => {
     try {
-      const { data } = await api.get("/api/admin/firebase/board", { params: payload });
+      const { data } = await api.get(`/api/admin/${backend}/board`, { params: payload });
       console.log(data)
+      set({ rows: data.items });
     } catch(err) {
       console.log(err)
     }
   },
 
-  createRow: (payload) => {
+  createRow: async (payload) => {
     const all = get().rows;
     const now = new Date();
     const row: AdminBoardRow = {
       id: String(Date.now()),
-      category: payload.category,
+      slug: payload.slug,
       title: payload.title,
       content: payload.content,
       tags: payload.tags ?? [],
+      password: payload.password ?? "",
+      hasPassword: payload.password ? true : false,
       authorName: "관리자",
-      isSecret: payload.isSecret ?? false,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     };
+    await api.post(`/api/admin/${backend}/board`, payload)
     const nextAll = [row, ...all];
     set({ rows: nextAll });
     get().setPage(1);
@@ -190,11 +152,12 @@ export const useAdminBoardStore = create<State>((set, get) => ({
     get().setQuery({});
   },
 
-  deleteRow: (id) => {
+  deleteRow: async (id) => {
+    // await api.delete(`/api/admin/${backend}/board/${id}`);
+    
     const nextAll = get().rows.filter((r) => r.id !== id);
     set({ rows: nextAll });
-    const page = get().paging.page;
-    get().setPage(page);
+    
     get().setQuery({});
   },
 
