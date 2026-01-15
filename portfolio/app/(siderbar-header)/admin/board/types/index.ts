@@ -3,12 +3,13 @@ export type AdminBoardCategory = "notice" | "faq" | "qna" | "general";
 
 export type AdminBoardRow = {
   id: string;
-  category: AdminBoardCategory;
+  slug: AdminBoardCategory;
   title: string;
   content: string;
   tags?: string[];
   authorName: string;
-  isSecret?: boolean;
+  password?: string;
+  hasPassword?: boolean;
   createdAt: string; // ISO
   updatedAt?: string; // ISO
 };
@@ -22,5 +23,18 @@ export type Paging = {
 export type BoardQuery = {
   keyword: string;
   tag: string;
-  category: AdminBoardCategory | "all";
+  slug: AdminBoardCategory | "all";
 };
+
+export type ModalState =
+  | { type: null }
+  | { type: "create" }
+  | { type: "edit"; id: string }
+  | { type: "detail"; id: string }
+  | { type: "delete"; id: string };
+
+export type ParamProps = {
+    page: number;
+    size: number;
+    total: number;
+} & BoardQuery;

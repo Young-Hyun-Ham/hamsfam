@@ -13,8 +13,8 @@ import {
   where,
   serverTimestamp,
 } from "firebase/firestore";
-import { getCategoryPerm, normalize } from "../_utils"; // 경로는 네 board/_utils.ts 기준으로 조정
-import { toDateTimeString } from "@/lib/utils/Utils";
+import { getCategoryPerm } from "../_utils"; // 경로는 네 board/_utils.ts 기준으로 조정
+import { normalize, toDateTimeString } from "@/lib/utils/utils";
 
 function deny(message: string, status = 403) {
   return NextResponse.json({ ok: false, message }, { status });

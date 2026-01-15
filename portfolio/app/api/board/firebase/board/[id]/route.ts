@@ -1,8 +1,8 @@
 // app/api/board/firebase/board/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { tokenizeForSearch, normalize, getCategoryPerm } from "../_utils";
+import { doc, getDoc } from "firebase/firestore";
+import { getCategoryPerm } from "../_utils";
 
 export async function GET(
   _req: NextRequest,

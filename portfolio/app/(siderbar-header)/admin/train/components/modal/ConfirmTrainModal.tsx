@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { TrainPreviewItem } from "../../types";
-import { formatDate } from "@/lib/utils/Utils"
+import { formatDate } from "@/lib/utils/utils"
 
 type TargetType = "project" | "intent" | "entity";
 

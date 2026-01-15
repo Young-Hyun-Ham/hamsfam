@@ -1,5 +1,5 @@
 // app/(siderbar-header)/admin/train/components/StudyJobTable.tsx
-import { formatDate } from "@/lib/utils/Utils";
+import { formatDate } from "@/lib/utils/utils";
 import useStudyStore from "../store";
 
 export default function StudyJobTable({ jobs }: any) {

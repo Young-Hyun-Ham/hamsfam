@@ -18,8 +18,8 @@ import {
   deleteDoc,
   QueryConstraint,
 } from "firebase/firestore";
-import { tokenizeForSearch, getCategoryPerm, normalize } from "./_utils";
-import { toDateTimeString } from "@/lib/utils/Utils";
+import { getCategoryPerm } from "./_utils";
+import { normalize, toDateTimeString, tokenizeForSearch } from "@/lib/utils/utils";
 import { hashPassword } from "@/lib/utils/password";
 
 const MAX_LIMIT = 50;

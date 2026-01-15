@@ -10,10 +10,10 @@ export default function IframePage() {
     () => [
       {
         key: "health",
-        label: "헬스",
+        label: "홈트레이닝",
         desc: "Hams Health",
-        href: "http://localhost:5173",
-        isPopup: false,
+        href: "https://hams-health.vercel.app",
+        isPopup: true,
       },
       {
         key: "naver",
