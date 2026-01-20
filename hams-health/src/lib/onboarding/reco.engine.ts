@@ -394,6 +394,39 @@ function resolveLegacyTemplateSteps(picked: any): RoutineStepResolved[] {
   });
 }
 
+function scaleLegacyTemplateSteps(
+  picked: { steps: { name: string; min: number }[]; duration_min: number },
+  wantedMin: number
+): RoutineStepResolved[] {
+  const baseMin = Math.max(1, Number(picked.duration_min ?? 1));
+  const targetMin = Math.max(1, Number(wantedMin ?? baseMin));
+  const rawSteps = picked.steps ?? [];
+
+  // 1) 비율로 분배
+  const mins = rawSteps.map((st) => Math.max(1, Math.round((st.min * targetMin) / baseMin)));
+
+  // 2) 라운딩 오차 보정(총합을 정확히 targetMin으로)
+  let sum = mins.reduce((a, b) => a + b, 0);
+  const diff = targetMin - sum;
+  if (mins.length) mins[mins.length - 1] = Math.max(1, mins[mins.length - 1] + diff);
+
+  // 3) RoutineStepResolved로 변환
+  return rawSteps.map((st, i) => {
+    const name = st?.name ?? "스트레칭";
+    const found = SUBTYPES_STEPS.find((x: any) => x.name === name);
+    const id = found?.id ?? name;
+    const meta = resolveStepMeta(id, name);
+
+    return {
+      id,
+      seconds: mins[i] * 60,
+      phase: undefined,
+      title: meta.title,
+      imgSrc: meta.imgSrc,
+    };
+  });
+}
+
 function pickRoutine(args: {
   subtype: WorkoutSubtype;
   wantedMin: number;
@@ -423,8 +456,14 @@ function pickRoutine(args: {
   const candidates = sorted.filter((t) => t.duration_min <= wantedMin);
   const picked = candidates.length ? candidates[candidates.length - 1] : sorted[0];
 
-  const steps = resolveLegacyTemplateSteps(picked);
-  const duration_min = picked.duration_min ?? Math.max(1, Math.round(steps.reduce((a, b) => a + b.seconds, 0) / 60));
+  const steps = 
+  picked.duration_min < wantedMin
+    ? scaleLegacyTemplateSteps(picked as any, wantedMin)
+    : resolveLegacyTemplateSteps(picked);
+  const duration_min = 
+  picked.duration_min < wantedMin
+    ? wantedMin
+    : (picked.duration_min ?? Math.max(1, Math.round(steps.reduce((a, b) => a + b.seconds, 0) / 60)));
 
   return {
     duration_min,

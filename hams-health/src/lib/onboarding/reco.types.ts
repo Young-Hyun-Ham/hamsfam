@@ -51,11 +51,20 @@ export type RecommendContext = {
   weekly_days?: number;
 };
 
+export type AgeBand = "10s" | "20s" | "30s" | "40s" | "50s" | "60_plus";
+export type Gender = "male" | "female" | "nonbinary" | "prefer_not";
+
 export type RecommendInput = {
   answers: Record<string, string>;
   goals?: string[];
   constraints?: RecommendConstraints;
   context?: RecommendContext;
+  derived?: {
+    dob?: string;      // "YYYY-MM-DD"
+    age?: number;      // 만 나이
+    age_band?: "10s"|"20s"|"30s"|"40s"|"50s"|"60_plus";
+    gender?: Gender;
+  };
 };
 
 /** =========================

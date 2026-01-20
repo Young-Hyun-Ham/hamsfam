@@ -13,10 +13,7 @@
   } from "$lib/onboarding/store";
 
   import { recoState, requestRecommendation, resetReco } from "$lib/onboarding/reco.store";
-  import type {
-    RecommendInput,
-    RoutineStepResolved,
-  } from "$lib/onboarding/reco.types";
+  import type { RecommendInput, RoutineStepResolved } from "$lib/onboarding/reco.types";
 
   import WorkoutPlayerModal from "$lib/components/WorkoutPlayerModal.svelte";
 
@@ -51,7 +48,9 @@
         fallbackImg;
 
       return {
-        key: id ? `${pick?.subtype_id ?? "pick"}-${i}-${id}` : `${pick?.subtype_id ?? "pick"}-${i}-${title}`,
+        key: id
+          ? `${pick?.subtype_id ?? "pick"}-${i}-${id}`
+          : `${pick?.subtype_id ?? "pick"}-${i}-${title}`,
         id: id ?? `unknown_${i}`,
         seconds,
         title,
@@ -82,6 +81,91 @@
   // 마지막 step에서 결과 미리보기 활성화(선택되면 즉시 보여줘도 되고)
   $: canShowPreview = step === total - 1;
 
+  // =========================
+  // ✅ DOB(select) 입력형 질문 지원
+  // =========================
+  let dobYear = "";
+  let dobMonth = "";
+  let dobDay = "";
+  let lastQid = "";
+
+  $: if (q && q.id !== lastQid) {
+    lastQid = q.id;
+
+    if ((q as any).kind === "dob") {
+      const v = ($onboarding.answers[q.id] ?? "").trim();
+      const [yy, mm, dd] = v.split("-");
+      dobYear = yy ?? "";
+      dobMonth = mm ?? "";
+      dobDay = dd ?? "";
+    } else {
+      dobYear = "";
+      dobMonth = "";
+      dobDay = "";
+    }
+  }
+
+  function pad2(v: string) {
+    return v.padStart(2, "0");
+  }
+
+  function daysInMonth(year: number, month1: number) {
+    // month1: 1-12
+    return new Date(year, month1, 0).getDate();
+  }
+
+  function setDob(part: "year" | "month" | "day", value: string) {
+    if (!q) return;
+    if ((q as any).kind !== "dob") return;
+
+    if (part === "year") dobYear = value;
+    if (part === "month") dobMonth = value;
+    if (part === "day") dobDay = value;
+
+    // month/year 변경 시 day가 범위를 초과하면 자동 보정
+    const y = Number(dobYear);
+    const m = Number(dobMonth);
+    if (y && m && dobDay) {
+      const maxDay = daysInMonth(y, m);
+      if (Number(dobDay) > maxDay) dobDay = String(maxDay);
+    }
+
+    // ✅ 완성되면 YYYY-MM-DD로 저장, 아니면 ""(미응답)
+    if (dobYear && dobMonth && dobDay) {
+      setAnswer(q.id, `${dobYear}-${pad2(dobMonth)}-${pad2(dobDay)}`);
+    } else {
+      setAnswer(q.id, "");
+    }
+
+    if (showResults) resetReco();
+  }
+
+  $: dobMaxYear =
+    q && (q as any).kind === "dob"
+      ? ((q as any).maxYear ?? new Date().getFullYear())
+      : new Date().getFullYear();
+
+  $: dobMinYear =
+    q && (q as any).kind === "dob"
+      ? ((q as any).minYear ?? dobMaxYear - 90)
+      : dobMaxYear - 90;
+
+  $: dobYears = Array.from(
+    { length: Math.max(0, dobMaxYear - dobMinYear + 1) },
+    (_, i) => String(dobMaxYear - i)
+  );
+  $: dobMonths = Array.from({ length: 12 }, (_, i) => String(i + 1));
+  $: dobDays = (() => {
+    const y = Number(dobYear);
+    const m = Number(dobMonth);
+    if (!y || !m) return Array.from({ length: 31 }, (_, i) => String(i + 1));
+    const max = daysInMonth(y, m);
+    return Array.from({ length: max }, (_, i) => String(i + 1));
+  })();
+
+  // =========================
+  // ✅ 선택/다음/이전
+  // =========================
   function select(v: string) {
     if (!q) return;
     setAnswer(q.id, v);
@@ -95,12 +179,15 @@
   function goNext() {
     if (!q) return;
     if (!selected) return;
+
     if (step < total - 1) {
       nextStep(total - 1);
       showResults = false;
       resetReco();
     }
   }
+
+  let showExitConfirm = false;
 
   function goPrev() {
     if (step > 0) {
@@ -112,8 +199,6 @@
     }
   }
 
-  let showExitConfirm = false;
-
   function exitToHome() {
     showExitConfirm = false;
     goto("/");
@@ -121,12 +206,18 @@
 
   async function submit() {
     // ✅ 서버로 보낼 RecommendInput (엔진이 steps 조합할 때 필요한 최소치 포함)
+    const a = $onboarding.answers;
+    const timeMin =
+      a.q5 === "long" ? 30 :
+      a.q5 === "short" ? 15 :
+      15; // 혹시 값 없으면 기본
+
     const input: RecommendInput = {
       answers: $onboarding.answers,
       goals: ["체형", "감량"],
-
+      
       constraints: {
-        time_min: 15,
+        time_min: timeMin,
         equipment: ["none"],
         space: "small",
         noise_level: "low",
@@ -146,7 +237,8 @@
 
     // ✅ 결과 섹션으로 스크롤 (로딩 카드가 먼저 보이게)
     requestAnimationFrame(() => {
-      document.getElementById("recommendation-section")
+      document
+        .getElementById("recommendation-section")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
@@ -172,15 +264,9 @@
   }
 
   onMount(() => {
-    document.documentElement.style.setProperty(
-      "--vh",
-      `${window.innerHeight * 0.01}px`
-    );
+    document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
     const onResize = () =>
-      document.documentElement.style.setProperty(
-        "--vh",
-        `${window.innerHeight * 0.01}px`
-      );
+      document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   });
@@ -218,12 +304,8 @@
         </button>
 
         <div class="text-center">
-          <div class="text-xs text-zinc-500 dark:text-zinc-400">
-            맞춤 홈트 찾기
-          </div>
-          <div class="text-base font-extrabold tracking-tight">
-            내 운동 성향을 알려줘
-          </div>
+          <div class="text-xs text-zinc-500 dark:text-zinc-400">맞춤 홈트 찾기</div>
+          <div class="text-base font-extrabold tracking-tight">내 운동 성향을 알려줘</div>
         </div>
 
         <button
@@ -240,7 +322,7 @@
         </button>
       </div>
 
-      <!-- Progress + Theme -->
+      <!-- Progress -->
       <div class="mt-4 flex items-center gap-3">
         <div class="h-2 flex-1 rounded-full bg-zinc-200/70 dark:bg-zinc-800">
           <!-- svelte-ignore element_invalid_self_closing_tag -->
@@ -275,71 +357,134 @@
           <article class="prose prose-zinc max-w-none dark:prose-invert">
             <h2 class="m-0 text-xl font-extrabold leading-snug">{q.title}</h2>
             {#if q.desc}
-              <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                {q.desc}
-              </p>
+              <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{q.desc}</p>
             {/if}
           </article>
 
-          <!-- 라디오 선택 -->
-          <fieldset class="mt-5 space-y-2.5">
-            <legend class="sr-only">선택지</legend>
-
-            {#each q.options as opt (opt.value)}
-              <label
-                class={[
-                  "flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 shadow-sm transition",
-                  "bg-zinc-50 border-zinc-200 hover:bg-white",
-                  "dark:bg-zinc-950/40 dark:border-zinc-800 dark:hover:bg-zinc-950/70",
-                  selected === opt.value
-                    ? "border-emerald-400/70 bg-emerald-50 ring-2 ring-emerald-200/70 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
-                    : "ring-0",
-                ].join(" ")}
-              >
-                <input
-                  class="mt-0.5 h-5 w-5"
-                  type="radio"
-                  name={q.id}
-                  value={opt.value}
-                  checked={selected === opt.value}
-                  on:change={(e) =>
-                    select((e.currentTarget as HTMLInputElement).value)}
-                />
-
-                <div class="min-w-0">
-                  <div
-                    class="text-sm font-semibold leading-snug text-zinc-900 dark:text-zinc-50"
+          {#if (q as any).kind === "dob"}
+            <!-- ✅ DOB(select) -->
+            <div class="mt-5">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="sr-only" for="dob-year">년</label>
+                  <select
+                    id="dob-year"
+                    class="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 shadow-sm
+                           dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-50"
+                    value={dobYear}
+                    on:change={(e) =>
+                      setDob("year", (e.currentTarget as HTMLSelectElement).value)}
                   >
-                    {opt.label}
-                  </div>
-                  {#if opt.hint}
-                    <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      {opt.hint}
-                    </div>
-                  {/if}
+                    <option value="">년</option>
+                    {#each dobYears as y (y)}
+                      <option value={y}>{y}년</option>
+                    {/each}
+                  </select>
                 </div>
-              </label>
-            {/each}
-          </fieldset>
 
-          <div
-            class="mt-4 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"
-          >
+                <div>
+                  <label class="sr-only" for="dob-month">월</label>
+                  <select
+                    id="dob-month"
+                    class="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 shadow-sm
+                           dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-50"
+                    value={dobMonth}
+                    on:change={(e) =>
+                      setDob("month", (e.currentTarget as HTMLSelectElement).value)}
+                  >
+                    <option value="">월</option>
+                    {#each dobMonths as m (m)}
+                      <option value={m}>{m}월</option>
+                    {/each}
+                  </select>
+                </div>
+
+                <div>
+                  <label class="sr-only" for="dob-day">일</label>
+                  <select
+                    id="dob-day"
+                    class="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-900 shadow-sm
+                           disabled:opacity-60
+                           dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-50"
+                    value={dobDay}
+                    disabled={!dobYear || !dobMonth}
+                    on:change={(e) =>
+                      setDob("day", (e.currentTarget as HTMLSelectElement).value)}
+                  >
+                    <option value="">일</option>
+                    {#each dobDays as d (d)}
+                      <option value={d}>{d}일</option>
+                    {/each}
+                  </select>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <!-- svelte-ignore element_invalid_self_closing_tag -->
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span>나이에 따라 추천 강도/회복 시간을 더 잘 맞출 수 있어</span>
+              </div>
+            </div>
+          {:else}
+            <!-- 라디오 선택 -->
+            <fieldset class="mt-5 space-y-2.5">
+              <legend class="sr-only">선택지</legend>
+
+              {#each (q as any).options as opt (opt.value)}
+                <label
+                  class={[
+                    "flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 shadow-sm transition",
+                    "bg-zinc-50 border-zinc-200 hover:bg-white",
+                    "dark:bg-zinc-950/40 dark:border-zinc-800 dark:hover:bg-zinc-950/70",
+                    selected === opt.value
+                      ? "border-emerald-400/70 bg-emerald-50 ring-2 ring-emerald-200/70 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+                      : "ring-0",
+                  ].join(" ")}
+                >
+                  <input
+                    class="mt-0.5 h-5 w-5"
+                    type="radio"
+                    name={q.id}
+                    value={opt.value}
+                    checked={selected === opt.value}
+                    on:change={(e) => select((e.currentTarget as HTMLInputElement).value)}
+                  />
+
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+                      {opt.label}
+                    </div>
+                    {#if opt.hint}
+                      <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        {opt.hint}
+                      </div>
+                    {/if}
+                  </div>
+                </label>
+              {/each}
+            </fieldset>
+          {/if}
+
+          <div class="mt-4 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
             <!-- svelte-ignore element_invalid_self_closing_tag -->
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {#if step < total - 1}
-              <span>선택 후 ‘다음’ 버튼을 눌러 진행해줘</span>
+              <span>선택/입력 후 ‘다음’ 버튼을 눌러 진행해줘</span>
             {:else}
-              <span>선택 후 ‘분석 시작’ 버튼을 눌러 결과를 확인해줘</span>
+              <span>선택/입력 후 ‘분석 시작’ 버튼을 눌러 결과를 확인해줘</span>
             {/if}
           </div>
         </section>
 
         <!-- ✅ 결과 미리보기 힌트(마지막 페이지에서만) -->
         {#if canShowPreview}
-          <div class="mt-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div
+            class="mt-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+          >
             <div class="flex items-start gap-3">
-              <div class="mt-0.5 h-9 w-9 shrink-0 rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 shadow-sm"></div>
+              <div
+                class="mt-0.5 h-9 w-9 shrink-0 rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 shadow-sm"
+              ></div>
               <div class="min-w-0">
                 <div class="text-sm font-extrabold">마지막 단계야</div>
                 <div class="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
@@ -451,13 +596,10 @@
                   <div class="text-sm font-extrabold">
                     추천 루틴 ({pick.routine.duration_min}분 · {pick.routine.level})
                   </div>
-                  <span
-                    class="text-xs text-zinc-500 dark:text-zinc-400"
-                    title="내 답변에 따라 자동 구성"
-                  >
+                  <span class="text-xs text-zinc-500 dark:text-zinc-400" title="내 답변에 따라 자동 구성">
                     score: {pick.score}
                   </span>
-                  
+
                   <!-- ✅ Play 버튼 -->
                   <button
                     type="button"
@@ -485,9 +627,7 @@
                         >
                           {i + 1}
                         </span>
-                        <span class="truncate text-sm font-semibold">
-                          {s.title}
-                        </span>
+                        <span class="truncate text-sm font-semibold">{s.title}</span>
                       </div>
                       <span
                         class="shrink-0 rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700
@@ -506,9 +646,7 @@
                   <div class="text-sm font-extrabold text-amber-900 dark:text-amber-200">주의할 점</div>
                   <ul class="mt-2 space-y-2">
                     {#each pick.warnings as w (w.tag)}
-                      <li class="text-xs text-amber-900 dark:text-amber-200">
-                        • {w.text}
-                      </li>
+                      <li class="text-xs text-amber-900 dark:text-amber-200">• {w.text}</li>
                     {/each}
                   </ul>
                 </div>
@@ -573,9 +711,7 @@
     {/if}
 
     <!-- Bottom CTA -->
-    <footer
-      class="sticky bottom-0 mt-5 pb-4 pt-3 bg-gradient-to-t from-zinc-50 to-transparent dark:from-zinc-950"
-    >
+    <footer class="sticky bottom-0 mt-5 pb-4 pt-3 bg-gradient-to-t from-zinc-50 to-transparent dark:from-zinc-950">
       {#if step < total - 1}
         <button
           class="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-4 text-base font-extrabold
@@ -626,7 +762,6 @@
         warnings={playerWarnings}
         onClose={() => (playerOpen = false)}
       />
-
     </footer>
   </div>
 
@@ -668,4 +803,3 @@
     </div>
   {/if}
 </div>
-

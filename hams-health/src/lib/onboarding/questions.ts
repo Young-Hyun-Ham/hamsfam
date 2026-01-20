@@ -3,6 +3,27 @@ import type { Question } from "./types";
 
 export const QUESTIONS: Question[] = [
   {
+    id: "q0",
+    dimension: "profile",
+    kind: "dob",
+    title: "생년월일을 알려줘",
+    desc: "나이에 따라 추천 강도와 회복 시간을 더 정확히 맞출 수 있어",
+    // minYear: 1940,
+    // maxYear: 2026,
+  },
+  {
+    id: "q0_gender",
+    dimension: "profile",
+    title: "성별을 알려줘",
+    desc: "운동 강도/회복/루틴 균형을 더 정확히 맞추는 데 참고할게",
+    options: [
+      { label: "남성", value: "male" },
+      { label: "여성", value: "female" },
+      { label: "논바이너리/기타", value: "nonbinary" },
+      { label: "말하고 싶지 않음", value: "prefer_not" },
+    ],
+  },
+  {
     id: "q1",
     dimension: "personality",
     title: "운동을 시작할 때 나는?",
