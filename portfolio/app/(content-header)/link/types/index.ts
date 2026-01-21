@@ -1,7 +1,7 @@
 // app/(content-header)/link/types/index.ts
 
 export type TargetSite = {
-  key: "health" | "naver" | "google";
+  key: any;
   label: string;
   desc: string;
   href: string;

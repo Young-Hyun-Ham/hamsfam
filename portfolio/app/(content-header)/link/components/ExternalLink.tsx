@@ -10,6 +10,9 @@ export function ExternalLink(p: ExternalLinkProps) {
   const onOpenNewTab = () => {
     window.open(p.current.href, "_blank", "noopener,noreferrer");
   };
+  const onOpenAway = () => {
+    window.open(p.current.href, "_self", "noopener,noreferrer");
+  };
 
   const onCopy = async () => {
     try {
@@ -137,7 +140,7 @@ export function ExternalLink(p: ExternalLinkProps) {
 
             <div className="mt-4">
               <button
-                // onClick={onOpenNewTab}
+                onClick={onOpenAway}
                 className="
                   w-full rounded-2xl bg-black px-4 py-3
                   text-sm font-medium text-white

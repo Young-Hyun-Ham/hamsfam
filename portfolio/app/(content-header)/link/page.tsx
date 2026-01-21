@@ -16,6 +16,13 @@ export default function IframePage() {
         isPopup: true,
       },
       {
+        key: "todos",
+        label: "Todos",
+        desc: "Hams Todos",
+        href: "https://hamsfam-todos.vercel.app/todos",
+        isPopup: true,
+      },
+      {
         key: "naver",
         label: "네이버",
         desc: "NAVER",
@@ -50,7 +57,7 @@ export default function IframePage() {
             <h1 className="text-lg font-semibold text-gray-900">
               타 서비스 이동{" "}
               <span className="ml-1 text-sm font-normal text-gray-500">
-                (다른 사이트를 iframe으로 연결한 화면입니다)
+                (다른 사이트를 iframe 또는 새탭으로 연결)
               </span>
             </h1>
             <div className="mt-1 text-xs text-gray-500">

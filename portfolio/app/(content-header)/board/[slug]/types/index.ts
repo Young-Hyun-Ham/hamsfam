@@ -62,6 +62,9 @@ type BoardReply = {
   authorName?: string;
   createdAt?: string;
   updatedAt?: string;
+
+  deleted?: boolean;
+  authorId?: string | null;
 };
 
 export type {

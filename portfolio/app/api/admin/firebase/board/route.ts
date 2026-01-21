@@ -40,6 +40,18 @@ export async function GET(req: Request) {
     if (tag) {
       queryRef = queryRef.where("tags", "array-contains", tag);
     }
+
+    // ✅ total (slug/tag 기준으로만 정확)
+    // Firestore Admin SDK에서 count aggregation 지원 시 사용
+    let total = 0;
+    try {
+      const countSnap = await queryRef.count().get();
+      total = Number(countSnap.data().count ?? 0);
+    } catch (e) {
+      // count() 미지원 환경이면 fallback(비추: 데이터 많으면 느림)
+      const allSnap = await queryRef.get();
+      total = allSnap.size;
+    }
     
     queryRef = queryRef
         .offset((page - 1) * size)
@@ -64,7 +76,17 @@ export async function GET(req: Request) {
       });
     }
 
-    return NextResponse.json({ items }, { status: 200 });
+    const hasMore = page * size < total;
+    return NextResponse.json(
+      { 
+        items,
+        paging: {
+          page,
+          size,
+          total,
+          hasMore,
+        },
+      }, { status: 200 });
   } catch (err) {
     console.error("GET /api/firebase/admin/board error:", err);
     return NextResponse.json(
@@ -76,8 +98,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json();
+  const { password, ...rest } = body;
 
-  const now = new Date().toISOString();
   const id = randomUUID();
   const tokens = tokenizeForSearch(body.title, body.content, body.tags);
   const pw = normalize(body.password);
@@ -85,15 +107,26 @@ export async function POST(req: Request) {
   const hasPassword = Boolean(pw);
 
   const payload = {
-    ...body,
+    ...rest,
     id,
     tokens,
     passwordHash,
     hasPassword,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
   await adminDb.collection(COL).doc(id).set(payload);
+  
+  // 히스토리 저장
+  const historyId = randomUUID();
+  const historyPayload = {
+    ...rest,
+    id: historyId,
+    authorId: "admin",
+    authorName: "관리자",
+    createdAt: new Date().toISOString(),
+  };
+  await adminDb.collection(COL).doc(id).collection("history").doc(historyId).set(historyPayload);
   
   return NextResponse.json({ ok: true, id: id });
 }

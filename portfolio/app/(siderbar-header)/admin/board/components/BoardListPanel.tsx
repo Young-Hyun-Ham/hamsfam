@@ -24,7 +24,6 @@ export default function BoardListPanel({ items }: { items: AdminBoardRow[] }) {
   const { 
     paging,
     open,
-    close,
   } = useAdminBoardStore();
   
   const [rows, setRows] = useState<AdminBoardRow[]>(items ?? []);
@@ -34,6 +33,7 @@ export default function BoardListPanel({ items }: { items: AdminBoardRow[] }) {
   const empty = useMemo(() => rows.length === 0, [rows.length]);
 
   useEffect(() => {
+    // console.log("================> ",items)
     setRows(items);
   }, [items]);
 
@@ -46,6 +46,10 @@ export default function BoardListPanel({ items }: { items: AdminBoardRow[] }) {
     } else {
       setOpenUnlock(false);
     }
+  }
+
+  function onClose() {
+    setOpenUnlock(false);
   }
 
   return (
@@ -135,12 +139,13 @@ export default function BoardListPanel({ items }: { items: AdminBoardRow[] }) {
         )}
       </div>
       
+      {/* 비밀글 비번락 모달팝업 */}
       {openUnlock && (
         <BoardUnlockModal
           id={targetId}
           type={targetType}
           isOpen={openUnlock}
-          onClose={close}
+          onClose={onClose}
         />
       )}
     </div>

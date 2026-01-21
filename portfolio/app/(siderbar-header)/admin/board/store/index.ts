@@ -2,7 +2,8 @@
 "use client";
 
 import { create } from "zustand";
-import type { AdminBoardRow, BoardQuery, ModalState, Paging, ParamProps } from "../types";
+import type { roleTypes } from "@/types/user";
+import type { AdminBoardRow, AdminUser, BoardQuery, BoardReply, ModalState, Paging, ParamProps, ReplyCreateInput } from "../types";
 import { api } from "@/lib/axios";
 import { normalize } from "@/lib/utils/utils";
 
@@ -37,7 +38,7 @@ type State = {
   open: (m: ModalState) => void;
   close: () => void;
 
-  // crud (mock)
+  // crud
   fetchList: (params?: ParamProps) => void;
   createRow: (payload: Pick<AdminBoardRow, "slug" | "title" | "content" | "tags" | "password">) => void;
   updateRow: (id: string, payload: Partial<Pick<AdminBoardRow, "slug" | "title" | "content" | "tags">>) => void;
@@ -45,6 +46,14 @@ type State = {
 
   // selectors
   getById: (id: string) => AdminBoardRow | undefined;
+
+  // reply crud
+  repliesByPostId: Record<string, BoardReply[]>;
+  replyFetch: (postId: string) => Promise<void>;
+  replyCreate: (payload: ReplyCreateInput) => Promise<BoardReply | null>;
+  
+  replyUpdate: (payload: { postId: string; replyId: string; content: string, actorRoles: roleTypes[] }) => Promise<boolean>;
+  replyDelete: (payload: { postId: string; replyId: string, actorRoles: roleTypes[] }) => Promise<boolean>;
 };
 
 const backend = process.env.NEXT_PUBLIC_BACKEND ?? "firebase";
@@ -65,32 +74,7 @@ export const useAdminBoardStore = create<State>((set, get) => ({
   selectedId: null,
   modal: { type: null },
 
-  // init: () => {
-  //   const all = makeMock(73);
-  //   const q = get().query;
-  //   const filtered = filterRows(all, q);
-  //   const { page, size } = get().paging;
-  //   const pageFixed = 1;
-  //   set({
-  //     all,
-  //     paging: { page: pageFixed, size, total: filtered.length },
-  //     rows: paginate(filtered, pageFixed, size),
-  //   });
-  // },
-
   setQuery: (q) => set({ query: { ...get().query, ...q } }),
-  // setQuery: (patch) => {
-  //   const next = { ...get().query, ...patch };
-  //   const all = get().rows;
-  //   const filtered = filterRows(all, next);
-  //   const size = get().paging.size ?? 10;
-  //   const page = get().paging.page ?? 1;
-  //   set({
-  //     query: next,
-  //     paging: { page, size, total: filtered.length },
-  //     rows: paginate(filtered, page, size),
-  //   });
-  // },
 
   setPage: (page) => {
     const { size } = get().paging;
@@ -109,8 +93,16 @@ export const useAdminBoardStore = create<State>((set, get) => ({
   fetchList: async (payload) => {
     try {
       const { data } = await api.get(`/api/admin/${backend}/board`, { params: payload });
-      console.log(data)
-      set({ rows: data.items });
+      
+      set({
+        rows: data.items ?? [],
+        paging: data.paging ?? {
+          page: payload?.page ?? 1,
+          size: payload?.size ?? 10,
+          total: 0,
+          hasMore: false,
+        },
+      });
     } catch(err) {
       console.log(err)
     }
@@ -118,27 +110,31 @@ export const useAdminBoardStore = create<State>((set, get) => ({
 
   createRow: async (payload) => {
     const all = get().rows;
-    const now = new Date();
     const row: AdminBoardRow = {
-      id: String(Date.now()),
+      id: "", // 서버에서 생성
       slug: payload.slug,
       title: payload.title,
       content: payload.content,
       tags: payload.tags ?? [],
       password: payload.password ?? "",
       hasPassword: payload.password ? true : false,
+      authorId: "admin",
       authorName: "관리자",
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    await api.post(`/api/admin/${backend}/board`, payload)
-    const nextAll = [row, ...all];
+    const { data } = await api.post(`/api/admin/${backend}/board`, row)
+    const nextData = {
+      ...row,
+      id: data.id
+    }
+    const nextAll = [nextData, ...all];
     set({ rows: nextAll });
     get().setPage(1);
     get().setQuery({}); // refresh with current query
   },
 
-  updateRow: (id, payload) => {
+  updateRow: async (id, payload) => {
     const nextAll = get().rows.map((r) =>
       r.id === id
         ? {
@@ -148,12 +144,14 @@ export const useAdminBoardStore = create<State>((set, get) => ({
           }
         : r
     );
+    // console.log("payload =========> ", id, payload);
+    const { data } = await api.patch(`/api/admin/${backend}/board/${id}`, payload);
     set({ rows: nextAll });
     get().setQuery({});
   },
 
   deleteRow: async (id) => {
-    // await api.delete(`/api/admin/${backend}/board/${id}`);
+    await api.delete(`/api/admin/${backend}/board/${id}`);
     
     const nextAll = get().rows.filter((r) => r.id !== id);
     set({ rows: nextAll });
@@ -162,4 +160,90 @@ export const useAdminBoardStore = create<State>((set, get) => ({
   },
 
   getById: (id) => get().rows.find((r) => r.id === id),
+    
+  repliesByPostId: {},
+
+  replyFetch: async (postId) => {
+    if (!postId) return;
+    const res = await api.get(`/api/admin/${backend}/board/replies`, { params: { postId } });
+    const items: BoardReply[] = res.data?.items ?? [];
+
+    // path 정렬(서버가 이미 정렬해주지만 안전하게 한번 더)
+    items.sort((a, b) => (a.path ?? "").localeCompare(b.path ?? ""));
+
+    set((s) => ({
+      repliesByPostId: { ...s.repliesByPostId, [postId]: items ?? [] },
+    }));
+  },
+
+  replyCreate: async (payload) => {
+    const postId = payload.postId;
+    const content = payload.content?.trim() ?? "";
+    const parentId = payload.parentId ?? null;
+
+    if (!postId || !content) return null;
+
+    // ✅ 서버가 계산해야 하는 값(threadId/depth/path/createdAt...)은 클라에서 만들지 않는다
+    const body = {
+      postId,
+      parentId,
+      content,
+      authorId: "admin",
+      authorName: "관리자",
+    };
+
+    const res = await api.post(`/api/admin/${backend}/board/replies`, body);
+    const item: BoardReply = res.data?.item;
+
+    if (!item) return null;
+
+    set((s) => {
+      const prev = s.repliesByPostId[postId] ?? [];
+      // path 기준 정렬(트리 정렬 유지)
+      const next = [...prev, item].sort((a, b) => (a.path ?? "").localeCompare(b.path ?? ""));
+      return { repliesByPostId: { ...s.repliesByPostId, [postId]: next } };
+    });
+
+    return item;
+  },
+  replyUpdate: async ({ postId, replyId, content, actorRoles }) => {
+    const nextContent = content.trim();
+    if (!postId || !replyId || !nextContent) return false;
+
+    const res = await api.patch(`/api/admin/${backend}/board/replies/${replyId}`, {
+      postId,
+      content: nextContent,
+      actorRoles,
+    });
+
+    const item: BoardReply | undefined = res.data?.item;
+    if (!item) return false;
+
+    set((s) => {
+      const prev = s.repliesByPostId[postId] ?? [];
+      const next = prev.map((r) => (r.id === replyId ? { ...r, ...item } : r));
+      return { repliesByPostId: { ...s.repliesByPostId, [postId]: next } };
+    });
+
+    return true;
+  },
+  replyDelete: async ({ postId, replyId, actorRoles }) => {
+    if (!postId || !replyId) return false;
+
+    const res = await api.delete(`/api/admin/${backend}/board/replies/${replyId}`, {
+      data: { postId, actorRoles },
+    });
+
+    const item: BoardReply | undefined = res.data?.item;
+    if (!item) return false;
+
+    // ✅ soft delete 반영(트리 유지)
+    set((s) => {
+      const prev = s.repliesByPostId[postId] ?? [];
+      const next = prev.map((r) => (r.id === replyId ? { ...r, ...item } : r));
+      return { repliesByPostId: { ...s.repliesByPostId, [postId]: next } };
+    });
+
+    return true;
+  },
 }));

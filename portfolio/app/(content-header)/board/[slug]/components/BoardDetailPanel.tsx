@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import usePublicBoardStore from "../store";
 import type { BoardPost } from "../types";
+import { formatDate } from "@/lib/utils/utils";
 
 export default function BoardDetailPanel({ selected }: { selected: BoardPost | null }) {
   const {
@@ -57,6 +58,20 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
   const canReplyFinal = canReply && !locked;
   // 권한 (현재 리스트에서 edit 권한을 글쓰기 기준으로 쓰고 있어서 동일하게)
   const canEdit = Boolean(category?.edit) && !locked;
+  // 삭제한 댓글 표시 토글 변수
+  const [showDeleted, setShowDeleted] = useState(false);
+
+  useEffect(() => {
+    if (!postId) return;
+    fetchReplies(postId);
+    setUnlocked(false);
+    setReplyText("");
+    setPw("");
+    setPwError(null);
+
+    // ✅ 글이 바뀌면 기본은 숨김
+    setShowDeleted(false);
+  }, [postId, fetchReplies]);
 
   async function unlock() {
     const pwTrim = pw.trim();
@@ -204,7 +219,7 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
               </div>
 
               <div className="mt-4 text-[11px] text-gray-400">
-                createdAt: {selected.createdAt ?? "-"} / updatedAt: {selected.updatedAt ?? "-"}
+                createdAt: {formatDate(selected.createdAt) ?? "-"} / updatedAt: {formatDate(selected.updatedAt) ?? "-"}
               </div>
             </section>
 
@@ -224,13 +239,31 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
                   </div>
                 </div>
 
-                <button
-                  onClick={() => postId && fetchReplies(postId)}
-                  className="rounded-2xl bg-gray-100 px-4 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={repliesLoading || !postId}
-                >
-                  {repliesLoading ? "불러오는 중..." : "새로고침"}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* 삭제 댓글 토글 */}
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleted((v) => !v)}
+                    className={[
+                      "rounded-2xl px-4 py-2 text-xs shadow-sm ring-1 transition",
+                      showDeleted
+                        ? "bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100"
+                        : "bg-gray-100 text-gray-700 ring-black/5 hover:bg-gray-200",
+                    ].join(" ")}
+                    title="삭제된 댓글 표시/숨김"
+                  >
+                    {showDeleted ? "삭제 댓글 숨김" : "삭제 댓글 표시"}
+                  </button>
+
+                  {/* 새로고침 */}
+                  <button
+                    onClick={() => postId && fetchReplies(postId)}
+                    className="rounded-2xl bg-gray-100 px-4 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={repliesLoading || !postId}
+                  >
+                    {repliesLoading ? "불러오는 중..." : "새로고침"}
+                  </button>
+                </div>
               </div>
 
               {/* reply editor card */}
@@ -271,39 +304,143 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
                     댓글을 불러오는 중...
                   </div>
                 ) : replies.length ? (
-                  replies.map((r: any) => (
-                    <div
-                      key={r.id}
-                      className="rounded-3xl bg-white p-4 shadow-[0_10px_28px_rgba(0,0,0,0.08)] ring-1 ring-black/5"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="whitespace-pre-wrap text-sm leading-6 text-gray-900">
-                            {r.content}
-                          </div>
-                          <div className="mt-2 text-[11px] text-gray-400">
-                            {r.authorName ? `작성자: ${r.authorName} · ` : ""}
-                            {r.createdAt ?? "-"}
+                  (() => {
+                    // ✅ depth 기반 indent (최대 3단까지만 시각적으로)
+                    const INDENT_UNIT = 18; // px
+                    const MAX_DEPTH_UI = 3;
+
+                    const getDepth = (r: any) => {
+                      const d = Number(r.depth ?? 0);
+                      return Number.isFinite(d) ? d : 0;
+                    };
+
+                    const depthLabel = (d: number) => {
+                      if (d <= 0) return "댓글";
+                      if (d === 1) return "답글";
+                      // return `답글 · ${d}단`;
+                      return `답글`;
+                    };
+
+                    // ✅ path/threadId가 없을 때도 정렬이 안정적으로 되게 fallback
+                    const sortKey = (r: any) => {
+                      const d = getDepth(r);
+                      const path = (r.path ?? "").toString();
+                      const threadId = (r.threadId ?? "").toString();
+                      const createdAt = (r.createdAt ?? "").toString();
+                      // path가 있으면 path 우선(관리자와 동일한 개념)
+                      if (path) return `${path}__${String(d).padStart(2, "0")}__${createdAt}`;
+                      // threadId가 있으면 threadId 우선
+                      if (threadId) return `${threadId}__${String(d).padStart(2, "0")}__${createdAt}`;
+                      // 둘 다 없으면 createdAt로만
+                      return `zz__${String(d).padStart(2, "0")}__${createdAt}`;
+                    };
+
+                    const sorted = [...replies].sort((a: any, b: any) =>
+                      sortKey(a).localeCompare(sortKey(b))
+                    );
+
+                    const chipCls = (d: number) => {
+                      const base =
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 shadow-sm";
+                      if (d <= 0) return `${base} bg-indigo-50 text-indigo-700 ring-indigo-200`;
+                      if (d === 1) return `${base} bg-emerald-50 text-emerald-700 ring-emerald-200`;
+                      return `${base} bg-amber-50 text-amber-700 ring-amber-200`;
+                    };
+
+                    function getParentContent(
+                      parentId: string | null | undefined,
+                      replies: any[],
+                      maxLen: number = 20
+                    ) {
+                      if (!parentId) return null;
+                      const parent = replies.find((r) => r.id === parentId);
+                      if (!parent || !parent.content) return null;
+
+                      const text = parent.content.replace(/\s+/g, " ").trim();
+                      return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
+                    }
+                    
+                    const visible = showDeleted ? sorted : sorted.filter((r: any) => !r.deleted);
+                    return visible.map((r: any) => {
+                      const isDeleted = Boolean(r.deleted);
+                      const d = getDepth(r);
+                      const uiDepth = Math.min(d, MAX_DEPTH_UI);
+                      const ml = uiDepth * INDENT_UNIT;
+
+                      return (
+                        <div key={r.id} className="relative">
+                          {/* ✅ depth 가이드 라인 (부드럽게) */}
+                          {uiDepth > 0 ? (
+                            <div
+                              className="pointer-events-none absolute left-0 top-0 h-full"
+                              style={{ width: ml }}
+                            >
+                              <div className="h-full w-full rounded-2xl bg-gradient-to-b from-black/5 to-transparent" />
+                            </div>
+                          ) : null}
+
+                          <div style={{ marginLeft: ml }}>
+                            <div
+                              className={[
+                                "rounded-3xl p-4 ring-1 ring-black/5",
+                                isDeleted
+                                  ? "bg-gray-50 shadow-inner"
+                                  : "bg-white shadow-[0_10px_28px_rgba(0,0,0,0.08)]",
+                              ].join(" ")}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  {/* ✅ 상단 메타: depth 칩 + 작성자/시간 */}
+                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <span className={chipCls(d)}>{depthLabel(d)}</span>
+
+                                    {r.parentId ? (
+                                      <span className="text-[11px] text-gray-400">
+                                        ↳ “{getParentContent(r.parentId, replies) ?? "삭제된 글입니다."}”
+                                      </span>
+                                    ) : null}
+                                  </div>
+
+                                  <div
+                                    className={[
+                                      "whitespace-pre-wrap text-sm leading-6",
+                                      isDeleted ? "text-gray-400 italic" : "text-gray-900",
+                                    ].join(" ")}
+                                  >
+                                    {isDeleted ? "삭제된 글입니다." : r.content}
+                                  </div>
+
+                                  <div className="mt-2 text-[11px] text-gray-400">
+                                    {r.authorName ? `작성자: ${r.authorName} · ` : ""}
+                                    {formatDate(r.createdAt) ?? "-"}
+                                  </div>
+                                </div>
+
+                                {/* 삭제된 댓글이면 버튼 숨김 */}
+                                {!isDeleted ? (
+                                  <button
+                                    onClick={() => onDeleteReply(r.id)}
+                                    disabled={repliesSaving}
+                                    className="shrink-0 rounded-2xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-600 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="삭제"
+                                  >
+                                    삭제
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
                         </div>
-
-                        <button
-                          onClick={() => onDeleteReply(r.id)}
-                          disabled={repliesSaving}
-                          className="shrink-0 rounded-2xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-600 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          title="삭제"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    });
+                  })()
                 ) : (
                   <div className="rounded-3xl bg-gray-50 p-4 text-sm text-gray-500 shadow-inner ring-1 ring-black/5">
                     아직 댓글이 없습니다.
                   </div>
                 )}
               </div>
+
             </section>
           </div>
         </div>

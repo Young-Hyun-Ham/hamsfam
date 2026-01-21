@@ -1,120 +1,128 @@
 // app/api/board/firebase/board/replies/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  where,
-  serverTimestamp,
-} from "firebase/firestore";
-import { getCategoryPerm } from "../_utils"; // 경로는 네 board/_utils.ts 기준으로 조정
-import { normalize, toDateTimeString } from "@/lib/utils/utils";
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebaseAdmin";
+import { randomUUID } from "crypto";
+import { normalize } from "@/lib/utils/utils";
 
-function deny(message: string, status = 403) {
-  return NextResponse.json({ ok: false, message }, { status });
-}
+const POSTS_COL = "board_posts";
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const url = new URL(req.url);
-    const postId = normalize(url.searchParams.get("postId"));
-    if (!postId) return NextResponse.json({ ok: false, message: "postId is required" }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const postId = normalize(searchParams.get("postId") ?? "");
+    if (!postId) {
+      return NextResponse.json({ items: [] }, { status: 200 });
+    }
 
-    const postSnap = await getDoc(doc(db, "board_posts", postId));
-    if (!postSnap.exists()) return NextResponse.json({ ok: false, message: "post not found" }, { status: 404 });
+    const snap = await adminDb
+      .collection(POSTS_COL)
+      .doc(postId)
+      .collection("replies")
+      .orderBy("createdAt", "asc")
+      .get();
 
-    const post = postSnap.data() as any;
-    const slug = normalize(post.slug);
-    const perm = await getCategoryPerm(slug);
-    if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
-
-    // 읽기는 허용(필요하면 perm.status로 제한)
-    const snap = await getDocs(
-      query(
-        collection(db, "board_replies"),
-        where("postId", "==", postId),
-        orderBy("createdAt", "asc")
-      )
+    const items = snap.docs.map((d) => d.data());
+    return NextResponse.json({ items }, { status: 200 });
+  } catch (err) {
+    console.error("GET /api/board/firebase/board/replies error:", err);
+    return NextResponse.json(
+      { error: "댓글 조회 중 오류가 발생했습니다." },
+      { status: 500 }
     );
-
-    // const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-    const items = snap.docs.map((d) => {
-      const data = d.data() as any;
-      return {
-        id: d.id,
-        ...data,
-        createdAt: toDateTimeString(data.createdAt),
-        updatedAt: toDateTimeString(data.updatedAt),
-      };
-    });
-    return NextResponse.json({ ok: true, items, canReply: Boolean(perm.reply) });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e?.message ?? "replies GET failed" }, { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json();
+
     const postId = normalize(body.postId);
     const content = normalize(body.content);
-    if (!postId) return NextResponse.json({ ok: false, message: "postId is required" }, { status: 400 });
-    if (!content) return NextResponse.json({ ok: false, message: "content is required" }, { status: 400 });
-
-    const postSnap = await getDoc(doc(db, "board_posts", postId));
-    if (!postSnap.exists()) return NextResponse.json({ ok: false, message: "post not found" }, { status: 404 });
-
-    const post = postSnap.data() as any;
-    const slug = normalize(post.slug);
-    const perm = await getCategoryPerm(slug);
-    const authorId = normalize(body.authorId) || null;
+    const authorId = body.authorId ?? null;
     const authorName = normalize(body.authorName) || "익명";
-    if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
-    if (!perm.reply) return deny("no permission to reply");
 
-    const ref = await addDoc(collection(db, "board_replies"), {
+    if (!postId) {
+      return NextResponse.json({ error: "postId is required" }, { status: 400 });
+    }
+    if (!content) {
+      return NextResponse.json({ error: "content is required" }, { status: 400 });
+    }
+
+    const id = randomUUID();
+    const now = new Date().toISOString();
+
+    const payload = {
+      id,
       postId,
-      slug,
       content,
       authorId,
       authorName,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      // ✅ 나중에 “답변(대댓글)” 확장 시 사용 가능
+      parentId: body.parentId ?? null,
+      depth: Number(body.depth ?? 0),
+      path: body.path ?? "",
+      deleted: false,
 
-    return NextResponse.json({ ok: true, id: ref.id });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e?.message ?? "replies POST failed" }, { status: 500 });
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await adminDb
+      .collection(POSTS_COL)
+      .doc(postId)
+      .collection("replies")
+      .doc(id)
+      .set(payload);
+
+    return NextResponse.json({ ok: true, id }, { status: 200 });
+  } catch (err) {
+    console.error("POST /api/board/firebase/board/replies error:", err);
+    return NextResponse.json(
+      { error: "댓글 생성 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: Request) {
   try {
-    const url = new URL(req.url);
-    const id = normalize(url.searchParams.get("id"));
-    if (!id) return NextResponse.json({ ok: false, message: "id is required" }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const id = normalize(searchParams.get("id") ?? "");
+    const postId = normalize(searchParams.get("postId") ?? "");
 
-    const replyRef = doc(db, "board_replies", id);
-    const replySnap = await getDoc(replyRef);
-    if (!replySnap.exists()) return NextResponse.json({ ok: false, message: "reply not found" }, { status: 404 });
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+    if (!postId) {
+      // ✅ 서브컬렉션 구조에서는 postId 없으면 doc를 못 찾음
+      return NextResponse.json({ error: "postId is required" }, { status: 400 });
+    }
 
-    const reply = replySnap.data() as any;
-    const slug = normalize(reply.slug);
-    const perm = await getCategoryPerm(slug);
-    if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
+    // 운영 정책: 하드 삭제 or 소프트 삭제
+    // 1) 하드 삭제
+    // await adminDb.collection(POSTS_COL).doc(postId).collection("replies").doc(id).delete();
 
-    // MVP: reply 권한 또는 edit 권한이 있으면 삭제 허용
-    if (!perm.reply && !perm.edit) return deny("no permission to delete reply");
+    // 2) 소프트 삭제(관리자와 동일 방향)
+    await adminDb
+      .collection(POSTS_COL)
+      .doc(postId)
+      .collection("replies")
+      .doc(id)
+      .set(
+        {
+          deleted: true,
+          content: "삭제된 댓글입니다.",
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
 
-    await deleteDoc(replyRef);
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, message: e?.message ?? "replies DELETE failed" }, { status: 500 });
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error("DELETE /api/board/firebase/board/replies error:", err);
+    return NextResponse.json(
+      { error: "댓글 삭제 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
   }
 }
