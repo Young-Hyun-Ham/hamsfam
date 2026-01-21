@@ -1,7 +1,9 @@
 // app/api/admin/firebase/board/[id]/route.ts
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { tokenizeForSearch } from "@/lib/utils/utils";
+import { normalize, tokenizeForSearch } from "@/lib/utils/utils";
+import { hashPassword } from "@/lib/utils/password";
+import { randomUUID } from "crypto";
 
 const COL = "board_posts";
 
@@ -11,6 +13,7 @@ type BoardPayload = {
     title: string;
     content: string;
     tags: string[];
+    authorId: string;
     authorName: string;
     tokens?: string[];
     password?: string;
@@ -22,24 +25,34 @@ type Params = { params: Promise<{ id: string }> };
 export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;
   const body = (await req.json()) as BoardPayload;
-
   const tokens = tokenizeForSearch(body.title, body.content, body.tags);
   const patch: any = {
     slug: body.slug,
     title: body.title,
     content: body.content,
     tokens,
-    authorName: body.authorName,
     updatedAt: new Date().toISOString(),
   };
   if (body?.tags != null) patch.tag = body.tags;
-  if (body?.password != null) patch.password = String(body.password).trim();
-  if (body?.password != null) { patch.hasPassword = true } else { patch.hasPassword = false };
+  const pw = normalize(body.password);
+  if (pw != null && pw != "") patch.passwordHash = await hashPassword(pw);
+  if (pw != null && pw != "") patch.hasPassword = Boolean(pw);
   
   const ref = adminDb.collection(COL).doc(id);
   await ref.set(patch, { merge: true });
 
   const after = await ref.get();
+  // 히스토리 저장
+  const historyId = randomUUID();
+  const historyPayload = {
+    ...patch,
+    id: historyId,
+    authorId: "admin",
+    authorName: "관리자",
+    createdAt: new Date().toISOString(),
+  };
+  await adminDb.collection(COL).doc(id).collection("history").doc(historyId).set(historyPayload);
+
   return NextResponse.json(after.data());
 }
 

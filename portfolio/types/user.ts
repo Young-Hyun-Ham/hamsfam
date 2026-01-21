@@ -1,10 +1,12 @@
 // types/user.ts
+export type roleTypes = "guest" | "admin" | "user";
+
 export type User = {
   id: string;
   sub: string;
   email: string;
   username: string;
-  roles?: string[];
+  roles?: roleTypes[];
   provider?: string;
   accessToken?: string;
   refreshToken?: string;

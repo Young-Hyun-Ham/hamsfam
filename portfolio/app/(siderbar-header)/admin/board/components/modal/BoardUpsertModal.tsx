@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useStore } from "@/store";
 import { useAdminBoardStore } from "../../store";
 import type { AdminBoardCategory } from "../../types";
 import { ChevronDown } from "lucide-react";
@@ -13,9 +14,12 @@ type Props = {
 };
 
 export default function BoardUpsertModal({ open, mode, editId, onClose }: Props) {
+  const { user } = useStore();
   const getById = useAdminBoardStore((s) => s.getById);
   const createRow = useAdminBoardStore((s) => s.createRow);
   const updateRow = useAdminBoardStore((s) => s.updateRow);
+
+  const [saving, setSaving] = useState(false);
 
   const editing = useMemo(
     () => (mode === "edit" && editId ? getById(editId) : undefined),
@@ -42,7 +46,7 @@ export default function BoardUpsertModal({ open, mode, editId, onClose }: Props)
 
       // ✅ 기존 글이 password(또는 hasPassword)가 있으면 체크 ON
       const hasPw = Boolean((editing as any).password) || Boolean((editing as any).hasPassword);
-      setUsePassword(hasPw);
+      setUsePassword(false);
       setPassword(""); // 수정 모드에서는 기본 비움(변경 시에만 입력)
     } else {
       setSlug("qna");
@@ -57,35 +61,49 @@ export default function BoardUpsertModal({ open, mode, editId, onClose }: Props)
 
   if (!open) return null;
 
-  const submit = () => {
+  const submit = async () => {
+    if (saving) return;
+
     const tagArr = tags
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+
+    const authorId = user.sub ?? user.uid ?? user.id;
+    const authorName = user.name;
 
     // ✅ 체크된 경우에만 password 포함 (미입력은 저장 안 함)
     const pw = password.trim();
     const passwordPayload =
       usePassword && pw.length ? { password: pw } : { password: undefined };
 
-    if (mode === "create") {
-      createRow({
-        slug,
-        title,
-        content,
-        tags: tagArr,
-        password: usePassword && pw.length ? pw : "",
-      });
-    } else if (mode === "edit" && editId) {
-      updateRow(editId, {
-        slug,
-        title,
-        content,
-        tags: tagArr,
-        ...passwordPayload,
-      });
+    try {
+      setSaving(true);
+      if (mode === "create") {
+        await Promise.resolve(
+          createRow({
+            slug,
+            title,
+            content,
+            tags: tagArr,
+            ...passwordPayload,
+          })
+        );
+      } else if (mode === "edit" && editId) {
+        await Promise.resolve(
+          updateRow(editId, {
+            slug,
+            title,
+            content,
+            tags: tagArr,
+            ...passwordPayload,
+          })
+        );
+      }
+      onClose();
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   return (
@@ -235,7 +253,7 @@ export default function BoardUpsertModal({ open, mode, editId, onClose }: Props)
                   : "bg-emerald-600 ring-emerald-700/30 hover:bg-emerald-700",
               ].join(" ")}
             >
-              저장
+              {saving ? "처리중..." : "저장"}
             </button>
           </div>
         </div>

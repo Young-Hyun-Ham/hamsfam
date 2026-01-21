@@ -608,9 +608,8 @@ const usePublicBoardStore = create<State>((set, get) => ({
     set({ repliesSaving: true, error: null });
 
     try {
-      await api.delete(`${base}/board/replies`, { params: { id } });
+      await api.delete(`${base}/board/replies`, { params: { id, postId } });
 
-      // 로컬 즉시 제거 + 재조회(선택)
       set((s) => {
         const pid = postId ?? s.selectedId ?? "";
         if (!pid) return s;
@@ -620,11 +619,21 @@ const usePublicBoardStore = create<State>((set, get) => ({
           ...s,
           repliesByPostId: {
             ...s.repliesByPostId,
-            [pid]: prev.filter((r) => r.id !== id),
+            [pid]: prev.map((r: any) =>
+              r.id === id
+                ? {
+                    ...r,
+                    deleted: true,
+                    content: "삭제된 댓글입니다.",
+                    updatedAt: new Date().toISOString(),
+                  }
+                : r
+            ),
           },
         };
       });
 
+      // 서버 최종본 동기화
       if (postId) await get().fetchReplies(postId);
 
       return true;
