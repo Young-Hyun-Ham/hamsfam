@@ -105,13 +105,18 @@ const Scenario = () => {
     }
   };
 
+  const onClose = () => {
+    setSelectedScenario(null);
+  }
+
   return (
     <>
       {hasScenario ? 
         <ScenarioDetail 
           scenario={selectedScenario} 
           backend={backend} 
-          scenarios={scenarios} 
+          scenarios={scenarios}
+          onClose={onClose}
         /> : 
         <ScenarioList 
           backend={backend}

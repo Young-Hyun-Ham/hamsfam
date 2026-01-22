@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAdminBoardStore } from "../store";
 import BoardUnlockModal from "./modal/BoardUnlockModal";
 import { AdminBoardRow } from "../types";
+import { formatDate } from "@/lib/utils/utils";
 
 function badge(category: string) {
   const base = "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1";
@@ -98,7 +99,7 @@ export default function BoardListPanel({ items }: { items: AdminBoardRow[] }) {
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                       <span>작성자: {r.authorName}</span>
                       <span className="text-gray-300">•</span>
-                      <span>{new Date(r.createdAt).toLocaleString()}</span>
+                      <span>{formatDate(r.createdAt) ?? ""}</span>
                       {r.tags?.length ? (
                         <>
                           <span className="text-gray-300">•</span>

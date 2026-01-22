@@ -9,9 +9,11 @@ type BoardPost = {
   tags: string[];
   status: BoardStatus;
   hasPassword?: string;
+  authorId?: string;
   authorName?: string;
   createdAt?: string;    // 문자열로 통일(렌더 이슈 방지)
   updatedAt?: string;
+  replyCount?: number;
 };
 
 type BoardQuery = {

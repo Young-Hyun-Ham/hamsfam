@@ -122,3 +122,58 @@ export const SetSlotIcon = () => ( // Added
         <path d="M16 8l4 4-4 4"/>
     </svg>
 );
+
+type Props = React.SVGProps<SVGSVGElement> & {
+  title?: string;
+};
+export const IconListBack = ({
+  title = "목록으로 이동",
+  ...props
+}: Props) => {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-label={title}
+      role="img"
+      {...props}
+    >
+      {title ? <title>{title}</title> : null}
+
+      {/* 목록(3줄) */}
+      <path
+        d="M11.5 6.5H20"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11.5 12H20"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11.5 17.5H20"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+
+      {/* 왼쪽(뒤로/목록) 화살표 */}
+      <path
+        d="M9.5 12H4.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.5 9.5L4 12l2.5 2.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

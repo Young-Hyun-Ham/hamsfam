@@ -34,10 +34,10 @@ export default function PublicBoardPage() {
 
   const filtered = useMemo(() => selectFilteredPosts(items, query), [items, query]);
 
-  const selected = useMemo(
-    () => items.find((it) => it.id === selectedId) ?? null,
-    [items, selectedId]
-  );
+  const selected = useMemo(() => { 
+    console.log("item==============> ", items);
+    return items.find((it) => it.id === selectedId) ?? null
+  }, [items, selectedId]);
 
   return (
     <>
