@@ -29,7 +29,7 @@ import ScenarioGroupModal from './modals/ScenarioGroupModal';
 import SlotDisplay from './SlotDisplay';
 import NodeController from './NodeController';
 import ChatbotSimulator from './ChatbotSimulator';
-import { SettingsIcon } from './icons/Icons';
+import { IconListBack, SettingsIcon } from './icons/Icons';
 import LogPreview from './modals/LogPreview';
 
 const nodeTypes = {
@@ -65,7 +65,7 @@ const nodeLabels = {
   scenario: '+ Scenario Group', // Scenario Group 버튼용
 } as any;
 
-const Flow = ({ scenario, backend, scenarios }: any) => {
+const Flow = ({ scenario, backend, scenarios, onClose }: any) => {
   const router = useRouter();
   const { showAlert, showConfirm } = useModal();
   const user = useStore((s: any) => s.user);
@@ -293,15 +293,16 @@ const Flow = ({ scenario, backend, scenarios }: any) => {
           <div onClick={() => setIsSimulatorVisible(!isSimulatorVisible)}>
             <img src="/images/chat_simulator.png" alt="Simulator Icon" className={!isSimulatorVisible ? styles.botButtonHidden : styles.botButton} />
           </div>
-          
-          <div onClick={() => setIsLogVisible(true)}>
-            <img src="/images/log.png" alt="log Icon" className={!isLogVisible ? styles.botButtonHidden : styles.botButton} />
-          </div>
-          {/* {isAdmin ? (
+          {isAdmin ? (
             <div onClick={() => setIsLogVisible(true)}>
               <img src="/images/log.png" alt="log Icon" className={!isLogVisible ? styles.botButtonHidden : styles.botButton} />
             </div>
-          ) : null} */}
+          ) : null}
+          <div onClick={onClose}>
+            <span className={styles.globalColorSettingButton}>
+              <IconListBack width="35" height="35" />
+            </span>
+          </div>
         </div>
         <ReactFlow
           nodes={visibleNodes}

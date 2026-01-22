@@ -1,6 +1,7 @@
 // app/(content-header)/board/[slug]/components/BoardListPanel.tsx
 "use client";
 
+import { formatDate } from "@/lib/utils/utils";
 import usePublicBoardStore from "../store";
 import type { BoardPost } from "../types";
 import BoardSearchBar from "./BoardSearchBar";
@@ -72,7 +73,7 @@ export default function BoardListPanel({
 
               const displayTitle = isSecret && !isOwner ? "비밀글입니다." : it.title;
               const displayAuthor = isSecret && !isOwner ? "익명" : (it.authorName ? `작성자: ${it.authorName}` : "작성자: -");
-              const displayCreatedAt = isSecret && !isOwner ? "-" : (it.createdAt ?? "-");
+              const displayCreatedAt = isSecret && !isOwner ? "-" : (formatDate(it.createdAt) ?? "");
 
               return (
                 <li

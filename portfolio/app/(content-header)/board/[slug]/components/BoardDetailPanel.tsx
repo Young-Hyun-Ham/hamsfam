@@ -16,8 +16,8 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     repliesSaving,
     fetchReplies,
     createReply,
+    updateReply,
     deleteReply,
-    
     openEdit,
     openDelete,
     
@@ -25,6 +25,11 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
   } = usePublicBoardStore() as any;
 
   const [replyText, setReplyText] = useState("");
+  
+  // 댓글 수정 상태
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // 보호글 잠금해제 상태
   const [pw, setPw] = useState("");
@@ -47,10 +52,16 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
   useEffect(() => {
     if (!postId) return;
     fetchReplies(postId);
+
     setUnlocked(false);
     setReplyText("");
     setPw("");
     setPwError(null);
+
+    // 편집 상태도 초기화
+    setEditingId(null);
+    setEditingText("");
+    setSavingEdit(false);
   }, [postId, fetchReplies]);
 
   // locked 계산도 훅 이후에(하지만 return 이전이라 OK)
@@ -69,7 +80,7 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     setPw("");
     setPwError(null);
 
-    // ✅ 글이 바뀌면 기본은 숨김
+    // 글이 바뀌면 기본은 숨김
     setShowDeleted(false);
   }, [postId, fetchReplies]);
 
@@ -107,8 +118,36 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
     if (!postId) return;
     await deleteReply(replyId, postId);
   };
+  
+  // 편집 시작/취소/저장
+  const startEdit = (r: any) => {
+    setEditingId(r.id);
+    setEditingText((r.content ?? "").toString());
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingText("");
+  };
+
+  const saveEdit = async () => {
+    if (!postId || !editingId) return;
+    const next = editingText.trim();
+    if (!next) return;
+
+    try {
+      setSavingEdit(true);
+      await Promise.resolve(updateReply?.(editingId, postId, next));
+      setEditingId(null);
+      setEditingText("");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   if (!selected) return null;
+
+  console.log("detail selected data ===========>", selected);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -229,7 +268,10 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
             <section className="rounded-3xl bg-white p-5 shadow-[0_14px_40px_rgba(0,0,0,0.10)] ring-1 ring-black/5">
               <div className="flex items-end justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-gray-900">댓글</div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    댓글
+                    <span>&nbsp;{selected?.replyCount ?? 0}</span>
+                  </div>
                   <div className="mt-1 text-xs text-gray-500">
                     {canReplyFinal
                       ? "댓글 작성 가능"
@@ -367,14 +409,12 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
                       const uiDepth = Math.min(d, MAX_DEPTH_UI);
                       const ml = uiDepth * INDENT_UNIT;
 
+                      const isEditing = editingId === r.id;
+
                       return (
                         <div key={r.id} className="relative">
-                          {/* ✅ depth 가이드 라인 (부드럽게) */}
                           {uiDepth > 0 ? (
-                            <div
-                              className="pointer-events-none absolute left-0 top-0 h-full"
-                              style={{ width: ml }}
-                            >
+                            <div className="pointer-events-none absolute left-0 top-0 h-full" style={{ width: ml }}>
                               <div className="h-full w-full rounded-2xl bg-gradient-to-b from-black/5 to-transparent" />
                             </div>
                           ) : null}
@@ -383,15 +423,13 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
                             <div
                               className={[
                                 "rounded-3xl p-4 ring-1 ring-black/5",
-                                isDeleted
-                                  ? "bg-gray-50 shadow-inner"
-                                  : "bg-white shadow-[0_10px_28px_rgba(0,0,0,0.08)]",
+                                isDeleted ? "bg-gray-50 shadow-inner" : "bg-white shadow-[0_10px_28px_rgba(0,0,0,0.08)]",
                               ].join(" ")}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  {/* ✅ 상단 메타: depth 칩 + 작성자/시간 */}
-                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                              <div className="relative">
+                                {/* 상단 헤더(댓글/답글 뱃지 + 버튼) */}
+                                <div className="mb-2 flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex flex-wrap items-center gap-2">
                                     <span className={chipCls(d)}>{depthLabel(d)}</span>
 
                                     {r.parentId ? (
@@ -401,32 +439,74 @@ export default function BoardDetailPanel({ selected }: { selected: BoardPost | n
                                     ) : null}
                                   </div>
 
-                                  <div
-                                    className={[
-                                      "whitespace-pre-wrap text-sm leading-6",
-                                      isDeleted ? "text-gray-400 italic" : "text-gray-900",
-                                    ].join(" ")}
-                                  >
-                                    {isDeleted ? "삭제된 글입니다." : r.content}
-                                  </div>
-
-                                  <div className="mt-2 text-[11px] text-gray-400">
-                                    {r.authorName ? `작성자: ${r.authorName} · ` : ""}
-                                    {formatDate(r.createdAt) ?? "-"}
-                                  </div>
+                                  {/* 삭제된 글이면 버튼 영역 자체를 렌더링 X (공간 0) */}
+                                  {!isDeleted ? (
+                                    <div className="shrink-0 flex items-center gap-2">
+                                      {isEditing ? (
+                                        <>
+                                          <button
+                                            onClick={saveEdit}
+                                            disabled={savingEdit || !editingText.trim()}
+                                            className="rounded-2xl bg-black px-3 py-2 text-[11px] font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                          >
+                                            {savingEdit ? "저장중..." : "저장"}
+                                          </button>
+                                          <button
+                                            onClick={cancelEdit}
+                                            disabled={savingEdit}
+                                            className="rounded-2xl bg-gray-100 px-3 py-2 text-[11px] font-medium text-gray-700 shadow-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                          >
+                                            취소
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            onClick={() => startEdit(r)}
+                                            disabled={repliesSaving}
+                                            className="rounded-2xl bg-white px-3 py-2 text-[11px] font-medium text-gray-700 shadow-sm ring-1 ring-black/5 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                          >
+                                            수정
+                                          </button>
+                                          <button
+                                            onClick={() => onDeleteReply(r.id)}
+                                            disabled={repliesSaving}
+                                            className="rounded-2xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-600 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                          >
+                                            삭제
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  ) : null}
                                 </div>
 
-                                {/* 삭제된 댓글이면 버튼 숨김 */}
-                                {!isDeleted ? (
-                                  <button
-                                    onClick={() => onDeleteReply(r.id)}
-                                    disabled={repliesSaving}
-                                    className="shrink-0 rounded-2xl bg-red-50 px-3 py-2 text-[11px] font-medium text-red-600 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                    title="삭제"
-                                  >
-                                    삭제
-                                  </button>
-                                ) : null}
+                                {/* 버튼이 상단에 떠 있으니까, 내용 영역은 위쪽 여백을 조금 줘서 겹침 방지 */}
+                                <div className="mt-1">
+                                  {isDeleted ? (
+                                    <div className="whitespace-pre-wrap text-sm leading-6 text-gray-400 italic">
+                                      삭제된 글입니다.
+                                    </div>
+                                  ) : isEditing ? (
+                                    <div className="rounded-2xl bg-gray-50 p-3 ring-1 ring-black/5 shadow-inner">
+                                      <textarea
+                                        value={editingText}
+                                        onChange={(e) => setEditingText(e.target.value)}
+                                        rows={3}
+                                        className="w-full resize-none rounded-2xl bg-white px-4 py-3 text-sm text-gray-900 outline-none ring-1 ring-black/5 focus:ring-2 focus:ring-black/10"
+                                        disabled={savingEdit}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="whitespace-pre-wrap text-sm leading-6 text-gray-900">{r.content}</div>
+                                  )}
+                                </div>
+
+                                <div className="mt-2 text-[11px] text-gray-400">
+                                  {r.authorName ? `작성자: ${r.authorName} · ` : ""}
+                                  {formatDate(r.createdAt) ?? "-"}
+                                  {r.updatedAt ? ` · 수정됨(${formatDate(r.updatedAt) ?? "-"})` : ""}
+                                </div>
                               </div>
                             </div>
                           </div>

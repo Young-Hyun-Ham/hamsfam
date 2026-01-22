@@ -1,27 +1,12 @@
 // app/api/board/firebase/board/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  getDoc,
-  doc,
-  Timestamp,
-  serverTimestamp,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  QueryConstraint,
-} from "firebase/firestore";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCategoryPerm } from "./_utils";
-import { normalize, toDateTimeString, tokenizeForSearch } from "@/lib/utils/utils";
+import { normalize, tokenizeForSearch } from "@/lib/utils/utils";
 import { hashPassword } from "@/lib/utils/password";
+import { randomUUID } from "crypto";
 
+const COL = "board_posts";
 const MAX_LIMIT = 50;
 
 function deny(message: string, status = 403) {
@@ -37,41 +22,39 @@ export async function GET(req: NextRequest) {
     const perm = await getCategoryPerm(slug);
     if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
 
-    // (선택) 비공개 카테고리는 읽기 차단하고 싶으면 여기서 처리
-    // if (perm.status && perm.status !== "published") return deny("category is not published", 403);
-
     const pageSize = Math.min(Number(url.searchParams.get("limit") ?? 20), MAX_LIMIT);
     const cursorId = normalize(url.searchParams.get("cursorId"));
     const keyword = normalize(url.searchParams.get("keyword")).toLowerCase();
 
-    const colRef = collection(db, "board_posts");
-    const qs: QueryConstraint[] = [
-      where("slug", "==", slug),
-      orderBy("createdAt", "desc"),
-      limit(pageSize + 1),
-    ];
+    const colRef = adminDb.collection(COL);
 
-    // cursor 적용
+    // ✅ base query (slug + createdAt desc)
+    let q: FirebaseFirestore.Query = colRef
+      .where("slug", "==", slug)
+      .orderBy("createdAt", "desc");
+
+    // ✅ cursor 적용 (startAfter는 DocumentSnapshot 필요)
     if (cursorId) {
-      const lastRef = doc(db, "board_posts", cursorId);
-      const lastSnap = await getDoc(lastRef);
-      if (lastSnap.exists()) qs.splice(2, 0, startAfter(lastSnap)); // orderBy 다음 위치에 startAfter
+      const lastSnap = await colRef.doc(cursorId).get();
+      if (lastSnap.exists) {
+        q = q.startAfter(lastSnap);
+      }
     }
 
-    const snap = await getDocs(query(colRef, ...qs));
+    q = q.limit(pageSize + 1);
+
+    const snap = await q.get();
+
     let rows = snap.docs.map((d) => {
       const data = d.data() as any;
       return {
-        id: d.id,
+        id: d.id, // ✅ 문서ID
         ...data,
-        passwordHash: undefined,
-        createdAt: toDateTimeString(data.createdAt),
-        updatedAt: toDateTimeString(data.updatedAt),
+        passwordHash: undefined, // 응답에서 제거
       };
     });
 
-    // keyword는 MVP로 tokens array-contains-any를 이미 쓰고 있으면 그 방식 유지
-    // (네 코드에 tokenizeForSearch가 있어서, 저장 시 tokens를 넣는 전제)
+    // keyword 필터 (현재 MVP 방식 유지)
     if (keyword) {
       rows = rows.filter((r) => {
         const hay = `${r.title ?? ""} ${r.content ?? ""} ${(r.tags ?? []).join(" ")}`.toLowerCase();
@@ -81,7 +64,6 @@ export async function GET(req: NextRequest) {
 
     const hasMore = rows.length > pageSize;
     const items = rows.slice(0, pageSize);
-
     const nextCursorId = hasMore ? items[items.length - 1]?.id ?? null : null;
 
     return NextResponse.json({
@@ -103,6 +85,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
+
     const slug = normalize(body.slug);
     if (!slug) return NextResponse.json({ ok: false, message: "slug is required" }, { status: 400 });
 
@@ -110,12 +93,15 @@ export async function POST(req: NextRequest) {
     if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
     if (!perm.edit) return deny("no permission to write");
 
+    const id = randomUUID();
+
     const title = normalize(body.title);
     const content = normalize(body.content);
     const tags = Array.isArray(body.tags) ? body.tags.map((t: any) => normalize(t)).filter(Boolean) : [];
     const status = normalize(body.status) || "published";
     const authorId = normalize(body.authorId) || null;
     const authorName = normalize(body.authorName) || "익명";
+
     const pw = normalize(body.password);
     const passwordHash = pw ? await hashPassword(pw) : "";
     const hasPassword = Boolean(pw);
@@ -124,7 +110,9 @@ export async function POST(req: NextRequest) {
 
     const tokens = tokenizeForSearch(title, content, tags);
 
-    const ref = await addDoc(collection(db, "board_posts"), {
+    // ✅ adminDb: 문서ID를 id로 고정 (cursorId 안정화)
+    await adminDb.collection(COL).doc(id).set({
+      id, // 필드에도 유지(기존 호환)
       slug,
       title,
       content,
@@ -135,11 +123,11 @@ export async function POST(req: NextRequest) {
       authorName,
       hasPassword,
       passwordHash: passwordHash || null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ ok: true, id: ref.id });
+    return NextResponse.json({ ok: true, id });
   } catch (e: any) {
     return NextResponse.json({ ok: false, message: e?.message ?? "POST failed" }, { status: 500 });
   }
@@ -148,25 +136,30 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
+
     const id = normalize(body.id);
     if (!id) return NextResponse.json({ ok: false, message: "id is required" }, { status: 400 });
 
-    const ref = doc(db, "board_posts", id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return NextResponse.json({ ok: false, message: "post not found" }, { status: 404 });
+    const ref = adminDb.collection(COL).doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return NextResponse.json({ ok: false, message: "post not found" }, { status: 404 });
 
     const post = snap.data() as any;
     const slug = normalize(post.slug);
+
     const perm = await getCategoryPerm(slug);
     if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
     if (!perm.edit) return deny("no permission to edit");
 
     const patch: any = {};
+
     if (body.title != null) patch.title = normalize(body.title);
     if (body.content != null) patch.content = normalize(body.content);
-    if (body.tags != null) patch.tags = Array.isArray(body.tags) ? body.tags.map((t: any) => normalize(t)).filter(Boolean) : [];
+    if (body.tags != null)
+      patch.tags = Array.isArray(body.tags) ? body.tags.map((t: any) => normalize(t)).filter(Boolean) : [];
     if (body.status != null) patch.status = normalize(body.status);
-    
+
+    // ✅ password 변경
     if (body.password != null) {
       const pw = normalize(body.password);
       if (pw) {
@@ -179,15 +172,16 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
-    // tokens 재계산
+    // ✅ tokens 재계산
     const nextTitle = patch.title ?? post.title ?? "";
     const nextContent = patch.content ?? post.content ?? "";
     const nextTags = patch.tags ?? post.tags ?? [];
     patch.tokens = tokenizeForSearch(nextTitle, nextContent, nextTags);
 
-    patch.updatedAt = serverTimestamp();
+    patch.updatedAt = new Date().toISOString();
 
-    await updateDoc(ref, patch);
+    // ✅ adminDb update
+    await ref.update(patch);
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
@@ -198,20 +192,22 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const url = new URL(req.url);
+
     const id = normalize(url.searchParams.get("id"));
     if (!id) return NextResponse.json({ ok: false, message: "id is required" }, { status: 400 });
 
-    const ref = doc(db, "board_posts", id);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return NextResponse.json({ ok: false, message: "post not found" }, { status: 404 });
+    const ref = adminDb.collection(COL).doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return NextResponse.json({ ok: false, message: "post not found" }, { status: 404 });
 
     const post = snap.data() as any;
     const slug = normalize(post.slug);
+
     const perm = await getCategoryPerm(slug);
     if (!perm) return NextResponse.json({ ok: false, message: "category not found" }, { status: 404 });
     if (!perm.edit) return deny("no permission to delete");
 
-    await deleteDoc(ref);
+    await ref.delete();
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {

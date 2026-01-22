@@ -13,77 +13,7 @@ import type {
   UpdatePatch,
 } from "../types";
 import { useStore } from "@/store";
-
-type State = {
-  // route state
-  slug: string;
-
-  // data
-  category: CategoryPerm | null;
-  items: BoardPost[];
-
-  // selection/ui
-  selectedId: string | null;
-  detailOpen: boolean;
-
-  // query
-  query: BoardQuery;
-
-  // paging
-  page: PageInfo;
-
-  // status
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
-
-  // state
-  upsertOpen: boolean;
-  deleteOpen: boolean;
-
-  // replies state
-  repliesByPostId: Record<string, BoardReply[]>;
-  repliesLoading: boolean;
-  repliesSaving: boolean;
-
-  // actions
-  openCreate: () => void;
-  openEdit: (id: string) => void;
-  openUpsert: () => void;
-  closeUpsert: () => void;
-  openDelete: () => void;
-  closeDelete: () => void;
-
-  setSlug: (slug: string) => void;
-  setQuery: (q: Partial<BoardQuery>) => void;
-
-  select: (id: string) => void;
-  closeDetail: () => void;
-
-  resetList: () => void;
-
-  // read
-  fetchPosts: (slug: string, opt?: { reset?: boolean }) => Promise<void>;
-  fetchMore: () => Promise<void>;
-
-  // crud
-  createPost: (
-    input: Omit<CreateInput, "slug"> & { slug?: string }
-  ) => Promise<string | null>;
-  updatePost: (id: string, patch: UpdatePatch) => Promise<boolean>;
-  deletePost: (id: string) => Promise<boolean>;
-
-  // replies
-  fetchReplies: (postId: string) => Promise<void>;
-  createReply: (postId: string, content: string) => Promise<string | null>;
-  deleteReply: (replyId: string, postId?: string) => Promise<boolean>;
-
-  verifyPostPassword: (postId: string, password: string) => Promise<boolean>;
-};
-
-function normalize(v: any) {
-  return (v ?? "").toString().replace(/\s+/g, " ").trim();
-}
+import { normalize } from "@/lib/utils/utils";
 
 function coerceDateString(v: any) {
   if (!v) return undefined;
@@ -240,6 +170,74 @@ async function verifyPasswordAuto(base: string, id: string, password: string) {
   // }
 }
 
+type State = {
+  // route state
+  slug: string;
+
+  // data
+  category: CategoryPerm | null;
+  items: BoardPost[];
+
+  // selection/ui
+  selectedId: string | null;
+  detailOpen: boolean;
+
+  // query
+  query: BoardQuery;
+
+  // paging
+  page: PageInfo;
+
+  // status
+  loading: boolean;
+  saving: boolean;
+  error: string | null;
+
+  // state
+  upsertOpen: boolean;
+  deleteOpen: boolean;
+
+  // replies state
+  repliesByPostId: Record<string, BoardReply[]>;
+  repliesLoading: boolean;
+  repliesSaving: boolean;
+
+  // actions
+  openCreate: () => void;
+  openEdit: (id: string) => void;
+  openUpsert: () => void;
+  closeUpsert: (isSelected?: Boolean) => void;
+  openDelete: () => void;
+  closeDelete: () => void;
+
+  setSlug: (slug: string) => void;
+  setQuery: (q: Partial<BoardQuery>) => void;
+
+  select: (id: string) => void;
+  closeDetail: () => void;
+
+  resetList: () => void;
+
+  // read
+  fetchPosts: (slug: string, opt?: { reset?: boolean }) => Promise<void>;
+  fetchMore: () => Promise<void>;
+
+  // crud
+  createPost: (
+    input: Omit<CreateInput, "slug"> & { slug?: string }
+  ) => Promise<string | null>;
+  updatePost: (id: string, patch: UpdatePatch) => Promise<boolean>;
+  deletePost: (id: string) => Promise<boolean>;
+
+  // replies
+  fetchReplies: (postId: string) => Promise<void>;
+  createReply: (postId: string, content: string) => Promise<string | null>;
+  updateReply: (replyId: string, postId: string, content: string) => Promise<void>;
+  deleteReply: (replyId: string, postId?: string) => Promise<boolean>;
+
+  verifyPostPassword: (postId: string, password: string) => Promise<boolean>;
+};
+
 const usePublicBoardStore = create<State>((set, get) => ({
   slug: "",
   category: null,
@@ -295,7 +293,7 @@ const usePublicBoardStore = create<State>((set, get) => ({
     }
     set({ upsertOpen: true });
   },
-  closeUpsert: () => set({ upsertOpen: false, selectedId: null, }),
+  closeUpsert: (isSelected) => set({ upsertOpen: false, selectedId: isSelected ? get().selectedId :  null, }),
   openDelete: () => set({ deleteOpen: true }),
   closeDelete: () => set({ deleteOpen: false }),
 
@@ -374,7 +372,7 @@ const usePublicBoardStore = create<State>((set, get) => ({
     const state = get();
 
     const { user } = useStore.getState();
-    const authorId = user?.id ?? user?.uid ?? null;
+    const authorId = user?.sub ?? user?.id ?? user?.uid ?? null;
     const authorName = user?.name ?? user?.displayName ?? user?.email ?? "익명";
 
     const slug = normalize(input.slug ?? state.slug);
@@ -587,6 +585,31 @@ const usePublicBoardStore = create<State>((set, get) => ({
     } catch (e: any) {
       set({ error: axiosErrMessage(e) });
       return null;
+    } finally {
+      set({ repliesSaving: false });
+    }
+  },
+
+  updateReply: async (replyId: string, postId: string, content: string) => {
+    set({ repliesSaving: true });
+    try {
+      const res = await fetch(`/api/board/firebase/reply`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ replyId, postId, content }),
+      });
+      if (!res.ok) throw new Error("reply update failed");
+
+      const updated = await res.json(); // { id, content, updatedAt ... } 형태 권장
+
+      set((s) => {
+        const list = (s.repliesByPostId?.[postId] ?? []).map((r: any) =>
+          r.id === replyId ? { ...r, content: updated.content ?? content, updatedAt: updated.updatedAt ?? new Date().toISOString() } : r
+        );
+        return {
+          repliesByPostId: { ...s.repliesByPostId, [postId]: list },
+        };
+      });
     } finally {
       set({ repliesSaving: false });
     }
