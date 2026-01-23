@@ -572,15 +572,17 @@ export function recommendWorkouts(input: RecommendInput): RecommendationOutput {
   }));
 
   return {
+    // ✅ 추가: 폴백 시엔 정적 WORKOUT_SUBTYPES를 그대로 넣어준다(구조적 타입 호환)
+    generated_subtypes: WORKOUT_SUBTYPES as any,
+
     top_picks: top3,
     alternatives,
     meta: {
-      computed_tags_top: topTags.slice(0, 5).map((t) => ({
-        tag: t.tag,
-        score: Number(t.score.toFixed(2)),
-      })),
-      explain:
-        "answers->tagScores 누적 후 subtype.profile_tags 매칭 점수 - avoid 패널티 + goal/제약 보너스 - 부상 패널티. routine은 step_pool 있으면 동적 조립, 없으면 session_templates fallback.",
+      computed_tags_top: [
+        ...(goals ?? []).slice(0, 5).map((g, i) => ({ tag: `goal:${g}`, score: 10 - i })),
+        ...(topTagNames ?? []).slice(0, 7).map((t, i) => ({ tag: `profile:${t}`, score: 8 - i })),
+      ].slice(0, 5),
+      explain: "LLM 실패로 폴백 엔진이 정적 subtype 데이터로 루틴을 구성했습니다.",
     },
   };
 }

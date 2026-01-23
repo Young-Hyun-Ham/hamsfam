@@ -1,7 +1,6 @@
 // src/lib/onboarding/reco.store.ts
 import { writable } from "svelte/store";
-import type { RecommendationOutput } from "./reco.types";
-import type { RecommendInput } from "./reco.types";
+import type { RecommendationOutput, RecommendInput } from "./reco.types";
 
 export const recoState = writable<{
   loading: boolean;
@@ -29,6 +28,7 @@ export async function requestRecommendation(input: RecommendInput) {
     }
 
     const data = (await res.json()) as RecommendationOutput;
+    console.log("llm json data ========> ", data)
     recoState.set({ loading: false, error: null, data });
     return data;
   } catch (e: any) {

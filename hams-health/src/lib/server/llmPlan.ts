@@ -1,56 +1,54 @@
 // src/lib/server/llmPlan.ts
-import OpenAI from "openai";
-import { OPENAI_API_KEY, OPENAI_MODEL } from "$env/static/private";
-import type { RecommendInput, RecoPlanRaw, RecoPlanResolved } from "$lib/onboarding/reco.types";
-import { WORKOUT_SUBTYPES, SUBTYPES_STEPS } from "$lib/onboarding/reco.data";
-import { attachDerived } from "$lib/onboarding/utils";
+/**
+ * LLM Prompt Guide (Structured Outputs / strict: true)
+ *
+ * 역할:
+ * - recoSchema.ts가 "형태(스키마)"를 강제한다.
+ * - 이 파일은 "추천 판단 기준" + "스키마에 맞게 출력하기 위한 규칙"을 제공한다.
+ *
+ * 이미지 규칙:
+ * - steps[].imgSrc 는 반드시 "/workouts/[stepId]" 형태 (확장자 없음)
+ */
 
-const client = new OpenAI({ apiKey: OPENAI_API_KEY });
-const ALLOWED_STEP_IDS = new Set(SUBTYPES_STEPS.map((s) => s.id));
+export const WORKOUT_IMAGE_BASE = "/workouts" as const;
 
-function buildPrompt(input: RecommendInput) {
-  const allowedSubtypeIds = WORKOUT_SUBTYPES.map((s) => s.id).join(", ");
-  const allowedStepIds = SUBTYPES_STEPS.map((s: any) => s.id).join(", ");
-  const stepLines = SUBTYPES_STEPS
-    .map((s: any) => `- ${s.id}: ${s.name}`)
-    .join("\n");
+export function stepImgSrc(stepId: string) {
+  // 요구사항: "/workouts/[stepId]" (확장자 없음)
+  return `${WORKOUT_IMAGE_BASE}/${stepId}.png`;
+}
+
+/**
+ * strict: true 환경에서 안전한 출력 규칙
+ * - object에서 properties에 있는 키는 보통 모두 출력되도록 유도(누락하면 스키마 에러/품질 저하)
+ * - "없음"은 생략하지 말고 빈 배열/빈 문자열 등으로 채우도록 지시
+ */
+export function buildRecommendationGuide(params: {
+  allowedStepIdsCsv: string;
+  stepCatalogLines: string; // "- id: name" 형태
+}) {
+  const { allowedStepIdsCsv, stepCatalogLines } = params;
 
   return `
-너는 홈트 추천 플래너다.
-반드시 "RecoPlanRaw" JSON만 출력한다. 다른 텍스트/설명/마크다운/코드블록 금지.
+너는 홈트 추천 코치다.
+반드시 "RecommendationOutput" JSON만 출력한다.
+다른 텍스트/설명/마크다운/코드블록/주석 금지.
 
+[중요: strict 출력 규칙]
+- 스키마에 있는 필드는 생략하지 말고 반드시 출력하라.
+- 값이 없으면 다음처럼 출력:
+  - 배열: []
+  - 문자열: ""
+  - 숫자: 0 (단, 의미상 최소/최대는 준수)
+- additionalProperties 금지. 정의된 키 외의 임의 키를 만들지 마라.
+
+[연령/성별 반영 규칙]
 ✅ 나이/생년월일 정보:
 - 입력에 derived.age / derived.age_band / derived.dob 가 있을 수 있다.
 - derived.age/age_band가 있으면 그 값을 최우선으로 사용하라.
 - derived가 없더라도 answers.q0 에 "YYYY-MM-DD" 형태의 dob가 있으면 참고하라.
 - 나이/생년월일 정보는 강도(intensity), 충격성/관절부담 회피, 워밍업/쿨다운 비중에 반드시 반영하라.
 
-가능한 subtype_id 목록 (반드시 아래 중 하나):
-${allowedSubtypeIds}
-
-가능한 step id 목록 (steps[].id는 반드시 아래 중 하나, 새로운 id 생성 금지):
-${allowedStepIds}
-
-step id 상세 (id: 표시명)
-${stepLines}
-
-규칙:
-- top_subtypes는 1~3개
-- subtype_id는 목록 중 하나만
-- intensity 1~5
-- constraints.time_min은 입력 constraints.time_min 우선(없으면 15)
-- equipment/space/noise_level/injury_flags는 입력 constraints를 최대한 유지
-- profile_tags는 다음 중에서만 선택:
-  ["time_crunched","follow_along","low_pressure","beginner_friendly","home_friendly","routine_friendly"]
-
-- ✅ steps는 "초 단위"로 작성
-- ✅ steps[].id는 반드시 허용 목록 중 하나
-- ✅ steps에 title/imgSrc/imgsrc/name 같은 필드는 절대 포함하지 마라 (금지)
-- ✅ 전체 steps[].seconds 합은 constraints.time_min(분)*60 근처(±20%)
-- ✅ 일반적으로 warmup → main → finisher/cooldown 순서
-- ✅ injury_flags가 true인 민감 동작은 회피
-
-나이 반영 규칙(반드시 지켜라):
+✅ 나이 반영 규칙(반드시 지켜라):
 - age 정보가 없으면: 기본(초보/무리 없는 강도)로 계획
 - age >= 50 (또는 age_band = "50s" | "60_plus"):
   - intensity는 보통 2~3 범위로(너무 높은 강도 금지)
@@ -70,304 +68,57 @@ ${stepLines}
 - 성별 정보는 **편견/고정관념 없이** 안전과 회복, 근력/유산소 밸런스(특히 상체/하체 비중) 조정에만 제한적으로 반영하라.
 - "prefer_not" 이거나 값이 없으면 성별 가정 금지.
 
-RecoPlanRaw 형태(정확히 이 JSON 스키마로만 출력):
-{
-  "top_subtypes":[{"subtype_id":"...", "intensity":3, "confidence":0.7, "reasons":["..."], "contra_tags":["knee_sensitive"]}],
-  "constraints":{"time_min":15,"equipment":["none"],"space":"small","noise_level":"low","injury_flags":{}},
-  "goals":["근력","체형"],
-  "profile_tags":["beginner_friendly","home_friendly"],
-  "steps":[
-    { "id":"warmup_walk_slow", "seconds":120, "phase":"warmup" },
-    { "id":"squat", "seconds":180, "phase":"main" }
-  ]
-}
+[추천 생성 규칙]
+1) generated_subtypes
+- 1~3개 루틴(step) 생성 (없어도 되면 []로 출력)
+- 각 subtype은 사용자의 constraints(시간/장비/공간/소음), injury_flags(부상/민감부위)와 충돌하지 않게 설계
+- profile_tags / goals / intensity_range / equipment / space / noise_level을 논리적으로 채워라
+- contra_tags는 위험/민감 포인트가 있으면 넣고, 없으면 []로 둬라
+- session_templates / step_pool 는 없으면 [] 로 둬라 (생략 금지)
 
-입력:
-${JSON.stringify(input, null, 2)}
+2) top_picks
+- 1~3개
+- top_picks[].subtype_id 는 반드시 generated_subtypes[].id 중 하나
+- reasons/warnings는 없으면 []로 출력 (생략 금지)
+
+3) steps 선택 규칙 (매우 중요)
+- steps[].id 는 반드시 아래 목록 중 하나만 사용 (새 id 생성 금지):
+  ${allowedStepIdsCsv}
+
+- steps[].title 은 SUBTYPES_STEPS 카탈로그의 name(표시명)을 그대로 사용
+- steps[].imgSrc 는 반드시 "/workouts/[stepId]" 형태로 작성 (확장자/쿼리스트링 금지)
+  예) id가 "squat" 이면 imgSrc는 "/workouts/squat.png"
+
+- steps[].phase 는 반드시 포함 (enum: warmup|main|finisher|cooldown)
+- 일반적으로 warmup → main → finisher/cooldown 순서로 구성
+- finisher/cooldown는 스트레칭 항목으로 무조건 3개 이상의 스트레칭 step을 선택해야 함.
+
+4) 시간 정합성
+- top_picks[].routine.duration_min 은 입력 constraints.time_min 이 있으면 그 값을 우선, 없으면 15
+- routine.steps[].seconds 합계는 duration_min*60 과 ±1800초 이내로 맞춰라
+
+5) 안전
+- injury_flags가 true인 부위/관절 관련 위험 동작은 steps에서 피하고,
+  unavoidable하면 warnings에 명확히 기재하고 대체/완화 포인트를 reasons에 포함
+
+[SUBTYPES_STEPS 카탈로그]
+${stepCatalogLines}
 `.trim();
 }
 
+/**
+ * openaiRecommend.ts에서 프롬프트를 만들 때 사용하는 헬퍼
+ */
+export function buildRecommendationPrompt(params: {
+  guide: string;
+  inputJson: string; // JSON.stringify(input, null, 2)
+}) {
+  const { guide, inputJson } = params;
 
-// helper 추가
-function resolvePlan(raw: RecoPlanRaw, input: RecommendInput): RecoPlanResolved {
-  // subtype whitelist
-  const allowedSubtype = new Set(WORKOUT_SUBTYPES.map((s) => s.id));
-  for (const p of raw.top_subtypes ?? []) {
-    if (!allowedSubtype.has(p.subtype_id)) {
-      throw new Error(`unknown subtype_id: ${p.subtype_id}`);
-    }
-  }
+  return `
+${guide}
 
-  // time_min 보정
-  raw.constraints = raw.constraints ?? ({} as any);
-  raw.constraints.time_min = Math.max(
-    5,
-    Math.min(120, raw.constraints.time_min ?? input.constraints?.time_min ?? 15)
-  );
-
-  raw.profile_tags = Array.isArray(raw.profile_tags) ? raw.profile_tags : [];
-  raw.goals = Array.isArray(raw.goals) ? raw.goals : [];
-
-  // ✅ SUBTYPES_STEPS 메타 맵 (실제 필드: name, imgsrc)
-  const stepMetaMap = new Map(
-    SUBTYPES_STEPS.map((s: any) => [
-      s.id,
-      {
-        title: s.name, // ✅ name 고정
-        imgSrc: s.imgsrc || `/workouts/${s.id}.png`, // ✅ imgsrc (소문자) 사용
-      },
-    ])
-  );
-
-  if (!Array.isArray(raw.steps) || raw.steps.length === 0) {
-    throw new Error("plan.steps invalid");
-  }
-
-  // ✅ 허용 필드만 남기는 sanitize + meta attach
-  const steps = raw.steps.map((st: any) => {
-    const id = st?.id;
-    const seconds = st?.seconds;
-    const phase = st?.phase;
-
-    const meta = stepMetaMap.get(id);
-    if (!meta) throw new Error(`unknown step id: ${id}`);
-    if (typeof seconds !== "number" || seconds <= 0) {
-      throw new Error(`invalid seconds for step: ${id}`);
-    }
-
-    return {
-      id,
-      seconds,
-      phase,
-      title: meta.title,
-      imgSrc: meta.imgSrc,
-    };
-  });
-
-  return {
-    top_subtypes: raw.top_subtypes,
-    constraints: raw.constraints,
-    goals: raw.goals,
-    profile_tags: raw.profile_tags,
-    steps,
-  };
-}
-
-export async function llmMakePlan(input: RecommendInput): Promise<RecoPlanResolved> {
-  const inputWithDerived = attachDerived(input);
-
-  const model = OPENAI_MODEL || "gpt-4o-mini";
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
-
-  try {
-    console.log(" inputWithDerived =========>", (inputWithDerived))
-    console.log(" system promt =========>", buildPrompt(inputWithDerived))
-    const resp = await client.responses.create(
-      { model, input: buildPrompt(inputWithDerived) },
-      { signal: controller.signal } as any
-    );
-    const anyResp: any = resp as any;
-    const text =
-      (typeof anyResp.output_text === "function" && anyResp.output_text()) ||
-      anyResp.output_text ||
-      anyResp.output?.[0]?.content?.find((c: any) => c.type === "output_text")?.text ||
-      "";
-
-    if (!text) throw new Error("LLM empty");
-
-    const raw = JSON.parse(stripJsonCodeBlock(text)) as RecoPlanRaw;
-    if (!raw?.top_subtypes?.length) throw new Error("plan invalid");
-
-    const v1 = validatePlanSteps(raw, inputWithDerived.constraints?.time_min ?? 15);
-    if (!v1.ok) {
-      const fixedText = await llmFixPlan(text, v1.reason);
-      const fixedPlan = JSON.parse(stripJsonCodeBlock(fixedText));
-      const inputTimeMin = inputWithDerived.constraints?.time_min ?? 15;
-
-      const v2 = validatePlanSteps(fixedPlan, inputTimeMin);
-      if (!v2.ok) {
-        // ✅ 총 시간만 문제면 서버에서 자동 보정 한번 더 시도
-        if (String(v2.reason).startsWith("total seconds out of range")) {
-          const auto = autoFixTotalSeconds(fixedPlan, inputTimeMin);
-          const v3 = validatePlanSteps(auto, inputTimeMin);
-          if (v3.ok) {
-            return resolvePlan(auto as RecoPlanRaw, inputWithDerived);
-          }
-        }
-
-        throw new Error(`[llm] plan.steps invalid after fix: ${v2.reason}`);
-      }
-
-    }
-
-    return resolvePlan(raw, inputWithDerived);
-  } catch (e: any) {
-    console.error("[llm] error", e?.name, e?.message || e);
-    throw e;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-// steps 검증 로직
-function validatePlanSteps(plan: any, inputTimeMin: number) {
-  if (!Array.isArray(plan.steps) || plan.steps.length === 0) {
-    return { ok: false, reason: "steps missing" as const };
-  }
-
-  // ✅ id whitelist
-  for (const s of plan.steps) {
-    if (!s?.id || typeof s.id !== "string") {
-      return { ok: false, reason: "step.id missing" as const };
-    }
-    if (!ALLOWED_STEP_IDS.has(s.id)) {
-      return { ok: false, reason: `unknown step.id: ${s.id}` as const };
-    }
-
-    // ✅ seconds
-    if (typeof s.seconds !== "number" || !Number.isFinite(s.seconds) || s.seconds <= 0) {
-      return { ok: false, reason: `invalid seconds for ${s.id}` as const };
-    }
-
-    // ✅ 금지 필드 방지
-    if ("title" in s || "imgSrc" in s || "imgsrc" in s) {
-      return { ok: false, reason: `forbidden field in step: ${s.id}` as const };
-    }
-  }
-
-  // ✅ 총 시간 체크 (±20%)
-  const sum = plan.steps.reduce((a: number, b: any) => a + (b.seconds ?? 0), 0);
-  const target = (plan.constraints?.time_min ?? inputTimeMin ?? 15) * 60;
-  const lo = target * 0.8;
-  const hi = target * 1.2;
-
-  if (sum < lo || sum > hi) {
-    return { ok: false, reason: `total seconds out of range: ${sum} (target ${target})` as const };
-  }
-
-  return { ok: true as const };
-}
-
-// 재시도
-async function llmFixPlan(originalText: string, err: string) {
-  const model = OPENAI_MODEL || "gpt-4o-mini";
-  const allowedStepIds = Array.from(ALLOWED_STEP_IDS).join(", ");
-  const fixPrompt = `
-너는 JSON 수리기다.
-반드시 RecoPlan JSON만 출력한다. 다른 텍스트 금지.
-
-오류: ${err}
-
-규칙:
-- steps[].id는 반드시 아래 허용 목록 중 하나
-- steps[].seconds는 초 단위 number
-- steps에 title/imgSrc 같은 필드는 절대 포함 금지
-- steps[].seconds 합은 constraints.time_min(분)*60 근처(±20%)
-
-허용 step id 목록:
-${allowedStepIds}
-
-원본 JSON:
-${originalText}
+[입력]
+${inputJson}
 `.trim();
-
-  const resp = await client.responses.create({ model, input: fixPrompt });
-  const anyResp: any = resp as any;
-  return (
-    (typeof anyResp.output_text === "function" && anyResp.output_text()) ||
-    anyResp.output_text ||
-    anyResp.output?.[0]?.content?.find((c: any) => c.type === "output_text")?.text ||
-    ""
-  );
-}
-
-// JSON 파싱 전에 코드블록 제거 유틸
-function stripJsonCodeBlock(text: string) {
-  return text
-    .trim()
-    .replace(/^```(?:json)?/i, "")
-    .replace(/```$/, "")
-    .trim();
-}
-
-function autoFixTotalSeconds(plan: any, inputTimeMin: number) {
-  const out = { ...plan };
-  out.constraints = out.constraints ?? {};
-  const target = (out.constraints.time_min ?? inputTimeMin ?? 15) * 60;
-
-  if (!Array.isArray(out.steps) || out.steps.length === 0) return out;
-
-  // 현재 합
-  let sum = out.steps.reduce((a: number, b: any) => a + (b?.seconds ?? 0), 0);
-  if (!Number.isFinite(sum) || sum <= 0) return out;
-
-  const lo = target * 0.8;
-  const hi = target * 1.2;
-
-  // 이미 범위면 그대로
-  if (sum >= lo && sum <= hi) return out;
-
-  // 1) 너무 짧으면: main 단계 위주로 반복해서 채우기
-  if (sum < lo) {
-    const steps = [...out.steps];
-
-    const mainPool = steps.filter((s: any) => s?.phase === "main");
-    const pool = (mainPool.length ? mainPool : steps).map((s: any) => ({
-      id: s.id,
-      seconds: s.seconds,
-      phase: s.phase,
-    }));
-
-    // 안전장치: 무한 증식 방지
-    const MAX_STEPS = 30;
-
-    let i = 0;
-    while (sum < lo && steps.length < MAX_STEPS && pool.length) {
-      const src = pool[i % pool.length];
-      const add = { ...src };
-
-      steps.push(add);
-      sum += add.seconds;
-      i++;
-    }
-
-    // 마지막 스텝 seconds로 미세조정(너무 초과하면 줄여서 hi 안으로)
-    if (sum > hi) {
-      const over = sum - hi;
-      const last = steps[steps.length - 1];
-      if (last && typeof last.seconds === "number") {
-        last.seconds = Math.max(10, last.seconds - over); // 최소 10초
-      }
-    }
-
-    out.steps = steps;
-    return out;
-  }
-
-  // 2) 너무 길면: 비율로 seconds를 줄여서 맞추기(단, 10초 이하로는 안 떨어지게)
-  if (sum > hi) {
-    const ratio = target / sum; // < 1
-    const steps = out.steps.map((s: any) => {
-      const sec = typeof s.seconds === "number" ? s.seconds : 0;
-      const next = Math.max(10, Math.round(sec * ratio));
-      return { ...s, seconds: next };
-    });
-
-    // 라운딩 때문에 target에서 벗어날 수 있으니 마지막으로 보정
-    let newSum = steps.reduce((a: number, b: any) => a + (b?.seconds ?? 0), 0);
-    const diff = target - newSum;
-
-    if (steps.length && Number.isFinite(diff) && diff !== 0) {
-      steps[steps.length - 1].seconds = Math.max(
-        10,
-        steps[steps.length - 1].seconds + diff
-      );
-    }
-
-    out.steps = steps;
-    return out;
-  }
-
-  return out;
 }

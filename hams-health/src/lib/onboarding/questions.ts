@@ -66,7 +66,8 @@ export const QUESTIONS: Question[] = [
     title: "가장 잘 맞는 운동 시간은?",
     options: [
       { label: "10~15분 짧고 자주", value: "short" },
-      { label: "30분 이상 몰아서", value: "long" },
+      { label: "30분~1시간 보통", value: "normal" },
+      { label: "1시간 몰아서", value: "long" },
     ],
   },
   {
