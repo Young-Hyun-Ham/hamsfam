@@ -208,7 +208,8 @@
     // ✅ 서버로 보낼 RecommendInput (엔진이 steps 조합할 때 필요한 최소치 포함)
     const a = $onboarding.answers;
     const timeMin =
-      a.q5 === "long" ? 30 :
+      a.q5 === "long" ? 60 :
+      a.q5 === "normal" ? 30 :
       a.q5 === "short" ? 15 :
       15; // 혹시 값 없으면 기본
 

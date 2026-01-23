@@ -124,6 +124,37 @@ export type Routine = {
 };
 
 /** =========================
+ *  (V2) LLM 생성 Subtype 메타
+ *  - WORKOUT_SUBTYPES의 shape과 동일하게 유지
+ *  ========================= */
+export type GeneratedWorkoutSubtype = {
+  id: string;
+  name: string;
+
+  // recommendation
+  profile_tags: string[];
+  contra_tags?: string[];
+  goals: string[];
+
+  intensity_range: [number, number];
+
+  equipment: string[]; // ["none"], ["dumbbell_or_kettlebell"], ["gym"]
+  space: SpaceLevel;
+  noise_level: NoiseLevel;
+
+  // quick routine templates (선택)
+  session_templates?: Array<{
+    id: string;
+    duration_min: number;
+    level: ExperienceLevel;
+    steps: { id: string; seconds: number; phase?: StepPhase; title: string; imgSrc: string }[];
+  }>;
+
+  // optional pool
+  step_pool?: Array<{ id: string; title: string; imgSrc: string; phase?: StepPhase; seconds_hint?: number }>;
+};
+
+/** =========================
  *  Recommendation Output (최종 추천 결과)
  *  ========================= */
 
@@ -146,6 +177,9 @@ export type RecommendationPick = {
 };
 
 export type RecommendationOutput = {
+  /** LLM이 생성한 subtype 메타(화면/후속 추천에 사용) */
+  generated_subtypes?: GeneratedWorkoutSubtype[];
+
   top_picks: RecommendationPick[];
   alternatives: Array<{
     subtype_id: string;

@@ -132,6 +132,206 @@ export const COPY_TEMPLATES = {
   alternatives_intro: "다른 대안도 있어요:"
 };
 
+export const SUBTYPES_STEPS = [
+  {
+    id: "light_warmup",
+    name: "가벼운 워밍업",
+    imgsrc: "/workouts/light_warmup.png",
+  },
+  {
+    id: "easy_rhythm_routine",
+    name: "리듬 루틴(쉬움)",
+    imgsrc: "/workouts/easy_rhythm_routine.png",
+  },
+  {
+    id: "cooldown",
+    name: "쿨다운",
+    imgsrc: "/workouts/cooldown.png",
+  },
+  {
+    id: "breathing_bracing",
+    name: "호흡+브레이싱",
+    imgsrc: "/workouts/breathing_bracing.png",
+  },
+  {
+    id: "dead_bug",
+    name: "데드버그",
+    imgsrc: "/workouts/dead_bug.png",
+  },
+  {
+    id: "glute_bridge",
+    name: "브릿지",
+    imgsrc: "/workouts/glute_bridge.png",
+  },
+  {
+    id: "clamshell_band",
+    name: "클램쉘(밴드 옵션)",
+    imgsrc: "/workouts/clamshell_band.png",
+  },
+  {
+    id: "hip_mobility",
+    name: "고관절 모빌리티",
+    imgsrc: "/workouts/hip_mobility.png",
+  },
+  {
+    id: "thoracic_rotation",
+    name: "흉추 회전",
+    imgsrc: "/workouts/thoracic_rotation.png",
+  },
+  {
+    id: "breathing_reset",
+    name: "호흡 정리",
+    imgsrc: "/workouts/breathing_reset.png",
+  },
+  {
+    id: "tabata_20_10",
+    name: "타바타(20/10 x 8)",
+    imgsrc: "/workouts/tabata_20_10.png",
+  },
+  {
+    id: "short_interval_boost",
+    name: "짧은 인터벌 보강",
+    imgsrc: "/workouts/short_interval_boost.png",
+  },
+  {
+    id: "warmup_walk_slow",
+    name: "워밍업 걷기(느리게)",
+    imgsrc: "/workouts/warmup_walk_slow.png",
+  },
+  {
+    id: "fast_walking",
+    name: "빠르게 걷기",
+    imgsrc: "/workouts/fast_walking.png",
+  },
+  {
+    id: "goblet_squat",
+    name: "고블릿 스쿼트",
+    imgsrc: "/workouts/goblet_squat.png",
+  },
+  {
+    id: "dumbbell_row",
+    name: "덤벨 로우",
+    imgsrc: "/workouts/dumbbell_row.png",
+  },
+  {
+    id: "shoulder_press",
+    name: "숄더 프레스",
+    imgsrc: "/workouts/shoulder_press.png",
+  },
+  {
+    id: "squat",
+    name: "스쿼트",
+    imgsrc: "/workouts/squat.png",
+  },
+  {
+    id: "knee_pushup",
+    name: "푸시업(무릎)",
+    imgsrc: "/workouts/knee_pushup.png",
+  },
+  {
+    id: "short_lunge",
+    name: "런지(짧게)",
+    imgsrc: "/workouts/short_lunge.png",
+  },
+  {
+    id: "lunge",
+    name: "런지",
+    imgsrc: "/workouts/lunge.png",
+  },
+  {
+    id: "plank",
+    name: "플랭크",
+    imgsrc: "/workouts/plank.png",
+  },
+  
+  // 스트레칭 목록
+  {
+    id: "final_stretching",
+    name: "마무리 스트레칭",
+    imgsrc: "/workouts/final_stretching.png",
+  },
+  {
+    id: "hamstring_stretch",
+    name: "햄스트링 스트레칭",
+    imgsrc: "/workouts/hamstring_stretch.png",
+  },
+  {
+    id: "hip_stretching",
+    name: "엉덩이 굴곡 근육 스트레칭",
+    imgsrc: "/workouts/hip_stretching.png",
+  },
+  {
+    id: "hip_deepen_stretching",
+    name: "엉덩이 굴곡 근육 심화 스트레칭",
+    imgsrc: "/workouts/hip_deepen_stretching.png",
+  },
+  {
+    id: "neck_stretch",
+    name: "목 스트레칭",
+    imgsrc: "/workouts/neck_stretch.png",
+  },
+  {
+    id: "upper_trap_stretch",
+    name: "승모근 스트레칭",
+    imgsrc: "/workouts/upper_trap_stretch.png",
+  },
+  {
+    id: "shoulder_cross_stretch",
+    name: "어깨(가로) 스트레칭",
+    imgsrc: "/workouts/shoulder_cross_stretch.png",
+  },
+  {
+    id: "chest_opener_stretch",
+    name: "가슴 열기 스트레칭",
+    imgsrc: "/workouts/chest_opener_stretch.png",
+  },
+  {
+    id: "lat_side_stretch",
+    name: "광배근 옆구리 스트레칭",
+    imgsrc: "/workouts/lat_side_stretch.png",
+  },
+  {
+    id: "cat_cow_stretch",
+    name: "캣카우(척추) 스트레칭",
+    imgsrc: "/workouts/cat_cow_stretch.png",
+  },
+  {
+    id: "child_pose_stretch",
+    name: "차일드 포즈 스트레칭",
+    imgsrc: "/workouts/child_pose_stretch.png",
+  },
+  {
+    id: "spinal_twist_stretch",
+    name: "누워서 척추 비틀기",
+    imgsrc: "/workouts/spinal_twist_stretch.png",
+  },
+  {
+    id: "quad_stretch",
+    name: "허벅지 앞(대퇴사두) 스트레칭",
+    imgsrc: "/workouts/quad_stretch.png",
+  },
+  {
+    id: "calf_stretch",
+    name: "종아리 스트레칭",
+    imgsrc: "/workouts/calf_stretch.png",
+  },
+  {
+    id: "adductor_stretch",
+    name: "내전근(사타구니) 스트레칭",
+    imgsrc: "/workouts/adductor_stretch.png",
+  },
+  {
+    id: "pigeon_glute_stretch",
+    name: "비둘기 자세(둔근) 스트레칭",
+    imgsrc: "/workouts/pigeon_glute_stretch.png",
+  },
+  {
+    id: "seated_hamstring_stretch",
+    name: "앉아서 햄스트링 스트레칭",
+    imgsrc: "/workouts/seated_hamstring_stretch.png",
+  },
+];
+
 export type WorkoutSubtype = {
   id: string;
   name: string;
@@ -345,133 +545,5 @@ export const WORKOUT_SUBTYPES: WorkoutSubtype[] = [
       }
     ],
     step_pool: [],
-  },
-];
-
-export const SUBTYPES_STEPS = [
-  {
-    id: "light_warmup",
-    name: "가벼운 워밍업",
-    imgsrc: "/workouts/light_warmup.png",
-  },
-  {
-    id: "easy_rhythm_routine",
-    name: "리듬 루틴(쉬움)",
-    imgsrc: "/workouts/easy_rhythm_routine.png",
-  },
-  {
-    id: "cooldown",
-    name: "쿨다운",
-    imgsrc: "/workouts/cooldown.png",
-  },
-  {
-    id: "breathing_bracing",
-    name: "호흡+브레이싱",
-    imgsrc: "/workouts/breathing_bracing.png",
-  },
-  {
-    id: "dead_bug",
-    name: "데드버그",
-    imgsrc: "/workouts/dead_bug.png",
-  },
-  {
-    id: "glute_bridge",
-    name: "브릿지",
-    imgsrc: "/workouts/glute_bridge.png",
-  },
-  {
-    id: "clamshell_band",
-    name: "클램쉘(밴드 옵션)",
-    imgsrc: "/workouts/clamshell_band.png",
-  },
-  {
-    id: "final_stretching",
-    name: "마무리 스트레칭",
-    imgsrc: "/workouts/final_stretching.png",
-  },
-  {
-    id: "hip_mobility",
-    name: "고관절 모빌리티",
-    imgsrc: "/workouts/hip_mobility.png",
-  },
-  {
-    id: "hamstring_stretch",
-    name: "햄스트링 스트레칭",
-    imgsrc: "/workouts/hamstring_stretch.png",
-  },
-  {
-    id: "thoracic_rotation",
-    name: "흉추 회전",
-    imgsrc: "/workouts/thoracic_rotation.png",
-  },
-  {
-    id: "breathing_reset",
-    name: "호흡 정리",
-    imgsrc: "/workouts/breathing_reset.png",
-  },
-  {
-    id: "tabata_20_10",
-    name: "타바타(20/10 x 8)",
-    imgsrc: "/workouts/tabata_20_10.png",
-  },
-  {
-    id: "short_interval_boost",
-    name: "짧은 인터벌 보강",
-    imgsrc: "/workouts/short_interval_boost.png",
-  },
-  {
-    id: "warmup_walk_slow",
-    name: "워밍업 걷기(느리게)",
-    imgsrc: "/workouts/warmup_walk_slow.png",
-  },
-  {
-    id: "fast_walking",
-    name: "빠르게 걷기",
-    imgsrc: "/workouts/fast_walking.png",
-  },
-  {
-    id: "goblet_squat",
-    name: "고블릿 스쿼트",
-    imgsrc: "/workouts/goblet_squat.png",
-  },
-  {
-    id: "dumbbell_row",
-    name: "덤벨 로우",
-    imgsrc: "/workouts/dumbbell_row.png",
-  },
-  {
-    id: "shoulder_press",
-    name: "숄더 프레스",
-    imgsrc: "/workouts/shoulder_press.png",
-  },
-  {
-    id: "stretching",
-    name: "스트레칭",
-    imgsrc: "/workouts/stretching.png",
-  },
-  {
-    id: "squat",
-    name: "스쿼트",
-    imgsrc: "/workouts/squat.png",
-  },
-  {
-    id: "knee_pushup",
-    name: "푸시업(무릎)",
-    imgsrc: "/workouts/knee_pushup.png",
-  },
-  {
-    id: "short_lunge",
-    name: "런지(짧게)",
-    imgsrc: "/workouts/short_lunge.png",
-  },
-  {
-    id: "lunge",
-    name: "런지",
-    imgsrc: "/workouts/lunge.png",
-  },
-  {
-    id: "plank",
-    name: "플랭크",
-    imgsrc: "/workouts/plank.png",
   },
 ];
