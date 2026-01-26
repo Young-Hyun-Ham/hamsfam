@@ -224,12 +224,45 @@ export const recommendationOutputJsonSchema = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["subtype_id", "subtype_name", "score", "why_short"],
+          required: ["subtype_id", "subtype_name", "score", "why_short", "routine"],
           properties: {
             subtype_id: { type: "string" },
             subtype_name: { type: "string" },
             score: { type: "number" },
             why_short: { type: "string" },
+
+            routine: {
+              type: "object",
+              additionalProperties: false,
+              required: ["duration_min", "level", "steps"],
+              properties: {
+                duration_min: { type: "number", minimum: 5, maximum: 120 },
+                level: { type: "string", enum: ["beginner", "intermediate", "advanced"] },
+
+                steps: {
+                  type: "array",
+                  minItems: 2,
+                  maxItems: 20,
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    // ✅ 여기도 동일하게 phase를 required에 포함
+                    required: ["id", "seconds", "phase", "title", "imgSrc"],
+                    properties: {
+                      id: { type: "string" },
+                      seconds: { type: "number", minimum: 5, maximum: 3600 },
+                      phase: {
+                        type: "string",
+                        enum: ["warmup", "main", "finisher", "cooldown"],
+                      },
+                      title: { type: "string" },
+                      imgSrc: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
+            
           },
         },
       },
@@ -247,9 +280,10 @@ export const recommendationOutputJsonSchema = {
             items: {
               type: "object",
               additionalProperties: false,
-              required: ["tag", "score"],
+              required: ["tag", "desc", "score"],
               properties: {
                 tag: { type: "string" },
+                desc: { type: "string" },
                 score: { type: "number" },
               },
             },

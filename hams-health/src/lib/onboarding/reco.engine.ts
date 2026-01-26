@@ -564,12 +564,25 @@ export function recommendWorkouts(input: RecommendInput): RecommendationOutput {
     };
   });
 
-  const alternatives = scored.slice(3, 10).map((x) => ({
-    subtype_id: x.subtype.id,
-    subtype_name: x.subtype.name,
-    score: Number(x.score.toFixed(3)),
-    why_short: "성향/제약 조건과 무난하게 맞는 대안",
-  }));
+  const alternatives = scored.slice(3, 10).map((x) => {
+    const subtype = x.subtype;
+
+    const routine = pickRoutine({
+      subtype,
+      wantedMin,
+      level,
+      topTags: topTagNames,
+      injuryFlags,
+    });
+
+    return {
+      subtype_id: subtype.id,
+      subtype_name: subtype.name,
+      score: Number(x.score.toFixed(3)),
+      why_short: "성향/제약 조건과 무난하게 맞는 대안",
+      routine, // ✅ 추가
+    };
+  });
 
   return {
     // ✅ 추가: 폴백 시엔 정적 WORKOUT_SUBTYPES를 그대로 넣어준다(구조적 타입 호환)
@@ -671,12 +684,23 @@ export function recommendFromPlan(input: RecommendInput, plan: RecoPlanBase): Re
     };
   });
 
-  const alternatives = picked.slice(3, 10).map(({ p, subtype }) => ({
-    subtype_id: subtype.id,
-    subtype_name: subtype.name,
-    score: Number((60 + clamp(p.confidence ?? 0.3, 0, 1) * 10).toFixed(3)),
-    why_short: (p.reasons?.[0] ?? "대안 추천"),
-  }));
+  const alternatives = picked.slice(3, 10).map(({ p, subtype }) => {
+    const routine = pickRoutine({
+      subtype,
+      wantedMin,
+      level,
+      topTags: topTagNames,
+      injuryFlags,
+    });
+
+    return {
+      subtype_id: subtype.id,
+      subtype_name: subtype.name,
+      score: Number((60 + clamp(p.confidence ?? 0.3, 0, 1) * 10).toFixed(3)),
+      why_short: (p.reasons?.[0] ?? "대안 추천"),
+      routine,
+    };
+  });
 
   return {
     top_picks,

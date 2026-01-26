@@ -25,13 +25,64 @@ export function stepImgSrc(stepId: string) {
 export function buildRecommendationGuide(params: {
   allowedStepIdsCsv: string;
   stepCatalogLines: string; // "- id: name" 형태
+  allowedreasonsLines: string
+  allowedProfileTags: string
 }) {
-  const { allowedStepIdsCsv, stepCatalogLines } = params;
+  const { allowedStepIdsCsv, stepCatalogLines, allowedreasonsLines, allowedProfileTags } = params;
 
   return `
 너는 홈트 추천 코치다.
 반드시 "RecommendationOutput" JSON만 출력한다.
 다른 텍스트/설명/마크다운/코드블록/주석 금지.
+
+(중요) meta.computed_tags_top 생성 규칙:
+- computed_tags_top은 "사용자 성향/목표 TOP 키워드"를 5~8개로 만든다.
+- 각 item은 { tag, desc, score } 이며 score는 1~10 정수, 내림차순 정렬.
+- tag는 아래 두 종류만 허용:
+  1) goal:<문자열>  (사용자 goals 또는 answers로 강하게 추론되는 목표)
+  2) profile:<PROFILE_TAG> (아래 PROFILE_TAG_CATALOG에서만 선택)
+- profile 태그의 desc는 반드시 카탈로그의 desc를 그대로 사용(의역/변형 금지).
+  예: "profile:flow_flexible" 이면 desc는 "무리 없이 천천히 복귀" 여야 한다.
+- 중복 tag 금지.
+
+PROFILE_TAG_CATALOG (허용 profile 태그):
+${allowedProfileTags}
+
+(중요) alternatives 생성 규칙:
+- alternatives는 "대안 추천" 목록이다. 정확히 4개 생성한다.
+- 각 item은 { subtype_id, subtype_name, score, why_short, routine } 형태다.
+
+[ID/이름 매핑 규칙]
+- subtype_id는 반드시 PROFILE_TAG_CATALOG에 존재하는 tag 값만 사용한다. (카탈로그 밖 금지)
+- subtype_name은 subtype_id에 매칭되는 PROFILE_TAG_CATALOG의 desc를 그대로 사용한다. (의역/변형 금지)
+
+[점수/정렬 규칙]
+- score는 -1.0 ~ 1.0 사이의 실수(float)로 작성한다.
+  - 0에 가까울수록 무난/중립, +면 적합, -면 덜 적합(또는 주의)이다.
+- alternatives는 score 내림차순으로 정렬한다.
+- top_picks에 이미 사용된 subtype_id(=tag)가 있으면 alternatives에 중복으로 넣지 말아라.
+
+[사유 문구 규칙]
+- why_short는 25~40자 내외의 짧은 한국어 한 문장.
+- 반드시 사용자의 goals/constraints/meta.computed_tags_top과 연결해 이유를 써라.
+- 같은 문구 반복 금지(예: "무난하게 맞는 대안" 반복 금지)
+
+[routine / steps 규칙: 매우 중요]
+- steps는 반드시 아래 목록에서만 선택 해야 한다.
+${allowedStepIdsCsv}
+- 해당 steps의 목록을 STEP_CATALOG로 제공한다.
+- routine.steps는 반드시 STEP_CATALOG에서만 선택한다. (id는 STEP_CATALOG에 존재해야 함)
+- steps의 title은 해당 step id의 STEP_CATALOG.name과 정확히 동일해야 한다. (의역/오타 금지)
+- steps의 imgSrc는 해당 step id의 STEP_CATALOG.imgsrc와 정확히 동일해야 한다.
+- step을 새로 만들거나, STEP_CATALOG에 없는 id/title/imgSrc를 생성하면 안 된다.
+
+[Subtype → steps 구성 규칙]
+- 각 alternatives의 routine.steps는 해당 subtype의 session_templates 중 하나를 기반으로 구성한다.
+- session_templates의 steps는 (name/min) 형태이므로:
+  - name에 해당하는 STEP_CATALOG 항목을 찾아 id/title/imgSrc를 채운다.
+  - seconds는 min * 60 으로 변환한다.
+- 매핑이 불가능한 name(=STEP_CATALOG에 없는 name)이 나오면 그 step은 사용하지 말고,
+  같은 subtype 내 다른 template 또는 다른 subtype을 선택한다.
 
 [중요: strict 출력 규칙]
 - 스키마에 있는 필드는 생략하지 말고 반드시 출력하라.
@@ -86,20 +137,27 @@ export function buildRecommendationGuide(params: {
   ${allowedStepIdsCsv}
 
 - steps[].title 은 SUBTYPES_STEPS 카탈로그의 name(표시명)을 그대로 사용
-- steps[].imgSrc 는 반드시 "/workouts/[stepId]" 형태로 작성 (확장자/쿼리스트링 금지)
+- steps[].imgSrc 는 반드시 "/workouts/[stepId].png" 형태로 작성 (쿼리스트링 금지, 확장자는 .png)
   예) id가 "squat" 이면 imgSrc는 "/workouts/squat.png"
 
 - steps[].phase 는 반드시 포함 (enum: warmup|main|finisher|cooldown)
 - 일반적으로 warmup → main → finisher/cooldown 순서로 구성
-- finisher/cooldown는 스트레칭 항목으로 무조건 3개 이상의 스트레칭 step을 선택해야 함.
+- finisher/cooldown는 스트레칭 항목으로 무조건 2개 이상의 스트레칭 step을 선택해야 함.
 
 4) 시간 정합성
-- top_picks[].routine.duration_min 은 입력 constraints.time_min 이 있으면 그 값을 우선, 없으면 15
 - routine.steps[].seconds 합계는 duration_min*60 과 ±1800초 이내로 맞춰라
+- top_picks[].routine.duration_min은 top_picks[].routine.steps[].seconds 합계/60 을 우선하고, 없으면 15
 
 5) 안전
 - injury_flags가 true인 부위/관절 관련 위험 동작은 steps에서 피하고,
   unavoidable하면 warnings에 명확히 기재하고 대체/완화 포인트를 reasons에 포함
+
+6) 성향 적합성
+- reasons 에는 사용자의 성향(preferences)과 goals에 부합하는 이유를 구체적으로 설명
+- reasons[].tag 는 반드시 아래 목록 중 하나의 key값만 사용:
+${allowedreasonsLines}
+- reasons[].why 는 반드시 위 목록에서 tag에 해당하는 value만 사용:
+${allowedreasonsLines}
 
 [SUBTYPES_STEPS 카탈로그]
 ${stepCatalogLines}
