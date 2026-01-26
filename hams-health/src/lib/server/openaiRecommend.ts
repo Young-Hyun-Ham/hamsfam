@@ -2,21 +2,28 @@
 import OpenAI from "openai";
 import { OPENAI_API_KEY, OPENAI_MODEL } from "$env/static/private";
 import type { RecommendInput, RecommendationOutput } from "$lib/onboarding/reco.types";
-import { SUBTYPES_STEPS } from "$lib/onboarding/reco.data";
+import { SUBTYPES_STEPS, REASON_SENTENCE_MAP, PROFILE_TAG_CATALOG, WORKOUT_SUBTYPES } from "$lib/onboarding/reco.data";
 import { recommendationOutputJsonSchema } from "./recoSchema";
 
 const client = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 const ALLOWED_STEP_IDS = SUBTYPES_STEPS.map((s) => s.id).join(", ");
 const STEP_LINES = SUBTYPES_STEPS.map((s) => `- ${s.id}: ${s.name}`).join("\n");
-
+const REASONS_LINES = Object.entries(REASON_SENTENCE_MAP).map(([key, value]) => `- ${key}: ${value}`).join("\n");
+const PROFILE_LINES = PROFILE_TAG_CATALOG
+  .map((x) => `- ${x.tag}: ${x.desc}`)
+  .join("\n");
+  
 import { buildRecommendationGuide, buildRecommendationPrompt } from "./llmPlan";
 
 function buildPrompt(input: RecommendInput) {
   const guide = buildRecommendationGuide({
     allowedStepIdsCsv: ALLOWED_STEP_IDS,
     stepCatalogLines: STEP_LINES,
+    allowedreasonsLines: REASONS_LINES,
+    allowedProfileTags: PROFILE_LINES,
   });
+  console.log("======================>", JSON.stringify(input, null, 2))
 
   return buildRecommendationPrompt({
     guide,

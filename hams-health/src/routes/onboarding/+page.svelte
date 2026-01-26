@@ -26,6 +26,25 @@
   let playerWarnings: Array<{ tag: string; text: string }> = [];
   let playerSteps: PlayerStep[] = [];
 
+  // ===========================================
+  // 대안 루틴 재생용
+  function playAlternative(alt: any) {
+    // ✅ 기존 플레이어 상태를 그대로 사용
+    playerTitle = alt?.subtype_name || "대안 루틴";
+    playerWarnings = []; // 대안 warnings가 생기면 alt.warnings로 교체 가능
+
+    // alt도 routine.steps 구조가 top_picks와 동일하니 그대로 변환 재사용
+    playerSteps = toPlayerSteps({
+      subtype_id: alt?.subtype_id ?? "alt",
+      subtype_name: alt?.subtype_name,
+      routine: alt?.routine,
+      copy: { title: alt?.subtype_name ?? "대안 루틴" }, // openPlayer가 쓰는 title 호환
+    });
+
+    playerOpen = true;
+  }
+  // ===========================================
+
   const fallbackImg = "/workouts/placeholder.png";
 
   function toPlayerSteps(pick: any): PlayerStep[] {
@@ -694,6 +713,17 @@
                       >
                         score: {alt.score}
                       </span>
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold
+                              bg-emerald-600 text-white shadow-sm hover:bg-emerald-500
+                              dark:bg-emerald-500/90 dark:hover:bg-emerald-500"
+                        on:click={() => playAlternative(alt)}
+                        aria-label="대안 루틴 재생"
+                        title="재생"
+                      >
+                        ▶ <span class="hidden sm:inline">플레이</span>
+                      </button>
                     </div>
                   </div>
                 {/each}
@@ -756,6 +786,7 @@
         {/if}
       {/if}
 
+      <!-- // 루틴 플레이어 모달 -->
       <WorkoutPlayerModal
         open={playerOpen}
         title={playerTitle}

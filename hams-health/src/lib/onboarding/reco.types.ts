@@ -186,6 +186,8 @@ export type RecommendationOutput = {
     subtype_name: string;
     score: number;
     why_short: string;
+    
+    routine: Routine;
   }>;
   meta: {
     computed_tags_top: Array<{ tag: string; score: number }>;

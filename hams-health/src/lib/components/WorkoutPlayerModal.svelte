@@ -37,6 +37,10 @@
   let timer: any = null;
   let finished = false;
   let paused = false;
+  
+  let countdown = 0;               // 3,2,1
+  let countdownTimer: any = null;  // setInterval 핸들
+  let countdownArmed = false;      // 카운트다운 중 UI 잠금 용도(선택)
 
   let unlockBodyScroll: null | (() => void) = null;
 
@@ -115,6 +119,34 @@
       window.scrollTo(0, scrollY);
     };
   }
+  
+  function clearCountdown() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+    countdown = 0;
+    countdownArmed = false;
+  }
+
+  function beginCountdown(thenRun: () => void) {
+    // 기존 러닝 타이머는 멈춤(점프/재개 시 중복 방지)
+    clearTimer?.();
+    clearCountdown();
+
+    countdownArmed = true;
+    countdown = 3;
+
+    // 즉시 READY 3 보여주고 1초마다 감소
+    countdownTimer = setInterval(() => {
+      countdown -= 1;
+
+      if (countdown <= 0) {
+        clearCountdown();
+        thenRun();
+      }
+    }, 1000);
+  }
 
   function reset() {
     idx = 0;
@@ -162,6 +194,27 @@
     if (!finished) start(isContinue);
   }
 
+  function sumFrom(startIndex: number) {
+    return steps.slice(startIndex).reduce((a, b) => a + (b?.seconds ?? 0), 0);
+  }
+
+  function jumpTo(targetIndex: number, autoContinue: boolean = true) {
+    if (!steps?.length) return;
+    if (targetIndex < 0 || targetIndex >= steps.length) return;
+
+    // 점프 준비: 상태 세팅
+    finished = false;
+    idx = targetIndex;
+    remaining = steps[idx]?.seconds ?? 0;
+    totalRemaining = sumFrom(idx);
+    paused = false; // 점프는 "실행 의도"이므로 paused 해제
+
+    // 3초 READY → 실행
+    beginCountdown(() => {
+      start(autoContinue);
+    });
+  }
+
   function restart() {
     reset();
     lastScrollIdx = -1;
@@ -169,9 +222,12 @@
   }
 
   function close() {
+    // clearTimer();
+    // unlockBodyScroll?.();
+    // unlockBodyScroll = null;
+    // onClose?.();
+    clearCountdown();
     clearTimer();
-    unlockBodyScroll?.();
-    unlockBodyScroll = null;
     onClose?.();
   }
 
@@ -228,8 +284,9 @@
   }
 
   onDestroy(() => {
-    clearTimer();
-    unlockBodyScroll?.();
+    // clearTimer();
+    // unlockBodyScroll?.();
+    clearCountdown();
   });
 
   function onKeydown(e: KeyboardEvent) {
@@ -251,6 +308,16 @@
     tabindex="0"
     transition:fade={{ duration: 120 }}
   >
+    {#if countdown > 0}
+      <div class="absolute inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm">
+        <div class="text-center">
+          <div class="text-2xl font-extrabold text-white">READY</div>
+          <div class="mt-2 text-6xl font-black text-white tabular-nums">{countdown}</div>
+          <div class="mt-3 text-sm text-white/80">곧 시작합니다</div>
+        </div>
+      </div>
+    {/if}
+
     <div
       class="mx-auto flex h-[100dvh] w-full max-w-xl flex-col
              px-3 pt-[calc(env(safe-area-inset-top)+12px)]
@@ -258,16 +325,18 @@
       style="--footer-h: 92px;"
     >
       <div
-        class="flex h-full flex-col overflow-hidden rounded-3xl border border-white/10
-               bg-zinc-950 text-zinc-50 shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
+        class="flex h-full flex-col overflow-hidden rounded-3xl
+          border border-black/10 bg-white text-zinc-900
+          shadow-[0_20px_80px_rgba(0,0,0,0.18)]
+          dark:border-black/10 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-50 dark:shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
         transition:fly={{ y: 10, duration: 160 }}
       >
         <!-- HEADER -->
-        <div class="shrink-0 border-b border-white/10 px-4 py-3 sm:px-5 sm:py-4">
+        <div class="shrink-0 border-b border-black/10 dark:border-white/10 px-4 py-3 sm:px-5 sm:py-4">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="text-sm font-extrabold">{title}</div>
-              <div class="mt-1 text-xs text-zinc-300">
+              <div class="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
                 전체 남은 시간 <span class="font-bold">{fmt(totalRemaining)}</span>
                 · 현재: <span class="font-bold">{current?.title ?? "-"}</span>
               </div>
@@ -275,7 +344,7 @@
 
             <button
               class="inline-flex h-10 w-10 items-center justify-center rounded-2xl
-                     border border-white/10 bg-white/5 hover:bg-white/10"
+                     border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-white/5 hover:bg-white/10"
               on:click={close}
               aria-label="닫기"
               title="닫기"
@@ -318,7 +387,7 @@
               <!-- 이미지 -->
               <button
                 type="button"
-                class="relative overflow-hidden rounded-3xl border border-white/10 bg-black/20 shrink-0 text-left"
+                class="relative overflow-hidden rounded-3xl border border-black/10 dark:border-white/10 bg-black/20 shrink-0 text-left"
                 on:click={togglePlayFromImage}
                 aria-label="운동 시작 또는 재개"
                 title={paused ? "시작/재개" : "일시정지"}
@@ -347,7 +416,7 @@
               </button>
 
               <!-- 진행 순서 -->
-              <div class="mt-4 flex min-h-0 flex-1 flex-col rounded-3xl border border-white/10 bg-white/5 p-4">
+              <div class="mt-4 flex min-h-0 flex-1 flex-col rounded-3xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-white/5 p-4">
                 <div class="text-sm font-extrabold shrink-0">진행 순서</div>
 
                 <ol
@@ -355,29 +424,34 @@
                   class="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
                 >
                   {#each steps as s, i (s.key)}
-                    <li
-                      use:registerItem(i)
-                      tabindex="-1"
-                      class={[
-                        "flex items-center justify-between rounded-2xl px-3 py-2",
-                        i === idx
-                          ? "bg-emerald-500/10 ring-1 ring-emerald-400/20"
-                          : "bg-white/5",
-                      ].join(" ")}
-                    >
-                      <div class="min-w-0">
-                        <div class="text-xs font-bold text-zinc-100">
-                          {i + 1}. {s.title}
+                    <li use:registerItem(i) class="rounded-2xl">
+                      <button
+                        type="button"
+                        class={[
+                          "w-full flex items-center justify-between rounded-2xl px-3 py-2 text-left",
+                          "transition active:scale-[0.99]",
+                          "hover:bg-black/5 dark:hover:bg-white/10",
+                          i === idx
+                            ? "bg-emerald-500/10 ring-1 ring-emerald-400/30"
+                            : "bg-white dark:bg-white/5",
+                        ].join(" ")}
+                        on:click={() => jumpTo(i, true)}
+                        aria-label={`${i + 1}번 ${s.title}로 이동`}
+                      >
+                        <div class="min-w-0">
+                          <div class="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                            {i + 1}. {s.title}
+                          </div>
                         </div>
-                      </div>
 
-                      <div class="shrink-0 rounded-full bg-black/40 px-3 py-1 text-xs font-bold text-zinc-100">
-                        {#if Math.round(s.seconds / 60) === 0}
-                          {s.seconds}초
-                        {:else}
-                          {Math.round(s.seconds / 60)}분
-                        {/if}
-                      </div>
+                        <div class="shrink-0 rounded-full bg-black/40 px-3 py-1 text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                          {#if Math.round(s.seconds / 60) === 0}
+                            {s.seconds}초
+                          {:else}
+                            {Math.round(s.seconds / 60)}분
+                          {/if}
+                        </div>
+                      </button>
                     </li>
                   {/each}
                 </ol>
@@ -388,21 +462,21 @@
 
         <!-- FOOTER -->
         <div
-          class="shrink-0 border-t border-white/10 bg-zinc-950/80 px-4 py-3 backdrop-blur sm:px-5"
+          class="shrink-0 border-t border-black/10 dark:border-white/10 bg-white/80 dark:bg-zinc-950/80 px-4 py-3 backdrop-blur sm:px-5"
           style="height: var(--footer-h);"
         >
           {#if !finished}
             <div class="flex h-full items-center gap-2">
               {#if !paused}
                 <button
-                  class="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-extrabold hover:bg-white/10"
+                  class="flex-1 rounded-2xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-4 py-3 text-sm font-extrabold hover:bg-white/10"
                   on:click={pause}
                 >
                   ⏸ 일시정지
                 </button>
               {:else}
                 <button
-                  class="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-extrabold hover:bg-white/10"
+                  class="flex-1 rounded-2xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-white/5 px-4 py-3 text-sm font-extrabold hover:bg-white/10"
                   on:click={() => resume(true)}
                 >
                   ▶ 재개
@@ -425,7 +499,7 @@
               <div class="mt-3 flex items-center justify-center gap-4">
                 <button
                   class="inline-flex h-12 w-12 items-center justify-center rounded-3xl
-                         border border-white/10 bg-white/5 text-xl hover:bg-white/10"
+                         border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-white/5 text-xl hover:bg-white/10"
                   on:click={restart}
                   aria-label="다시 하기"
                   title="다시 하기"
