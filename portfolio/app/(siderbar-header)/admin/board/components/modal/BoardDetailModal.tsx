@@ -11,7 +11,7 @@ import { useReplyThreads } from "./_hooks/useReplyThreads";
 import { ShowDeletedToggle } from "./_components/ShowDeletedToggle";
 import { ReplyComposer } from "./_components/ReplyComposer";
 import { ReplyThreadCard } from "./_components/ReplyThreadCard";
-import { truncateText } from "@/lib/utils/utils";
+import { formatDate, truncateText } from "@/lib/utils/utils";
 
 const EMPTY_REPLIES: BoardReply[] = [];
 
@@ -207,8 +207,8 @@ export default function BoardDetailModal({ open, id, onClose }: Props) {
                 </div>
 
                 <div className="mt-5 text-xs text-gray-500">
-                  createdAt: {new Date(row.createdAt).toLocaleString()} / updatedAt:{" "}
-                  {row.updatedAt ? new Date(row.updatedAt).toLocaleString() : "-"}
+                  createdAt: {formatDate(row.createdAt)} / updatedAt:{" "}
+                  {row.updatedAt ? formatDate(row.updatedAt) : "-"}
                 </div>
               </div>
 

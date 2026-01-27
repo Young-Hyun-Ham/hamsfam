@@ -6,6 +6,7 @@ import { db } from "@/lib/postgresql";
 import { isCrossSite, setAccessTokenCookie, setRefreshTokenCookie } from "@/lib/cookies";
 import { signAccessToken, signRefreshToken } from "@/lib/oauth";
 import bcrypt from "bcryptjs";
+import { roleTypes } from "@/types/user";
 
 export async function POST(req: NextRequest) {
   console.log("/auth/refresh [ POST ] 호출됨.");
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     );
 
     const user = upsert.rows[0];
-    const roles: string[] =
+    const roles: roleTypes[] =
     Array.isArray(user.roles)
       ? user.roles.map(String)
       : (typeof user.roles === 'string'
