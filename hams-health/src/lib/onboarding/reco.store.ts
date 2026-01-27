@@ -14,7 +14,7 @@ export const recoState = writable<{
 
 export async function requestRecommendation(input: RecommendInput) {
   recoState.update((s) => ({ ...s, loading: true, error: null }));
-
+  console.log("requestRecommendation request input ========> ", input);
   try {
     const res = await fetch("/api/recommend", {
       method: "POST",

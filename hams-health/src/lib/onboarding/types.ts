@@ -9,9 +9,9 @@ export type Dimension =
   | "meta"
   | "profile";
 
-export type QuestionKind = "choice" | "dob";
+export type QuestionKind = "choice" | "dob" | "multi";
 
-export type QuestionOption = { label: string; value: string; hint?: string };
+export type QuestionOption = { label: string; value: string; hint?: string; thumbnail?: string; };
 
 export type ChoiceQuestion = {
   kind?: "choice";
@@ -32,7 +32,16 @@ export type DobQuestion = {
   maxYear?: number; // 선택: 없으면 화면에서 자동 계산
 };
 
-export type Question = ChoiceQuestion | DobQuestion;
+export type MultiQuestion = {
+  id: string;
+  dimension: string;
+  kind?: "multi";
+  title: string;
+  desc?: string;
+  options?: QuestionOption[];
+};
+
+export type Question = ChoiceQuestion | DobQuestion | MultiQuestion;
 
 // ✅ 기존 그대로 유지 (DOB도 "YYYY-MM-DD" 문자열로 저장)
-export type AnswerMap = Record<string, string>;
+export type AnswerMap = Record<string, string | string[]>;

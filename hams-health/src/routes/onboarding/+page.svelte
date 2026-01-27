@@ -10,6 +10,8 @@
     nextStep,
     prevStep,
     resetOnboarding,
+    toggleMultiAnswer,
+    setStep,
   } from "$lib/onboarding/store";
 
   import { recoState, requestRecommendation, resetReco } from "$lib/onboarding/reco.store";
@@ -42,6 +44,24 @@
     });
 
     playerOpen = true;
+  }
+  // ===========================================
+
+  // ===========================================
+  // 썸네일 미리보기 모달
+  let previewOpen = false;
+  let previewTitle = "";
+  let previewImg = "";
+
+  function openPreview(opt: any) {
+    previewTitle = opt?.label ?? "미리보기";
+    previewImg = opt?.thumbnail ?? "";
+    previewOpen = true;
+  }
+  function closePreview() {
+    previewOpen = false;
+    previewTitle = "";
+    previewImg = "";
   }
   // ===========================================
 
@@ -91,13 +111,50 @@
 
   let showResults = false;
 
-  $: total = QUESTIONS.length;
-  $: step = $onboarding.step;
-  $: q = QUESTIONS[step];
-  $: selected = q ? ($onboarding.answers[q.id] ?? "") : "";
+  // ✅ 항상 포함될 질문(프로그램 선택을 위한 최소 3개)
+  const CORE_IDS = new Set(["q0", "q0_gender", "q0_reco_mode"]);
+
+  // ✅ 현재 추천 모드
+  $: mode = (typeof $onboarding.answers?.q0_reco_mode === "string"
+    ? ($onboarding.answers.q0_reco_mode as string)
+    : "llm");
+
+  // ✅ program 모드면: core 3개 + program 4개(시간1 + step3)만 남김
+  // ✅ llm/engine 모드면: program 질문은 제외하고 기존 23개(혹은 기존 세트)만 노출
+  $: visibleQuestions =
+    mode === "program"
+      ? QUESTIONS.filter((qq) => CORE_IDS.has(qq.id) || qq.dimension === "program")
+      : QUESTIONS.filter((qq) => qq.dimension !== "program");
+
+  // ✅ 화면에서 사용할 총 질문 수/현재 질문
+  $: total = visibleQuestions.length;
+
+  // ✅ step이 범위를 벗어나면 보정 (모드 변경 시 필수)
+  $: if ($onboarding.step > total - 1) {
+    setStep(Math.max(0, total - 1));
+  }
+
+  $: step = Math.min($onboarding.step, Math.max(0, total - 1));
+  $: q = visibleQuestions[step];
+
+  // ✅ 현재 답변 원본
+  $: answerRaw = q ? $onboarding.answers[q.id] : "";
+
+  // ✅ choice(라디오)용 selected string
+  $: selectedValue = typeof answerRaw === "string" ? answerRaw : "";
+
+  // ✅ multi(체크)용 selected array
+  $: selectedList = Array.isArray(answerRaw) ? answerRaw : [];
+
+  // ✅ 현재 질문이 multi인지
+  $: isMulti = q && (q as any).kind === "multi";
+
+  // ✅ 다음 버튼 활성화 조건
+  $: hasSelection = isMulti ? selectedList.length > 0 : Boolean(selectedValue);
+
   $: progress = total <= 1 ? 0 : Math.round((step / (total - 1)) * 100);
 
-  // 마지막 step에서 결과 미리보기 활성화(선택되면 즉시 보여줘도 되고)
+  // 마지막 step에서 결과 미리보기 활성화
   $: canShowPreview = step === total - 1;
 
   // =========================
@@ -112,7 +169,8 @@
     lastQid = q.id;
 
     if ((q as any).kind === "dob") {
-      const v = ($onboarding.answers[q.id] ?? "").trim();
+      const raw = $onboarding.answers[q.id];
+      const v = (typeof raw === "string" ? raw : "").trim();
       const [yy, mm, dd] = v.split("-");
       dobYear = yy ?? "";
       dobMonth = mm ?? "";
@@ -197,7 +255,7 @@
 
   function goNext() {
     if (!q) return;
-    if (!selected) return;
+    if (!hasSelection) return;
 
     if (step < total - 1) {
       nextStep(total - 1);
@@ -227,13 +285,12 @@
     // ✅ 서버로 보낼 RecommendInput (엔진이 steps 조합할 때 필요한 최소치 포함)
     const a = $onboarding.answers;
     const timeMin =
-      a.q5 === "long" ? 60 :
-      a.q5 === "normal" ? 30 :
-      a.q5 === "short" ? 15 :
-      15; // 혹시 값 없으면 기본
+      mode === "program"
+        ? Number(a.q_program_time ?? 15)
+        : (a.q5 === "long" ? 60 : a.q5 === "normal" ? 30 : a.q5 === "short" ? 15 : 15);
 
     const input: RecommendInput = {
-      answers: $onboarding.answers,
+      answers: $onboarding.answers as any,
       goals: ["체형", "감량"],
       
       constraints: {
@@ -252,6 +309,20 @@
 
       context: { experience_level: "beginner", weekly_days: 3 },
     };
+    // ✅ program 모드: 결과 섹션 없이 바로 플레이
+    if (mode === "program") {
+      // 로딩은 필요하니 recoState.loading으로 표시되게 하고 싶으면 showResults=true 유지해도 됨
+      showResults = false; // ✅ 결과 카드 영역은 숨김
+
+      await requestRecommendation(input);
+
+      // recoState.data가 들어오면 top_picks[0] 플레이
+      const pick = $recoState.data?.top_picks?.[0];
+      if (pick) {
+        openPlayer(pick);
+      }
+      return;
+    }
 
     showResults = true;
 
@@ -277,7 +348,7 @@
 
     // 스와이프 이동: 다음은 선택이 있어야만
     if (dx < 0) {
-      if (selected && step < total - 1) nextStep(total - 1);
+      if (hasSelection && step < total - 1) nextStep(total - 1);
     } else {
       if (step > 0) prevStep();
     }
@@ -445,8 +516,73 @@
                 <span>나이에 따라 추천 강도/회복 시간을 더 잘 맞출 수 있어</span>
               </div>
             </div>
+          {:else if (q as any).kind === "multi"}
+            <!-- ✅ MULTI(체크 토글) + 미리보기 -->
+            <div class="mt-5 space-y-2.5">
+              {#each (q as any).options as opt (opt.value)}
+                {@const checked = selectedList.includes(opt.value)}
+                <div
+                  class={[
+                    "flex w-full items-stretch gap-2 rounded-2xl border p-2 shadow-sm transition",
+                    "bg-zinc-50 border-zinc-200 hover:bg-white",
+                    "dark:bg-zinc-950/40 dark:border-zinc-800 dark:hover:bg-zinc-950/70",
+                    checked
+                      ? "border-emerald-400/70 bg-emerald-50 ring-2 ring-emerald-200/70 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+                      : "ring-0",
+                  ].join(" ")}
+                >
+                  <!-- ✅ 왼쪽: 토글 클릭 영역 -->
+                  <button
+                    type="button"
+                    class="flex flex-1 items-start gap-3 rounded-xl px-3 py-2 text-left"
+                    on:click={() => {
+                      toggleMultiAnswer(q.id, opt.value);
+                      if (showResults) resetReco();
+                    }}
+                  >
+                    <span
+                      class={[
+                        "mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md border shrink-0",
+                        checked
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-950/30",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    >
+                      {#if checked}✓{/if}
+                    </span>
+
+                    <div class="min-w-0">
+                      <div class="text-sm font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+                        {opt.label}
+                      </div>
+                      {#if opt.hint}
+                        <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                          {opt.hint}
+                        </div>
+                      {/if}
+                    </div>
+                  </button>
+
+                  <!-- ✅ 오른쪽: 미리보기 버튼 -->
+                  <button
+                    type="button"
+                    class="shrink-0 inline-flex items-center justify-center rounded-xl px-3 text-xs font-bold
+                          border border-zinc-200 bg-white shadow-sm hover:bg-zinc-50
+                          dark:border-zinc-800 dark:bg-zinc-950/30 dark:hover:bg-zinc-950/60
+                          disabled:opacity-40"
+                    disabled={!opt.thumbnail}
+                    on:click|stopPropagation={() => openPreview(opt)}
+                    title={opt.thumbnail ? "미리보기" : "이미지 없음"}
+                  >
+                    미리보기
+                  </button>
+                </div>
+              {/each}
+            </div>
+
           {:else}
-            <!-- 라디오 선택 -->
+            <!-- ✅ 라디오 선택(단일) -->
             <fieldset class="mt-5 space-y-2.5">
               <legend class="sr-only">선택지</legend>
 
@@ -456,7 +592,7 @@
                     "flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-4 shadow-sm transition",
                     "bg-zinc-50 border-zinc-200 hover:bg-white",
                     "dark:bg-zinc-950/40 dark:border-zinc-800 dark:hover:bg-zinc-950/70",
-                    selected === opt.value
+                    selectedValue === opt.value
                       ? "border-emerald-400/70 bg-emerald-50 ring-2 ring-emerald-200/70 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
                       : "ring-0",
                   ].join(" ")}
@@ -466,7 +602,7 @@
                     type="radio"
                     name={q.id}
                     value={opt.value}
-                    checked={selected === opt.value}
+                    checked={selectedValue === opt.value}
                     on:change={(e) => select((e.currentTarget as HTMLInputElement).value)}
                   />
 
@@ -593,7 +729,7 @@
               <div class="mt-4 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-950/40">
                 <div class="text-sm font-extrabold">왜 이게 맞냐면</div>
                 <ul class="mt-2 space-y-2">
-                  {#each pick.reasons as r (r.tag)}
+                  {#each pick.reasons as r, i (`${r.tag}-${i}`)}
                     <li class="flex items-start gap-2">
                       <!-- svelte-ignore element_invalid_self_closing_tag -->
                       <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -614,7 +750,10 @@
               <div class="mt-4">
                 <div class="flex items-center justify-between">
                   <div class="text-sm font-extrabold">
-                    추천 루틴 ({pick.routine.duration_min}분 · {pick.routine.level})
+                    추천 루틴
+                    ({Math.round(
+                      pick.routine.steps.reduce((acc, s) => acc + (s.seconds ?? 0), 0) / 60
+                    )}분 · {pick.routine.level})
                   </div>
                   <span class="text-xs text-zinc-500 dark:text-zinc-400" title="내 답변에 따라 자동 구성">
                     score: {pick.score}
@@ -687,9 +826,11 @@
                 </span>
               {/each}
             </div>
+            <!-- 
             <div class="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               {$recoState.data.meta.explain}
             </div>
+            -->
           </article>
 
           <!-- Alternatives -->
@@ -748,7 +889,7 @@
           class="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-4 text-base font-extrabold
                  text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] disabled:opacity-50"
           on:click={goNext}
-          disabled={!selected}
+          disabled={!hasSelection}
         >
           다음
         </button>
@@ -758,9 +899,9 @@
             class="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-4 text-base font-extrabold
                    text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] disabled:opacity-50"
             on:click={submit}
-            disabled={!selected}
+            disabled={!hasSelection}
           >
-            분석 시작
+            {mode === "program" ? "플레이 시작" : "분석 시작"}
           </button>
         {:else}
           <div class="grid grid-cols-2 gap-2">
@@ -796,6 +937,56 @@
       />
     </footer>
   </div>
+
+  <!-- 미리보기 모달 -->
+  {#if previewOpen}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4" on:click={closePreview}>
+      <div
+        class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-zinc-900"
+        transition:fade
+        on:click|stopPropagation
+      >
+        <div class="flex items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+          <div class="text-sm font-extrabold text-zinc-900 dark:text-zinc-50 truncate">
+            {previewTitle}
+          </div>
+          <button
+            class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm
+                  hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/30 dark:hover:bg-zinc-950/60"
+            on:click={closePreview}
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="p-4">
+          {#if previewImg}
+            <img
+              src={previewImg}
+              alt={previewTitle}
+              class="w-full rounded-xl border border-zinc-200 bg-zinc-50 object-contain dark:border-zinc-800 dark:bg-zinc-950/30"
+            />
+          {:else}
+            <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/30 dark:text-zinc-300">
+              미리보기 이미지가 없어요.
+            </div>
+          {/if}
+
+          <div class="mt-4">
+            <button
+              class="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-4 py-3 text-sm font-extrabold text-white"
+              on:click={closePreview}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- 뒤로가기 confirm모달 팝업 -->
   {#if showExitConfirm}

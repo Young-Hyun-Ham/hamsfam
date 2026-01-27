@@ -146,7 +146,7 @@ ${allowedStepIdsCsv}
 
 4) 시간 정합성
 - routine.steps[].seconds 합계는 duration_min*60 과 ±1800초 이내로 맞춰라
-- top_picks[].routine.duration_min은 top_picks[].routine.steps[].seconds 합계/60 을 우선하고, 없으면 15
+- top_picks[].routine.duration_min은 (top_picks[].routine.steps[].seconds 합계)/60 을 우선하고, 없으면 15
 
 5) 안전
 - injury_flags가 true인 부위/관절 관련 위험 동작은 steps에서 피하고,
