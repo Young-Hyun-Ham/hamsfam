@@ -44,6 +44,22 @@ export function setAnswer(qid: string, value: string) {
   }));
 }
 
+// ✅ multi 토글 헬퍼
+export function toggleMultiAnswer(id: string, optionValue: string) {
+  onboarding.update((s: any) => {
+    const cur = s.answers[id];
+    const arr = Array.isArray(cur) ? cur : [];
+    const next = arr.includes(optionValue)
+      ? arr.filter((v) => v !== optionValue)
+      : [...arr, optionValue];
+    return { ...s, answers: { ...s.answers, [id]: next } };
+  });
+}
+
+export function setStep(n: number) {
+  onboarding.update((s) => ({ ...s, step: Math.max(0, n | 0) }));
+}
+
 export function nextStep(max: number) {
   onboarding.update((s) => ({ ...s, step: Math.min(s.step + 1, max) }));
 }

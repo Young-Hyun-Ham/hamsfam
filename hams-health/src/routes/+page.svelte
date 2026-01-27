@@ -5,6 +5,11 @@
   import { theme, applyTheme, THEME_KEY } from "$lib/ui/theme";
   import type { Theme as ThemeMode } from "$lib/ui/theme";
 
+  import WorkoutPlayerModal from "$lib/components/WorkoutPlayerModal.svelte";
+  import { buildProgramOutput } from "$lib/onboarding/program.builder";
+  import { SUBTYPES_STEPS } from "$lib/onboarding/reco.data";
+  import { PROGRAM_FINISH_STEP_IDS, PROGRAM_MAIN_STEP_IDS, PROGRAM_START_STEP_IDS } from "$lib/onboarding/questions";
+
   const onStart = () => goto("/onboarding");
 
   // ✅ theme persistence
@@ -27,6 +32,9 @@
 
     if (mql?.addEventListener) mql.addEventListener("change", onMqlChange);
     else if ((mql as any)?.addListener) (mql as any).addListener(onMqlChange);
+
+    // 오늘의 추천
+    refreshPreview();
   });
 
   onDestroy(() => {
@@ -34,6 +42,86 @@
     if (mql.removeEventListener) mql.removeEventListener("change", onMqlChange);
     else if ((mql as any)?.removeListener) (mql as any).removeListener(onMqlChange);
   });
+
+  function pickOne<T>(arr: T[]) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+  function getMeta(id: string) {
+    return SUBTYPES_STEPS.find((s) => s.id === id);
+  }
+
+  // ✅ "오늘의 추천 예시" 데이터(랜덤 1개씩)
+  let previewStartId = "";
+  let previewMainId = "";
+  let previewFinishId = "";
+
+  function refreshPreview() {
+    previewStartId = pickOne(PROGRAM_START_STEP_IDS);
+    previewMainId = pickOne(PROGRAM_MAIN_STEP_IDS);
+    previewFinishId = pickOne(PROGRAM_FINISH_STEP_IDS);
+  }
+
+  // ✅ 플레이어 모달
+  let playerOpen = false;
+  let playerTitle = "오늘의 추천 예시";
+  let playerWarnings: Array<{ tag: string; text: string }> = [];
+  let playerSteps: Array<any> = [];
+
+  const fallbackImg = "/workouts/placeholder.png";
+
+  // ✅ buildProgramOutput 결과(top_picks[0])를 모달 step 형태로 변환
+  function toPlayerSteps(pick: any) {
+    const steps = (pick?.routine?.steps ?? []) as any[];
+    return steps.map((s: any, i: number) => {
+      const id: string | null = s?.id ?? s?.step_id ?? null;
+      const title: string = s?.title ?? s?.name ?? `Step ${i + 1}`;
+      const seconds: number = typeof s?.seconds === "number" ? Math.max(1, s.seconds) : 60;
+
+      const imgSrc: string =
+        s?.imgSrc ??
+        s?.imgsrc ??
+        (id ? `/workouts/${id}.png` : null) ??
+        fallbackImg;
+
+      return {
+        key: id ? `preview-${i}-${id}` : `preview-${i}-${title}`,
+        id: id ?? `unknown_${i}`,
+        seconds,
+        title,
+        imgSrc,
+        phase: s?.phase,
+      };
+    });
+  }
+
+  function playPreview() {
+    const input: any = {
+      answers: {
+        q_program_time: 4,
+        q_program_start_stretch: [previewStartId],
+        q_program_main_steps: [previewMainId],
+        q_program_finish_stretch: [previewFinishId],
+      },
+      goals: ["체형", "감량"],
+      constraints: { time_min: 15, equipment: ["none"], space: "small", noise_level: "low" },
+      context: { experience_level: "beginner", weekly_days: 3 },
+    };
+
+    const out = buildProgramOutput(input);
+    const pick = out?.top_picks?.[0];
+
+    if (!pick) return;
+
+    playerTitle = "오늘의 추천 예시";
+    playerWarnings = [];
+    playerSteps = toPlayerSteps(pick);
+    playerOpen = true;
+  }
+
+  // ✅ reactive 선언
+  $: startMeta = getMeta(previewStartId);
+  $: mainMeta = getMeta(previewMainId);
+  $: finMeta = getMeta(previewFinishId);
 </script>
 
 <svelte:head>
@@ -211,34 +299,53 @@
           >
             <div class="flex items-center justify-between">
               <div class="text-sm font-semibold">오늘의 추천 예시</div>
-              <span class="text-xs text-slate-500 dark:text-slate-400">Preview</span>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold shadow-sm
+                        hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60 dark:hover:bg-slate-900"
+                  on:click={refreshPreview}
+                  title="랜덤 새로 뽑기"
+                >
+                  랜덤
+                </button>
+
+                <button
+                  type="button"
+                  class="rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 px-3 py-1.5 text-xs font-extrabold text-white shadow-sm"
+                  on:click={playPreview}
+                  title="미리보기 재생"
+                >
+                  Preview ▶
+                </button>
+              </div>
             </div>
 
             <div class="mt-4 space-y-3">
               <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
                 <div class="text-xs">
                   <div class="font-semibold">워밍업</div>
-                  <div class="mt-0.5 text-slate-500 dark:text-slate-400">느리게 걷기 · 3분</div>
+                  <div class="mt-0.5 text-slate-500 dark:text-slate-400">{startMeta?.name ?? previewStartId}</div>
                 </div>
                 <div class="rounded-full bg-emerald-100 px-2 py-1 text-[11px] text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-                  easy
+                  warmup
                 </div>
               </div>
 
               <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
                 <div class="text-xs">
-                  <div class="font-semibold">근력(기초)</div>
-                  <div class="mt-0.5 text-slate-500 dark:text-slate-400">스쿼트 · 45초</div>
+                  <div class="font-semibold">본운동</div>
+                  <div class="mt-0.5 text-slate-500 dark:text-slate-400">{mainMeta?.name ?? previewMainId}</div>
                 </div>
                 <div class="rounded-full bg-sky-100 px-2 py-1 text-[11px] text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">
-                  work
+                  main
                 </div>
               </div>
 
               <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
                 <div class="text-xs">
                   <div class="font-semibold">쿨다운</div>
-                  <div class="mt-0.5 text-slate-500 dark:text-slate-400">스트레칭 · 2분</div>
+                  <div class="mt-0.5 text-slate-500 dark:text-slate-400">{finMeta?.name ?? previewFinishId}</div>
                 </div>
                 <div class="rounded-full bg-violet-100 px-2 py-1 text-[11px] text-violet-700 dark:bg-violet-900/40 dark:text-violet-200">
                   relax
@@ -256,7 +363,7 @@
         <!-- 하단 START -->
         <div class="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="text-xs text-slate-500 dark:text-slate-400">
-            Tip: 다크모드는 <span class="font-semibold">html.dark</span> 클래스 기준으로 적용돼.
+            Tip: 다크모드는 <span class="font-semibold">시스템 설정</span>을 따르거나, 상단 토글로 변경할 수 있어.
           </div>
 
           <button
@@ -280,4 +387,12 @@
       © {new Date().getFullYear()} Hams Health · Built with SvelteKit + Tailwind
     </footer>
   </div>
+
+  <WorkoutPlayerModal
+    open={playerOpen}
+    title={playerTitle}
+    steps={playerSteps}
+    warnings={playerWarnings}
+    onClose={() => (playerOpen = false)}
+  />
 </div>
