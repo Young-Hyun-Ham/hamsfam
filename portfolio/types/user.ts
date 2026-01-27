@@ -1,5 +1,5 @@
 // types/user.ts
-export type roleTypes = "guest" | "admin" | "user";
+export type roleTypes = "guest" | "admin" | "user" | "";
 
 export type User = {
   id: string;

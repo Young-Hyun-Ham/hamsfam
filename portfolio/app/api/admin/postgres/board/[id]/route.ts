@@ -6,10 +6,10 @@ function normalize(v: any) {
   return (v ?? "").toString().replace(/\s+/g, " ").trim();
 }
 
-export async function GET(_: NextRequest, ctx: { params: { id: string } }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const client = await db.connect();
   try {
-    const id = ctx.params.id;
+    const id = (await ctx.params).id;
     const res = await client.query(
       `
       SELECT
@@ -39,10 +39,10 @@ export async function GET(_: NextRequest, ctx: { params: { id: string } }) {
   }
 }
 
-export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const client = await db.connect();
   try {
-    const id = ctx.params.id;
+    const id = (await ctx.params).id;
     const body = await req.json().catch(() => ({}));
 
     const sets: string[] = [];
@@ -84,10 +84,10 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
   }
 }
 
-export async function DELETE(_: NextRequest, ctx: { params: { id: string } }) {
+export async function DELETE(_: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const client = await db.connect();
   try {
-    const id = ctx.params.id;
+    const id = (await ctx.params).id;
     await client.query(`DELETE FROM admin_board_posts WHERE id = $1`, [id]);
     return NextResponse.json({ ok: true });
   } catch (e: any) {

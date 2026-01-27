@@ -9,6 +9,7 @@ import { isCrossSite, setAccessTokenCookie, setRefreshTokenCookie } from '@/lib/
 
 import { jwtVerify, createRemoteJWKSet, type JWTPayload } from 'jose';
 import bcrypt from 'bcryptjs';
+import { roleTypes } from '@/types/user';
 
 const GOOGLE_JWKS = createRemoteJWKSet(
   new URL('https://www.googleapis.com/oauth2/v3/certs')
@@ -109,7 +110,7 @@ export async function GET(req: Request) {
     throw new Error('유저 정보가 없습니다.');
   }
 
-  const roles: string[] =
+  const roles: roleTypes[] =
   Array.isArray(user.roles)
     ? user.roles.map(String)
     : (typeof user.roles === 'string'
