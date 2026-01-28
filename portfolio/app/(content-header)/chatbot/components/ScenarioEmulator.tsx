@@ -142,7 +142,7 @@ export default function ScenarioEmulator({
   // =============================================================================
   // 1) 시나리오 데이터 로딩
   // =============================================================================
-  useEffect(() => {
+  useEffect(() => { 
     let mounted = true;
 
     const fetchScenarioLoadData = async () => {
