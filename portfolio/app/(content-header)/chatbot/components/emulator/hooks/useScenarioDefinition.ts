@@ -2,9 +2,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { useStore } from "@/store";
-import * as builderBackendService from "../../../../builder/services/backendService";
+
 import type { AnyEdge, AnyNode } from "../../../types";
+import { fetchScenarioDatas } from "../../../services/chatbotFirebaseService";
 
 export function useScenarioDefinition(scenarioKey: string) {
   const backend = useStore((s: any) => s.backend);
@@ -16,9 +18,7 @@ export function useScenarioDefinition(scenarioKey: string) {
     let mounted = true;
 
     const fetchScenarioData = async () => {
-      const data = await builderBackendService.fetchScenarioData(backend, {
-        scenarioId: scenarioKey,
-      });
+      const data: any = await fetchScenarioDatas({ scenarioId: scenarioKey });
       if (!mounted) return;
       setNodes(data.nodes);
       setEdges(data.edges);

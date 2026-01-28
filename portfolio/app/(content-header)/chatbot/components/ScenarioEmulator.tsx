@@ -2,12 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/store";
-import * as builderBackendService from "../../builder/services/backendService";
 import ScenarioNodeControls from "./ScenarioNodeControls";
 import useChatbotStore from "../store";
 import { AnyEdge, AnyNode, ChatStep } from "../types";
 import { makeStepId, resolveTemplate } from "../utils";
 import { useEngineLogger } from "../utils/engine";
+import { fetchScenarioDatas } from "../services/chatbotFirebaseService";
 
 /** 루트 노드 찾기 */
 function findRootNode(nodes: AnyNode[], edges: AnyEdge[]): AnyNode | null {
@@ -145,14 +145,14 @@ export default function ScenarioEmulator({
   useEffect(() => {
     let mounted = true;
 
-    const fetchScenarioData = async () => {
-      const data = await builderBackendService.fetchScenarioData(backend, { scenarioId: scenarioKey });
+    const fetchScenarioLoadData = async () => {
+      const data: any = await fetchScenarioDatas({ scenarioId: scenarioKey });
       if (!mounted) return;
       setNodes(data.nodes);
       setEdges(data.edges);
     };
 
-    fetchScenarioData();
+    fetchScenarioLoadData();
 
     return () => {
       mounted = false;

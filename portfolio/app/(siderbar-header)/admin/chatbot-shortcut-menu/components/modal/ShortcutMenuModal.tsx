@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import * as backendService from '@/app/(content-header)/builder/services/backendService';
+import * as backendService from '@/app/(siderbar-header)/admin/builder/services/backendService';
 
 import { FormState, ShortcutGroup } from "../../types/types";
 import { ChevronDown } from "lucide-react";
