@@ -1,0 +1,30 @@
+<!-- HC Logo A (SVG) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="HC">
+  <defs>
+    <linearGradient id="g" x1="40" y1="24" x2="216" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="0.55" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="b"/>
+      <feColorMatrix in="b" type="matrix"
+        values="0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 .25 0" result="s"/>
+      <feMerge>
+        <feMergeNode in="s"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="20" y="20" width="216" height="216" rx="56" fill="url(#g)" filter="url(#soft)"/>
+  <rect x="34" y="34" width="188" height="188" rx="48" fill="rgba(255,255,255,0.12)"/>
+
+  <g fill="#fff">
+    <path d="M88 78c6 0 10 4 10 10v26h48V88c0-6 4-10 10-10s10 4 10 10v80c0 6-4 10-10 10s-10-4-10-10v-30H98v30c0 6-4 10-10 10s-10-4-10-10V88c0-6 4-10 10-10z"/>
+    <path d="M196 102c-5-9-16-14-29-14-22 0-38 16-38 40s16 40 38 40c13 0 24-5 29-14 3-5 9-6 14-3 5 3 6 9 3 14-9 16-27 26-46 26-33 0-60-25-60-63s27-63 60-63c19 0 37 10 46 26 3 5 2 11-3 14-5 3-11 2-14-3z" opacity="0.92"/>
+  </g>
+</svg>

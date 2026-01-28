@@ -1,0 +1,48 @@
+/* src/routes/layout.css */
+@import "tailwindcss";
+
+/* ✅ 이게 핵심: Tailwind v4의 dark: 변형을 'class(.dark)' 기반으로 바꿈 */
+@custom-variant dark (&:is(.dark *));
+
+@plugin "@tailwindcss/typography";
+
+/* 라이트 기본값 */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  color-scheme: light;
+}
+
+/* 토글용 변수 (Tailwind 유틸과 별개로 body 기본색도 같이 바뀜) */
+html.dark {
+  --background: #000000;
+  --foreground: #ededed;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 레이아웃 기본 */
+html, body { height: 100%; }
+body { margin: 0; }
+
+.app-root { height: 100%; display: flex; flex-direction: column; }
+.app-main { height: 100%; min-height: 0; }
+
+/* 채팅 시 llm 로딩 표시 */
+.loading-dots span {
+  display: inline-block;
+  animation: loadingDots 1.2s infinite;
+  opacity: 0.2;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadingDots {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
