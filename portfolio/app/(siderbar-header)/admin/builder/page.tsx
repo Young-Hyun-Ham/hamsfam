@@ -12,8 +12,11 @@ import * as backendService from './services/backendService';
 import { Scenarios } from './types/types';
 
 import useBuilderStore from './store/index';
+import { useStore } from '@/store';
 
 const Scenario = () => {
+  // admin siderbar collapse state
+  const setCollapsed = useStore((s: any) => s.setAdminSidebarCollapsed);
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +29,7 @@ const Scenario = () => {
     id: '',
     name: '',
   });
+  
   const backend = useBuilderStore(s => s.backend);
   const hasScenario = !!selectedScenario && Object.keys(selectedScenario).length > 0;
   
@@ -51,6 +55,9 @@ const Scenario = () => {
       );
       
       setSelectedScenario({ ...scenario, lastUsedAt: newLastUsedAt });
+
+      // admin siderbar collapse state
+      setCollapsed(true);
       
     } catch (error) {
       console.error("Failed to update last used time:", error);
@@ -108,6 +115,9 @@ const Scenario = () => {
 
   const onClose = () => {
     setSelectedScenario(null);
+    
+    // admin siderbar collapse state
+    setCollapsed(false);
   }
 
   return (

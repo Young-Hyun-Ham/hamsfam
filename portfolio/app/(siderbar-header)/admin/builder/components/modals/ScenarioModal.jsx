@@ -7,7 +7,6 @@ import styles from './ScenarioModal.module.css';
 
 function ScenarioModal({ isOpen, onClose, onSave, scenario }) {
   const [name, setName] = useState('');
-  // <<< [수정] job 상태 제거 >>>
   // const [job, setJob] = useState('Batch');
   const [description, setDescription] = useState('');
   const { showAlert } = useModal();
@@ -18,12 +17,10 @@ function ScenarioModal({ isOpen, onClose, onSave, scenario }) {
     if (isOpen) {
       if (isEditMode) {
         setName(scenario.name || '');
-        // <<< [수정] job 상태 설정 제거 >>>
         // setJob(scenario.job || 'Batch');
         setDescription(scenario.description || '');
       } else {
         setName('');
-        // <<< [수정] job 상태 설정 제거 >>>
         // setJob('Batch');
         setDescription('');
       }
@@ -45,12 +42,13 @@ function ScenarioModal({ isOpen, onClose, onSave, scenario }) {
   }
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <div
+      className={styles.modalOverlay}
+      // onClick={onClose}
+    >
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <h2>{isEditMode ? 'Edit Scenario' : 'Create New Scenario'}</h2>
-        {/* <<< [수정] 문구에서 Job Type 제거 --- */}
         <p>{isEditMode ? 'Edit the name and description of your scenario.' : 'Enter a name and optionally add a description for your new scenario.'}</p>
-        {/* --- [수정 끝] >>> */}
         <form onSubmit={handleSubmit}>
           <label className={styles.label}>Name</label>
           <input
@@ -61,7 +59,6 @@ function ScenarioModal({ isOpen, onClose, onSave, scenario }) {
             placeholder="Scenario Name"
             autoFocus
           />
-          {/* --- 👇 [수정] Job Type 선택 UI 숨김 --- */}
           {/*
           <label className={styles.label}>Job Type</label>
           <select
@@ -74,7 +71,6 @@ function ScenarioModal({ isOpen, onClose, onSave, scenario }) {
             <option value="Long Transaction">Long Transaction</option>
           </select>
           */}
-          {/* --- 👆 [수정 끝] --- */}
           <label className={styles.label}>Description (Optional)</label>
           <textarea
             className={styles.input}

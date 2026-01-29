@@ -42,6 +42,14 @@ export const useStore: any = create((set: any, get: any) => ({
   sidebarMenus: [],
   setSidebarMenus: (data: SidebarMenu) => { set({ sidebarMenus: data }) },
 
+  // ==============================================================================
+  // admin sidebar collapse state
+  adminSidebarCollapsed: false,
+  setAdminSidebarCollapsed: (v: any) => set({ adminSidebarCollapsed: v }),
+  toggleAdminSidebarCollapsed: () =>
+    set({ adminSidebarCollapsed: !get().adminSidebarCollapsed }),
+  // ==============================================================================
+
   setUser: (user: User) => { set({ user }); },
   setRoles: (role: string) => {
     const user = get().user;
