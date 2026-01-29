@@ -141,7 +141,7 @@ const ScenarioList = ({ backend, onSelect, onAddScenario, onEditScenario, scenar
   const user = useStore((s: any) => s.user);
 
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('updatedAt'); // 'updatedAt' 또는 'lastUsedAt'
+  const [sortBy, setSortBy] = useState('updatedAt');
   const { showAlert, showConfirm } = useModal();
 
   useEffect(() => {
@@ -267,13 +267,11 @@ const ScenarioList = ({ backend, onSelect, onAddScenario, onEditScenario, scenar
                 <div style={styles.scenarioHeader}>
                   <span style={styles.scenarioName} title={scenario.name}>{scenario.name}</span>
                   
-                  {/* --- 👇 [수정] formatTimeAgo 함수 사용 --- */}
                   {lastUsedAtDate && !isNaN(lastUsedAtDate) && (
                     <span style={styles.scenarioTimestamp}>
                       (Used: {formatTimeAgo(lastUsedAtDate)})
                     </span>
                   )}
-                  {/* --- 👆 [수정 끝] --- */}
                 </div>
               </div>
               <div style={styles.buttonGroup}>

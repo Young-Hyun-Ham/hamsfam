@@ -23,6 +23,13 @@ export default function IframePage() {
         isPopup: true,
       },
       {
+        key: "hams-chat",
+        label: "Chatting",
+        desc: "Hams Chat",
+        href: "https://hams-chat.vercel.app",
+        isPopup: true,
+      },
+      {
         key: "naver",
         label: "네이버",
         desc: "NAVER",

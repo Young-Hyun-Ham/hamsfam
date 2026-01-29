@@ -23,7 +23,9 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   const logout = useStore((s: any) => s.logout);
   const backend = useStore((s: any) => s.backend);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // admin sidebar collapse state
+  const sidebarCollapsed = useStore((s: any) => s.adminSidebarCollapsed);
+  const setAdminSidebarCollapsed = useStore((s: any) => s.setAdminSidebarCollapsed);
   
   useEffect(() => {
     if (!authChecked) return;
@@ -106,7 +108,7 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
   };
 
   const handleCollapse = () => {
-    setSidebarCollapsed(true);
+    setAdminSidebarCollapsed(true);
     setMenuOpen(false);
   };
 
@@ -169,7 +171,7 @@ export default function ResizableSidebarLayout({ header, sidebar, children }: Si
             {sidebarCollapsed ? (
               // 펼치기 아이콘만 표시
               <button
-                onClick={() => setSidebarCollapsed(false)}
+                onClick={() => setAdminSidebarCollapsed(false)}
                 className="size-7 grid place-items-center rounded-md hover:bg-gray-100 cursor-pointer"
               >
                 {/* 펼치기 아이콘 */}
