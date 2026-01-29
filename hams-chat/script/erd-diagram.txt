@@ -1,0 +1,84 @@
+%% mermaid code
+
+erDiagram
+  USERS ||--o{ SESSIONS : has
+  USERS ||--o{ ROOM_MEMBERS : joins
+  ROOMS ||--o{ ROOM_MEMBERS : contains
+  ROOMS ||--o{ MESSAGES : has
+  USERS ||--o{ MESSAGES : sends
+  MESSAGES ||--o{ MESSAGE_ATTACHMENTS : has
+  MESSAGES ||--o{ MESSAGE_REACTIONS : has
+  USERS ||--o{ MESSAGE_REACTIONS : reacts
+  ROOMS ||--o{ MESSAGE_READS : has
+  USERS ||--o{ MESSAGE_READS : reads
+
+  USERS {
+    uuid id PK
+    text email UK
+    text display_name
+    text avatar_url
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  SESSIONS {
+    text id PK
+    uuid user_id FK
+    timestamptz expires_at
+    timestamptz created_at
+  }
+
+  ROOMS {
+    uuid id PK
+    room_type type
+    text title
+    uuid created_by FK
+    text dm_key UK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  ROOM_MEMBERS {
+    uuid room_id PK, FK
+    uuid user_id PK, FK
+    text role
+    timestamptz joined_at
+    timestamptz last_seen_at
+  }
+
+  MESSAGES {
+    uuid id PK
+    uuid room_id FK
+    uuid sender_id FK
+    message_type type
+    text content
+    jsonb metadata
+    timestamptz edited_at
+    timestamptz deleted_at
+    timestamptz created_at
+  }
+
+  MESSAGE_ATTACHMENTS {
+    uuid id PK
+    uuid message_id FK
+    text kind
+    text url
+    text file_name
+    text mime_type
+    bigint byte_size
+    timestamptz created_at
+  }
+
+  MESSAGE_REACTIONS {
+    uuid message_id PK, FK
+    uuid user_id PK, FK
+    text emoji PK
+    timestamptz created_at
+  }
+
+  MESSAGE_READS {
+    uuid room_id PK, FK
+    uuid user_id PK, FK
+    uuid last_read_message_id FK
+    timestamptz last_read_at
+  }
