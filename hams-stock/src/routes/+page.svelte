@@ -117,7 +117,7 @@
   let options: StockOption[] = [];
   let holdingList: Holding[] = [];
 
-  // 파생 KPI(퍼블리싱용)
+  // 파생 KPI
   $: holdingCount = holdingList.length;
   $: selectedHolding = selectedCode === "ALL"
     ? null
@@ -143,12 +143,24 @@
     ];
   });
 
-  async function fetchDemo() {
+  function diffDays(aYmd: string, bYmd: string) {
+    // b - a (일)
+    const a = new Date(aYmd + "T00:00:00");
+    const b = new Date(bYmd + "T00:00:00");
+    return Math.floor((b.getTime() - a.getTime()) / 86400000);
+  }
+
+  function addDays(ymd: string, days: number) {
+    const d = new Date(ymd + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return toYmd(d);
+  }
+
+  async function fetchKis() {
     errorMsg = "";
     loading = true;
 
     try {
-      // 전체는 차트 비활성(요구사항 스타일)
       if (selectedCode === "ALL") {
         series = [];
         baseClose = null;
@@ -157,21 +169,47 @@
         return;
       }
 
-      const s = makeDemoSeries(selectedCode, baseDate);
-      series = s;
+      const today = toYmd(new Date());
+      const daysFromBase = diffDays(baseDate, today);
 
-      // 기준일: baseDate와 가장 가까운 지점으로 매칭(퍼블리싱용)
-      const idx = Math.max(0, s.findIndex((p) => p.date >= baseDate));
+      // ✅ 규칙: 30일 이내=D(최근30일), 30초과=M(기준~오늘), 365초과=Y(기준~오늘)
+      const period =
+        daysFromBase > 365 ? "Y" :
+        daysFromBase > 30 ? "M" : "D";
+
+      const from =
+        period === "D"
+          ? addDays(today, -30)   // 지금과 같게: 최근 30일
+          : baseDate;             // 월/년: 기준일~오늘
+
+      const to = today;
+
+      // 1) 차트 시리즈
+      const r1 = await fetch(
+        `/api/kis/daily?code=${selectedCode}&from=${from}&to=${to}&period=${period}`
+      );
+      if (!r1.ok) throw new Error(await r1.text());
+      const j1 = await r1.json();
+      series = j1.series ?? [];
+
+      // 2) 기준일 종가 매칭: baseDate 이상인 첫 포인트(없으면 첫 포인트)
+      const idx = series.findIndex((p: PricePoint) => p.date >= baseDate);
       const baseIdx = idx === -1 ? 0 : idx;
+      baseClose = series[baseIdx]?.close ?? null;
 
-      baseClose = s[baseIdx]?.close ?? null;
-      currentPrice = s[s.length - 1]?.close ?? null;
+      // 3) 현재가
+      const r2 = await fetch(`/api/kis/quote?code=${selectedCode}`);
+      if (!r2.ok) throw new Error(await r2.text());
+      const j2 = await r2.json();
+      currentPrice = j2.currentPrice ?? (series.at(-1)?.close ?? null);
+
     } catch (e: any) {
       errorMsg = e?.message ?? "조회 중 오류가 발생했어요.";
     } finally {
       loading = false;
     }
   }
+
 
   function resetFilters() {
     baseDate = toYmd(new Date());
@@ -276,7 +314,7 @@
               </button>
               <button
                 class="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:brightness-110 active:brightness-95 disabled:opacity-60 sm:w-auto"
-                on:click={fetchDemo}
+                on:click={fetchKis}
                 disabled={loading}
               >
                 {loading ? "조회 중..." : "조회"}
@@ -379,7 +417,7 @@
                       class="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:brightness-110"
                       on:click={() => {
                         selectedCode = h.code;
-                        fetchDemo();
+                        fetchKis();
                       }}
                     >
                       선택

@@ -10,13 +10,41 @@
   let canvasEl: HTMLCanvasElement | null = null;
   let chart: any = null;
 
-  function formatDateShort(ymd: string) {
-    // "YYYY-MM-DD" -> "MM-DD"
-    if (!ymd) return "";
-    const m = ymd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!m) return ymd;
-    return `${m[2]}-${m[3]}`;
+  type Granularity = "D" | "M" | "Y";
+
+  /**
+   * series 전체 기간을 보고 일/월/년 판단
+   */
+  function inferGranularity(series: { date: string }[]): Granularity {
+    if (!series || series.length < 2) return "D";
+
+    const first = new Date(series[0].date + "T00:00:00");
+    const last = new Date(series[series.length - 1].date + "T00:00:00");
+    const days = Math.floor((last.getTime() - first.getTime()) / 86400000);
+
+    if (days > 365) return "Y";
+    if (days > 30) return "M";
+    return "D";
   }
+
+  function formatAxisDate(ymd: string, g: Granularity) {
+    if (!ymd) return "";
+    const d = new Date(ymd + "T00:00:00");
+
+    if (g === "Y") {
+      return String(d.getFullYear());          // 2023
+    }
+    if (g === "M") {
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${d.getFullYear()}-${m}`;        // 2023-07
+    }
+
+    // D
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${mm}-${dd}`;                      // 07-21
+  }
+
 
   function formatWon(v: unknown) {
     const n = typeof v === "number" ? v : Number(v);
@@ -51,6 +79,7 @@
     const data = series.map((p) => p.close);
 
     const colors = getThemeColors();
+    const granularity = inferGranularity(series);
 
     chart = new Chart(canvasEl, {
       type: "line",
@@ -91,10 +120,15 @@
             displayColors: false,
             callbacks: {
               // 상단 제목: 원본 날짜
+              // title: (items: any[]) => {
+              //   const idx = items?.[0]?.dataIndex ?? 0;
+              //   const d = series?.[idx]?.date ?? "";
+              //   return d ? `날짜: ${d}` : "";
+              // },
               title: (items: any[]) => {
-                const idx = items?.[0]?.dataIndex ?? 0;
-                const d = series?.[idx]?.date ?? "";
-                return d ? `날짜: ${d}` : "";
+                const idx = items[0]?.dataIndex ?? 0;
+                const d = labels[idx];
+                return formatAxisDate(d, granularity);
               },
               // 라벨: 원화 포맷
               label: (item: any) => `종가: ${formatWon(item.parsed?.y)}`,
@@ -116,12 +150,15 @@
             ticks: {
               color: colors.tick,
               autoSkip: true,
-              maxTicksLimit: 5, // ✅ 요청: 5개만 표시
               maxRotation: 0,
               minRotation: 0,
-              callback: (value: any, index: number) => {
-                const label = labels[index] as string;
-                return formatDateShort(label); // ✅ "MM-DD"로 더 깔끔
+              maxTicksLimit:
+                granularity === "Y" ? 6 :
+                granularity === "M" ? 8 :
+                10,
+              callback: (_value: any, index: any) => {
+                const d = labels[index];
+                return formatAxisDate(d, granularity);
               },
             },
           },
