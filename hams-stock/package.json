@@ -25,6 +25,8 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
-		"chart.js": "^4.5.1"
+		"@types/node": "^25.2.0",
+		"chart.js": "^4.5.1",
+		"youtube-transcript": "^1.2.1"
 	}
 }
