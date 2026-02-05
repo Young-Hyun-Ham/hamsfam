@@ -21,8 +21,9 @@ export async function qstashPublishJSON(opts: PublishOpts) {
   if (!token) throw new Error("QSTASH_TOKEN missing");
 
   const base = normalizeBaseUrl(QSTASH_URL);
-  const publishUrl = `${base}/v2/publish/${encodeURIComponent(opts.url)}`;
-
+  const publishUrl = `${base}/${encodeURIComponent(opts.url)}`;
+  console.log("[QSTASH base]", base);
+  console.log("[QSTASH publishUrl]", publishUrl);
   const h: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
