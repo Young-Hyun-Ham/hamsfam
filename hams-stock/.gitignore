@@ -25,3 +25,6 @@ vite.config.ts.timestamp-*
 # Package manager files
 *-lock.json
 *-lock.yaml
+
+# Firebase admin SDK key
+hams-stock-firebase-adminsdk-key.json

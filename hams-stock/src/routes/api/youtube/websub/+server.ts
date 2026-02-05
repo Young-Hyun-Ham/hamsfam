@@ -1,50 +1,60 @@
 // src/routes/api/youtube/websub/+server.ts
-import { json } from "@sveltejs/kit";
+import { json, text } from "@sveltejs/kit";
 import { qstashPublishJSON } from "$lib/server/qstash";
+import { PUBLIC_BASE_URL } from "$env/static/public";
 
-function extractFromAtom(xml: string) {
-  const videoId = xml.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1]?.trim() ?? "";
-  const title = xml.match(/<title>([^<]+)<\/title>/)?.[1]?.trim() ?? "";
-  const link = xml.match(/<link[^>]+href="([^"]+)"[^>]*\/>/)?.[1]?.trim() ?? "";
-  const published = xml.match(/<published>([^<]+)<\/published>/)?.[1]?.trim() ?? "";
-  return { videoId, title, link, published };
+function extractFirst(xml: string, re: RegExp) {
+  const m = xml.match(re);
+  return m?.[1] ?? "";
 }
 
 export async function GET({ url }: any) {
-  const challenge = url.searchParams.get("hub.challenge");
-  if (!challenge) return new Response("missing hub.challenge", { status: 400 });
-  return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+  // Hub verification
+  const challenge =
+    url.searchParams.get("hub.challenge") ||
+    url.searchParams.get("hub_challenge");
+
+  if (!challenge) return text("missing challenge", { status: 400 });
+  return text(challenge, { status: 200 });
 }
 
-export async function POST({ request }: any) {
+export async function POST({ request, url }: any) {
   try {
     const xml = await request.text();
-    const info = extractFromAtom(xml);
 
-    // 삭제/수정 이벤트 등 videoId가 없을 수 있음 → 그냥 OK
-    if (!info.videoId) return new Response("ok", { status: 200 });
+    // Atom XML 내에서 videoId 추출
+    const videoId = extractFirst(xml, /<yt:videoId>([^<]+)<\/yt:videoId>/i);
+    const channelId = extractFirst(xml, /<yt:channelId>([^<]+)<\/yt:channelId>/i);
 
-    const base = process.env.PUBLIC_APP_URL;
-    if (!base) throw new Error("PUBLIC_APP_URL env missing");
+    // title은 feed title일 수도 있어서 entry title을 우선 매칭 시도
+    const entryTitle =
+      extractFirst(xml, /<entry>[\s\S]*?<title>([^<]+)<\/title>[\s\S]*?<\/entry>/i) ||
+      extractFirst(xml, /<title>([^<]+)<\/title>/i);
 
-    const jobUrl = `${base.replace(/\/$/, "")}/api/youtube/jobs/analyze`;
+    const publishedAt =
+      extractFirst(xml, /<entry>[\s\S]*?<published>([^<]+)<\/published>[\s\S]*?<\/entry>/i) ||
+      extractFirst(xml, /<published>([^<]+)<\/published>/i) ||
+      extractFirst(xml, /<updated>([^<]+)<\/updated>/i);
 
-    // ✅ 무거운 작업은 큐로
+    if (!videoId) {
+      // 삭제/변경 이벤트 등 변형일 수 있어 200 처리
+      return json({ ok: true, skipped: true, reason: "videoId not found" });
+    }
+
+    const origin = PUBLIC_BASE_URL || url.origin;
+    const processUrl = `${origin}/api/youtube/process`;
+
+    // ✅ QStash enqueue (videoId 단위 중복 방지)
     await qstashPublishJSON({
-      url: jobUrl,
-      body: {
-        videoId: info.videoId,
-        title: info.title,
-        link: info.link,
-        published: info.published,
-        receivedAt: new Date().toISOString(),
-      },
+      url: processUrl,
+      body: { videoId, channelId, title: entryTitle, publishedAt },
+      deduplicationId: `yt:${videoId}`,
+      retries: 3,
+      timeout: "30s",
     });
 
-    // ✅ 웹훅은 즉시 200 OK
-    return new Response("ok", { status: 200 });
+    return json({ ok: true, queued: true, videoId });
   } catch (e: any) {
-    // 운영에서는 hub 재시도 방지 위해 200으로 삼키고 로그만 남기는 것도 고려
-    return json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
+    return json({ ok: false, error: e?.message ?? "websub failed" }, { status: 500 });
   }
 }

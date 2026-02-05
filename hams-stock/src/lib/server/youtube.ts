@@ -1,5 +1,6 @@
 // src/lib/server/youtube.ts
-const YT_API_KEY = process.env.YOUTUBE_API_KEY || "";
+import { YOUTUBE_API_KEY } from "$env/static/private";
+const YT_API_KEY = YOUTUBE_API_KEY || "";
 
 /**
  * 지원 형태
@@ -44,4 +45,26 @@ export async function resolveChannelId(input: string): Promise<string> {
 export function makeChannelFeedUrl(channelId: string) {
   // WebSub topic
   return `https://www.youtube.com/xml/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
+}
+
+export async function getVideoSnippet(videoId: string) {
+  if (!YT_API_KEY) throw new Error("YOUTUBE_API_KEY is required");
+
+  const api =
+    `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(videoId)}` +
+    `&key=${encodeURIComponent(YT_API_KEY)}`;
+
+  const res = await fetch(api);
+  if (!res.ok) throw new Error(`YouTube API error: ${res.status} ${await res.text()}`);
+
+  const data = await res.json();
+  const sn = data?.items?.[0]?.snippet;
+  if (!sn) throw new Error("video snippet not found");
+
+  return {
+    title: String(sn.title ?? ""),
+    description: String(sn.description ?? ""),
+    publishedAt: String(sn.publishedAt ?? ""),
+    channelTitle: String(sn.channelTitle ?? ""),
+  };
 }

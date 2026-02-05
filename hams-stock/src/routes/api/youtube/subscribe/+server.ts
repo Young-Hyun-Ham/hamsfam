@@ -1,37 +1,37 @@
 // src/routes/api/youtube/subscribe/+server.ts
 import { json } from "@sveltejs/kit";
 import { resolveChannelId, makeChannelFeedUrl } from "$lib/server/youtube";
+import { PUBLIC_BASE_URL } from "$env/static/public";
 
 const HUB_URL = "https://pubsubhubbub.appspot.com/subscribe";
 
-export async function POST({ request }: any) {
+export async function POST({ request, url }: any) {
   try {
-    const body = await request.json();
-    const channelUrl = String(body?.channelUrl ?? "").trim();
-    if (!channelUrl) return json({ ok: false, error: "channelUrl required" }, { status: 400 });
+    const { channelUrl } = await request.json();
+    if (!channelUrl) {
+      return json({ ok: false, error: "channelUrl is required" }, { status: 400 });
+    }
 
-    const channelId = await resolveChannelId(channelUrl);
+    const channelId = await resolveChannelId(String(channelUrl));
     const topic = makeChannelFeedUrl(channelId);
 
-    // callback은 반드시 외부에서 접근 가능한 공개 URL이어야 함
-    const base = process.env.PUBLIC_APP_URL;
-    if (!base) throw new Error("PUBLIC_APP_URL env missing");
-    const callback = `${base.replace(/\/$/, "")}/api/youtube/websub`;
+    const origin = PUBLIC_BASE_URL || url.origin;
+    const callback = `${origin}/api/youtube/websub`;
 
-    // WebSub 구독 요청(폼)
-    const form = new URLSearchParams();
-    form.set("hub.mode", "subscribe");
-    form.set("hub.topic", topic);
-    form.set("hub.callback", callback);
-    form.set("hub.verify", "async");
+    const body = new URLSearchParams({
+      "hub.mode": "subscribe",
+      "hub.topic": topic,
+      "hub.callback": callback,
+      "hub.verify": "async",
+    });
 
     const res = await fetch(HUB_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: form.toString(),
+      body,
     });
 
-    // 보통 202 Accepted가 옴(검증은 hub가 GET callback으로 challenge)
+    // Hub는 보통 202 Accepted로 응답함
     if (!res.ok && res.status !== 202) {
       throw new Error(`Hub subscribe failed: ${res.status} ${await res.text()}`);
     }
@@ -43,9 +43,9 @@ export async function POST({ request }: any) {
       topic,
       callback,
       hubStatus: res.status,
-      note: "곧 Hub가 callback(GET)으로 challenge 검증을 시도할 거야.",
+      note: "업로드 감지(WebSub) 파이프라인 ON. Hub가 callback 검증(GET hub.challenge)을 곧 시도합니다.",
     });
   } catch (e: any) {
-    return json({ ok: false, error: e?.message ?? String(e) }, { status: 500 });
+    return json({ ok: false, error: e?.message ?? "subscribe failed" }, { status: 500 });
   }
 }

@@ -15,15 +15,23 @@
     latestVideo?: { title: string; url: string; publishedAt: string };
     picks?: Pick[];
     error?: string;
+    warning?: any;
   };
 
   type Row = {
     id: string;
     url: string;
+
+    /** ✅ "유튜브 구독"이 아니라 "업로드 감지 파이프라인 ON/OFF" */
     enabled: boolean;
+
     loading: boolean;
     error: string;
-    subscribeInfo?: { channelId: string; topic: string; callback: string } | null;
+
+    /** ✅ WebSub 등록 정보(표현도 '모니터링 등록') */
+    monitorInfo?: { channelId: string; topic: string; callback: string } | null;
+
+    /** ✅ 미리보기(최신 영상 자막→AI→TopPick) */
     result: AnalysisResult | null;
   };
 
@@ -37,11 +45,14 @@
   }
 
   let rows: Row[] = [
-    { id: uid(), url: "", enabled: false, loading: false, error: "", subscribeInfo: null, result: null },
+    { id: uid(), url: "", enabled: false, loading: false, error: "", monitorInfo: null, result: null },
   ];
 
   function addRow() {
-    rows = [...rows, { id: uid(), url: "", enabled: false, loading: false, error: "", subscribeInfo: null, result: null }];
+    rows = [
+      ...rows,
+      { id: uid(), url: "", enabled: false, loading: false, error: "", monitorInfo: null, result: null },
+    ];
   }
 
   function removeRow(id: string) {
@@ -49,26 +60,30 @@
     rows = rows.filter((r) => r.id !== id);
   }
 
-  async function subscribeChannel(rowId: string) {
+  /** ✅ ON: WebSub 구독 등록 = "업로드 감지 파이프라인 활성화" */
+  async function enableMonitor(rowId: string) {
     const r = rows.find((x) => x.id === rowId);
     if (!r) return;
 
     const channelUrl = r.url.trim();
     if (!isProbablyYoutubeUrl(channelUrl)) {
-      rows = rows.map((x) => (x.id === rowId ? { ...x, error: "유튜브 채널/핸들 주소를 입력해줘." } : x));
+      rows = rows.map((x) =>
+        x.id === rowId ? { ...x, error: "유튜브 채널/핸들 주소를 입력해줘." } : x
+      );
       return;
     }
 
     rows = rows.map((x) => (x.id === rowId ? { ...x, loading: true, error: "" } : x));
 
     try {
+      // ✅ 서버에서 WebSub 구독 등록(= 업로드 푸시 이벤트 수신 준비)
       const res = await fetch("/api/youtube/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ channelUrl }),
       });
       const j = await res.json();
-      if (!res.ok || !j?.ok) throw new Error(j?.error ?? "구독 등록 실패");
+      if (!res.ok || !j?.ok) throw new Error(j?.error ?? "모니터링 등록 실패");
 
       rows = rows.map((x) =>
         x.id === rowId
@@ -76,35 +91,43 @@
               ...x,
               loading: false,
               enabled: true,
-              subscribeInfo: { channelId: j.channelId, topic: j.topic, callback: j.callback },
+              monitorInfo: { channelId: j.channelId, topic: j.topic, callback: j.callback },
             }
           : x
       );
     } catch (e: any) {
       rows = rows.map((x) =>
-        x.id === rowId ? { ...x, loading: false, enabled: false, subscribeInfo: null, error: e?.message ?? "구독 실패" } : x
+        x.id === rowId
+          ? { ...x, loading: false, enabled: false, monitorInfo: null, error: e?.message ?? "등록 실패" }
+          : x
       );
     }
   }
 
-  async function unsubscribeChannel(rowId: string) {
-    // ⚠️ WebSub "unsubscribe"도 가능하지만(동일 hub.mode=unsubscribe),
-    // 초기 단계에서는 UI상 OFF만 처리하고, 필요하면 unsubscribe API도 추가하면 됨.
+  /** ✅ OFF: 현 단계에서는 UI상 OFF만(필요하면 hub.mode=unsubscribe API 추가) */
+  async function disableMonitor(rowId: string) {
     rows = rows.map((x) => (x.id === rowId ? { ...x, enabled: false, result: null } : x));
   }
 
+  /** ✅ 미리보기: "최신 영상" 기준 자막→AI 검증→TopPick */
   async function runAnalyzePreview(rowId: string) {
     const r = rows.find((x) => x.id === rowId);
     if (!r) return;
+
     const url = r.url.trim();
-    if (!isProbablyYoutubeUrl(url)) return;
+    if (!isProbablyYoutubeUrl(url)) {
+      rows = rows.map((x) =>
+        x.id === rowId ? { ...x, error: "미리보기를 하려면 유튜브 채널/핸들 주소를 입력해줘.", result: null } : x
+      );
+      return;
+    }
 
     rows = rows.map((x) => (x.id === rowId ? { ...x, loading: true, error: "", result: null } : x));
 
     try {
-      const res = await fetch(`/api/youtube/picks?channelUrl=${encodeURIComponent(url)}`);
+      const res = await fetch(`/api/youtube/picks?channelUrl=${encodeURIComponent(url)}&notify=1`);
       const data = (await res.json()) as AnalysisResult;
-      if (!res.ok || !data.ok) throw new Error(data.error ?? "분석 실패");
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "미리보기 분석 실패");
 
       rows = rows.map((x) => (x.id === rowId ? { ...x, loading: false, result: data } : x));
     } catch (e: any) {
@@ -112,33 +135,35 @@
     }
   }
 
+  /** ✅ 버튼 의미 교정: 알림(ON/OFF) = 업로드 감지 파이프라인 ON/OFF */
   async function toggleNotify(rowId: string) {
     const r = rows.find((x) => x.id === rowId);
     if (!r) return;
 
     if (!r.enabled) {
-      // ✅ ON: WebSub 구독 등록부터
-      await subscribeChannel(rowId);
-
-      // (선택) UX: 구독 직후 1회 미리보기 분석
+      await enableMonitor(rowId);
+      // 필요하면 ON 직후 1회 미리보기 자동 실행도 가능
       // await runAnalyzePreview(rowId);
     } else {
-      // OFF
-      await unsubscribeChannel(rowId);
+      await disableMonitor(rowId);
     }
   }
 </script>
 
 <div class="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
   <div class="mx-auto w-full max-w-5xl px-4 py-10">
-    <div class="text-2xl font-black tracking-tight">유튜버 알림 → 업로드 감지 → 텔레그램 전송</div>
+    <div class="text-2xl font-black tracking-tight">
+      업로드 감지 → 자막 추출 → AI 검증 → 텔레그램 Top Pick 전송
+    </div>
+
     <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-      알림을 켜면 WebSub(유튜브 푸시)로 새 영상 업로드 이벤트가 서버로 들어오고, 백엔드에서 분석 후 텔레그램으로 메시지를 보냅니다.
+      새 영상이 올라오면 <b>자막(스크립트) 추출</b> → <b>AI 검증</b> 후
+      <b>Top Pick 1~3 종목</b>을 근거와 함께 <b>텔레그램</b>으로 전송한다.
     </div>
 
     <div class="mt-8 rounded-3xl border border-slate-200 bg-white/70 p-5 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/40">
       <div class="flex items-center justify-between gap-3">
-        <div class="text-sm font-semibold">유튜버 목록</div>
+        <div class="text-sm font-semibold">모니터링 대상(유튜버) 목록</div>
         <button
           class="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow hover:opacity-95 dark:bg-white dark:text-slate-900"
           on:click={addRow}
@@ -159,14 +184,16 @@
                   placeholder="예) https://www.youtube.com/@channelhandle"
                   bind:value={r.url}
                   on:input={() => {
-                    rows = rows.map((x) => (x.id === r.id ? { ...x, error: "", subscribeInfo: null, result: null } : x));
+                    rows = rows.map((x) =>
+                      x.id === r.id ? { ...x, error: "", monitorInfo: null, result: null } : x
+                    );
                   }}
                 />
               </div>
 
               <div class="flex items-center gap-2">
                 <button
-                  class={`h-11 min-w-[120px] rounded-2xl px-4 text-sm font-bold shadow-sm transition
+                  class={`h-11 min-w-[140px] rounded-2xl px-4 text-sm font-bold shadow-sm transition
                     ${
                       r.enabled
                         ? "bg-emerald-600 text-white hover:bg-emerald-500"
@@ -175,15 +202,15 @@
                   on:click={() => toggleNotify(r.id)}
                   disabled={r.loading}
                 >
-                  {#if r.enabled}알림 해제{:else}알림{/if}
+                  {#if r.enabled}감지 OFF{:else}감지 ON{/if}
                 </button>
 
                 <button
                   class="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold
-                         hover:bg-slate-50 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+                        hover:bg-slate-50 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
                   on:click={() => runAnalyzePreview(r.id)}
-                  disabled={r.loading || !r.enabled}
-                  title="알림이 켜진 상태에서만 미리보기 분석"
+                  disabled={r.loading || !r.url.trim()}
+                  title="단발성 미리보기: 최신 영상 자막/설명 → AI 검증 → TopPick 1~3"
                 >
                   미리보기
                 </button>
@@ -209,10 +236,20 @@
               </div>
             {/if}
 
-            {#if r.subscribeInfo}
+            {#if r.monitorInfo}
               <div class="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300">
-                <div><b>구독 요청 완료</b> (Hub가 곧 callback 검증을 시도함)</div>
-                <div class="mt-1">channelId: {r.subscribeInfo.channelId}</div>
+                <div><b>모니터링 등록 완료</b> (Hub가 곧 callback 검증을 시도함)</div>
+                <div class="mt-1">channelId: {r.monitorInfo.channelId}</div>
+              </div>
+            {/if}
+
+            {#if r.result?.warning}
+              <div
+                class="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800
+                      dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
+              >
+                <div class="font-bold">참고</div>
+                <div class="mt-1">{r.result.warning}</div>
               </div>
             {/if}
 

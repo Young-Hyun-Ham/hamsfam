@@ -1,7 +1,10 @@
 // src/lib/server/telegram.ts
+import { TELEGRAM_BOT_TOKEN } from "$env/static/private";
+import { TELEGRAM_CHAT_ID } from "$env/static/private";
+
 export async function sendTelegram(text: string) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const token = TELEGRAM_BOT_TOKEN;
+  const chatId = TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) throw new Error("Telegram env missing");
 

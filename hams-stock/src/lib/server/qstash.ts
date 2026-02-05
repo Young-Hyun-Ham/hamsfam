@@ -1,23 +1,41 @@
 // src/lib/server/qstash.ts
-export async function qstashPublishJSON(opts: {
+import { QSTASH_TOKEN, QSTASH_URL } from "$env/static/private";
+
+type PublishOpts = {
   url: string;
   body: any;
+  deduplicationId?: string;
+  contentBasedDeduplication?: boolean;
+  retries?: number;
+  timeout?: string;
   headers?: Record<string, string>;
-}) {
-  const token = process.env.QSTASH_TOKEN;
+};
+
+function normalizeBaseUrl(u?: string) {
+  const base = (u || "https://qstash.upstash.io").trim();
+  return base.replace(/\/+$/, ""); // trailing slash 제거
+}
+
+export async function qstashPublishJSON(opts: PublishOpts) {
+  const token = QSTASH_TOKEN;
   if (!token) throw new Error("QSTASH_TOKEN missing");
 
-  // QStash publish endpoint로 목적지 URL을 전달
-  // (docs: /publish endpoint + Bearer auth) :contentReference[oaicite:3]{index=3}
-  const publishUrl = `https://qstash.upstash.io/v2/publish/${encodeURIComponent(opts.url)}`;
+  const base = normalizeBaseUrl(QSTASH_URL);
+  const publishUrl = `${base}/v2/publish/${encodeURIComponent(opts.url)}`;
+
+  const h: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  if (opts.deduplicationId) h["Upstash-Deduplication-Id"] = opts.deduplicationId;
+  if (opts.contentBasedDeduplication) h["Upstash-Content-Based-Deduplication"] = "true";
+  if (typeof opts.retries === "number") h["Upstash-Retries"] = String(opts.retries);
+  if (opts.timeout) h["Upstash-Timeout"] = opts.timeout;
 
   const res = await fetch(publishUrl, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...(opts.headers ?? {}),
-    },
+    headers: h,
     body: JSON.stringify(opts.body),
   });
 
