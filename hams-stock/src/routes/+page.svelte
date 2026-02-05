@@ -5,57 +5,6 @@
   import type { PricePoint } from "$lib/types";
   import { get } from "svelte/store";
   import { onMount } from "svelte";
-  import { browser } from "$app/environment";
-
-  // =======================================================================
-  // 다크/라이트 모드
-  let mode: "light" | "dark" = "light";
-
-  function applyMode(next: "light" | "dark") {
-    mode = next;
-    if (!browser) return;
-
-    const root = document.documentElement; // <html>
-    root.classList.toggle("dark", mode === "dark");
-    localStorage.setItem("hams:theme", mode);
-  }
-
-  function toggleMode() {
-    applyMode(mode === "dark" ? "light" : "dark");
-  }
-
-  // ✅ 테마별 히어로 배경(보색 느낌)
-  // 라이트: 퍼플/핑크 계열
-  // 다크: 라임/앰버/시안 계열 (퍼플의 보색 느낌으로 반전)
-  $: heroBgStyle =
-    mode === "dark"
-      ? `background-image:
-          radial-gradient(900px circle at 15% 10%, rgba(34,197,94,0.22), transparent 55%),
-          radial-gradient(800px circle at 80% 0%, rgba(251,191,36,0.18), transparent 50%),
-          radial-gradient(900px circle at 50% 85%, rgba(6,182,212,0.16), transparent 55%);`
-      : `background-image:
-          radial-gradient(900px circle at 15% 10%, rgba(168,85,247,0.35), transparent 55%),
-          radial-gradient(800px circle at 80% 0%, rgba(99,102,241,0.28), transparent 50%),
-          radial-gradient(900px circle at 50% 85%, rgba(236,72,153,0.18), transparent 55%);`;
-
-  // ✅ 페이지 바닥색도 테마에 맞게 반전(라이트는 밝게, 다크는 더 깊게)
-  $: pageBgClass =
-    mode === "dark"
-      ? "bg-slate-950 text-slate-100"
-      : "bg-white text-slate-900";
-
-  onMount(() => {
-    if (!browser) return;
-
-    const saved = localStorage.getItem("hams:theme") as "light" | "dark" | null;
-    if (saved === "light" || saved === "dark") {
-      applyMode(saved);
-    } else {
-      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches;
-      applyMode(prefersDark ? "dark" : "light");
-    }
-  });
-  // =======================================================================
 
   type StockOption = { code: string; name: string };
 
@@ -69,35 +18,6 @@
 
   function clamp(n: number, a: number, b: number) {
     return Math.max(a, Math.min(b, n));
-  }
-
-  // 데모용: 종목코드 기반 시계열 생성(퍼블리싱/레이아웃 확인용)
-  function makeDemoSeries(code: string, baseDate: string): PricePoint[] {
-    // seed
-    let seed = 0;
-    for (const ch of (code + baseDate)) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-    const rand = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
-
-    const today = new Date();
-    const points: PricePoint[] = [];
-    const days = 30;
-
-    // base close: 30k ~ 220k
-    let price = Math.round(30000 + rand() * 190000);
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      // 주말도 포함(퍼블리싱용)
-      const drift = (rand() - 0.5) * 0.03; // -1.5% ~ +1.5%
-      price = Math.round(price * (1 + drift));
-      price = clamp(price, 5000, 500000);
-
-      points.push({ date: toYmd(d), close: price });
-    }
-    return points;
   }
 
   // ===== 검색 조건
@@ -119,11 +39,14 @@
 
   // 파생 KPI
   $: holdingCount = holdingList.length;
-  $: selectedHolding = selectedCode === "ALL"
-    ? null
-    : holdingList.find((h) => h.code === selectedCode) ?? null;
+  $: selectedHolding =
+    selectedCode === "ALL"
+      ? null
+      : holdingList.find((h) => h.code === selectedCode) ?? null;
 
-  $: delta = baseClose != null && currentPrice != null ? currentPrice - baseClose : null;
+  $: delta =
+    baseClose != null && currentPrice != null ? currentPrice - baseClose : null;
+
   $: deltaPct =
     baseClose != null && currentPrice != null && baseClose !== 0
       ? (delta! / baseClose) * 100
@@ -131,9 +54,7 @@
 
   // 더미 평가금액(보유수량 기반)
   $: estimatedValue =
-    selectedHolding && currentPrice != null
-      ? selectedHolding.qty * currentPrice
-      : null;
+    selectedHolding && currentPrice != null ? selectedHolding.qty * currentPrice : null;
 
   onMount(() => {
     holdingList = get(holdings);
@@ -144,7 +65,6 @@
   });
 
   function diffDays(aYmd: string, bYmd: string) {
-    // b - a (일)
     const a = new Date(aYmd + "T00:00:00");
     const b = new Date(bYmd + "T00:00:00");
     return Math.floor((b.getTime() - a.getTime()) / 86400000);
@@ -173,15 +93,9 @@
       const daysFromBase = diffDays(baseDate, today);
 
       // ✅ 규칙: 30일 이내=D(최근30일), 30초과=M(기준~오늘), 365초과=Y(기준~오늘)
-      const period =
-        daysFromBase > 365 ? "Y" :
-        daysFromBase > 30 ? "M" : "D";
+      const period = daysFromBase > 365 ? "Y" : daysFromBase > 30 ? "M" : "D";
 
-      const from =
-        period === "D"
-          ? addDays(today, -30)   // 지금과 같게: 최근 30일
-          : baseDate;             // 월/년: 기준일~오늘
-
+      const from = period === "D" ? addDays(today, -30) : baseDate;
       const to = today;
 
       // 1) 차트 시리즈
@@ -202,14 +116,12 @@
       if (!r2.ok) throw new Error(await r2.text());
       const j2 = await r2.json();
       currentPrice = j2.currentPrice ?? (series.at(-1)?.close ?? null);
-
     } catch (e: any) {
       errorMsg = e?.message ?? "조회 중 오류가 발생했어요.";
     } finally {
       loading = false;
     }
   }
-
 
   function resetFilters() {
     baseDate = toYmd(new Date());
@@ -221,200 +133,133 @@
   }
 </script>
 
-<div class={"min-h-[calc(100dvh-0px)] " + pageBgClass}>
-  <!-- ===== Top Hero / Header -->
-  <div class="relative overflow-hidden">
-    <div
-      class="absolute inset-0 -z-10"
-      style={heroBgStyle}
-    ></div>
+<section class="page">
+  <!-- ===== Hero -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-title">
+        <h1>
+          주식 보유 현황 <span class="accent">메인 대시보드</span>
+        </h1>
+        <p>기준일 대비 흐름을 빠르게 확인하고, 종목별 차트를 직관적으로 조회하세요.</p>
+      </div>
 
-    <div class="mx-auto w-full max-w-6xl px-4 pb-4 pt-8 sm:px-6">
-      <div class="flex flex-col gap-4">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/30 px-3 py-1 text-xs text-slate-800 shadow-sm backdrop-blur dark:border-slate-800/60 dark:bg-slate-950/40 dark:text-slate-200">
-              <span class="h-2 w-2 rounded-full bg-violet-500"></span>
-              hams-stock · Portfolio Dashboard
+      <!-- Search Card -->
+      <div class="card search">
+        <div class="search-grid">
+          <div class="field">
+            <label>기준일</label>
+            <div class="control">
+              <input type="date" bind:value={baseDate} />
             </div>
-            <h1 class="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
-              주식 보유 현황
-              <span class="ml-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                메인 대시보드
-              </span>
-            </h1>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              기준일 대비 흐름을 빠르게 확인하고, 종목별 차트를 직관적으로 조회하세요.
-            </p>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button
-              class="group flex items-center gap-1.5 rounded-2xl border border-white/20
-                    bg-white/40 px-3 py-2 text-xs font-semibold text-slate-800 shadow-sm
-                    backdrop-blur transition hover:bg-white/60
-                    dark:border-slate-800/70 dark:bg-slate-950/40 dark:text-slate-100
-                    dark:hover:bg-slate-950/55"
-              on:click={toggleMode}
-              aria-label="테마 전환"
-              title="테마 전환"
-            >
-              <!-- 아이콘 (항상 표시) -->
-              <span class="text-sm">
-                {mode === "dark" ? "☀️" : "🌙"}
-              </span>
-
-              <!-- 텍스트 (sm 이상에서만 표시) -->
-              <span class="hidden sm:inline">
-                {mode === "dark" ? "라이트" : "다크"}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- ===== Search Card -->
-        <div class="rounded-3xl border border-white/20 bg-white/40 p-4 shadow-sm backdrop-blur dark:border-slate-800/70 dark:bg-slate-950/40">
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-[220px_1fr_160px] sm:items-end">
-            <div>
-              <label class="text-xs font-semibold text-slate-700 dark:text-slate-200">기준일</label>
-              <input
-                type="date"
-                bind:value={baseDate}
-                class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-200 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-900/40"
-              />
+          <div class="field">
+            <div class="row-between">
+              <label>종목</label>
+              <span class="hint-up">종목 선택 시 사용 가능</span>
             </div>
-
-            <div>
-              <div class="flex items-end justify-between">
-                <label class="text-xs font-semibold text-slate-700 dark:text-slate-200">종목</label>
-
-                <!-- ✅ 요청했던 문구: "검색조건 아래 우측" 느낌으로, 살짝 위로 -->
-                <span class="-mb-[2px] text-[11px] text-slate-500 dark:text-slate-400">
-                  종목 선택 시 사용 가능
-                </span>
-              </div>
-
-              <select
-                bind:value={selectedCode}
-                class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-200 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-900/40"
-              >
+            <div class="control">
+              <select bind:value={selectedCode}>
                 {#each options as opt}
                   <option value={opt.code}>{opt.name}</option>
                 {/each}
               </select>
             </div>
-
-            <div class="flex gap-2 sm:justify-end">
-              <button
-                class="w-full rounded-2xl border border-white/20 bg-white/40 px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:bg-white/60 disabled:opacity-60 dark:border-slate-800/70 dark:bg-slate-950/40 dark:text-slate-100 dark:hover:bg-slate-950/55 sm:w-auto"
-                on:click={resetFilters}
-                disabled={loading}
-              >
-                초기화
-              </button>
-              <button
-                class="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:brightness-110 active:brightness-95 disabled:opacity-60 sm:w-auto"
-                on:click={fetchKis}
-                disabled={loading}
-              >
-                {loading ? "조회 중..." : "조회"}
-              </button>
-            </div>
           </div>
-
-          {#if errorMsg}
-            <div class="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
-              {errorMsg}
-            </div>
-          {/if}
+          <div class="btn-row">
+            <button class="btn ghost" on:click={resetFilters} disabled={loading}>
+              초기화
+            </button>
+            <button class="btn primary" on:click={fetchKis} disabled={loading}>
+              {loading ? "조회 중..." : "조회"}
+            </button>
+          </div>
         </div>
+
+        {#if errorMsg}
+          <div class="alert">{errorMsg}</div>
+        {/if}
       </div>
     </div>
   </div>
 
-  <!-- ===== Main Content -->
-  <div class="mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6">
-    <!-- KPI Row -->
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
-      <div class="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">보유 종목</div>
-        <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-50">{holdingCount}</div>
-        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">현재 store 기준</div>
+  <!-- ===== Content -->
+  <div class="container">
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <div class="k-label">보유 종목</div>
+        <div class="k-value">{holdingCount}</div>
+        <div class="k-sub">현재 store 기준</div>
       </div>
 
-      <div class="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">선택 종목</div>
-        <div class="mt-2 truncate text-lg font-extrabold text-slate-900 dark:text-slate-50">
-          {selectedHolding ? selectedHolding.name : "전체"}
-        </div>
-        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          {selectedHolding ? selectedHolding.code : "—"}
-        </div>
+      <div class="card kpi">
+        <div class="k-label">선택 종목</div>
+        <div class="k-value2">{selectedHolding ? selectedHolding.name : "전체"}</div>
+        <div class="k-sub">{selectedHolding ? selectedHolding.code : "—"}</div>
       </div>
 
-      <div class="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">기준일 대비</div>
-        <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-50">
+      <div class="card kpi">
+        <div class="k-label">기준일 대비</div>
+        <div class="k-value">
           {#if delta != null}
-            <span class={delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>
+            <span class={delta >= 0 ? "pos" : "neg"}>
               {delta >= 0 ? "+" : ""}{delta.toLocaleString()}
             </span>
-            <span class="ml-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+            <span class="pct">
               ({deltaPct != null ? (deltaPct >= 0 ? "+" : "") + deltaPct.toFixed(2) + "%" : ""})
             </span>
           {:else}
-            <span class="text-slate-400 dark:text-slate-500">—</span>
+            <span class="dash">—</span>
           {/if}
         </div>
-        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">단일 종목 선택 시</div>
+        <div class="k-sub">단일 종목 선택 시</div>
       </div>
 
-      <div class="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">평가금액(추정)</div>
-        <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-slate-50">
+      <div class="card kpi">
+        <div class="k-label">평가금액(추정)</div>
+        <div class="k-value">
           {#if estimatedValue != null}
             {estimatedValue.toLocaleString()}원
           {:else}
-            <span class="text-slate-400 dark:text-slate-500">—</span>
+            <span class="dash">—</span>
           {/if}
         </div>
-        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">수량×현재가</div>
+        <div class="k-sub">수량×현재가</div>
       </div>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+    <div class="main-grid">
       <!-- Holdings Table -->
-      <div class="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-        <div class="flex items-center justify-between gap-2">
+      <div class="card table-card">
+        <div class="table-head">
           <div>
-            <div class="text-sm font-extrabold text-slate-900 dark:text-slate-50">보유 종목 리스트</div>
-            <div class="text-xs text-slate-500 dark:text-slate-400">종목을 선택하면 우측에 차트가 활성화됩니다.</div>
+            <div class="t1">보유 종목 리스트</div>
+            <div class="t2">종목을 선택하면 우측에 차트가 활성화됩니다.</div>
           </div>
-
-          <div class="rounded-2xl bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-200">
-            {baseDate}
-          </div>
+          <div class="pill">{baseDate}</div>
         </div>
 
-        <div class="mt-3 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
+        <div class="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <th class="px-3 py-2">종목</th>
-                <th class="px-3 py-2">코드</th>
-                <th class="px-3 py-2 text-right">수량</th>
-                <th class="px-3 py-2 text-right">바로선택</th>
+                <th>종목</th>
+                <th>코드</th>
+                <th class="right">수량</th>
+                <th class="right">바로선택</th>
               </tr>
             </thead>
             <tbody>
               {#each holdingList as h (h.code)}
-                <tr class="border-t border-slate-200 bg-white/60 hover:bg-white dark:border-slate-800 dark:bg-slate-950/20 dark:hover:bg-slate-950/35">
-                  <td class="px-3 py-3 font-semibold text-slate-900 dark:text-slate-100">{h.name}</td>
-                  <td class="px-3 py-3 text-slate-600 dark:text-slate-300">{h.code}</td>
-                  <td class="px-3 py-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{h.qty}</td>
-                  <td class="px-3 py-3 text-right">
+                <tr>
+                  <td class="name">{h.name}</td>
+                  <td class="code">{h.code}</td>
+                  <td class="right nums">{h.qty}</td>
+                  <td class="right">
                     <button
-                      class="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:brightness-110"
+                      class="btn small primary"
                       on:click={() => {
                         selectedCode = h.code;
                         fetchKis();
@@ -429,65 +274,593 @@
           </table>
         </div>
 
-        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          <span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 dark:border-slate-800 dark:bg-slate-950/40">
-            <span class="h-1.5 w-1.5 rounded-full bg-violet-500"></span>
-            전체 선택 시 차트 비활성
+        <div class="badges">
+          <span class="badge">
+            <span class="dot v"></span> 전체 선택 시 차트 비활성
           </span>
-          <span class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 dark:border-slate-800 dark:bg-slate-950/40">
-            <span class="h-1.5 w-1.5 rounded-full bg-fuchsia-500"></span>
-            데모 데이터로 퍼블리싱 확인
+          <span class="badge">
+            <span class="dot f"></span> 데모 데이터로 퍼블리싱 확인
           </span>
         </div>
       </div>
 
-      <!-- Chart / Detail -->
-      <div class="space-y-4">
-        {#if selectedCode === "ALL"}
-          <div class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-            <div class="text-sm font-extrabold text-slate-900 dark:text-slate-50">차트</div>
-            <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-              종목을 선택하면 기준일 대비 가격 흐름을 차트로 보여줘요.
-            </div>
+      <!-- Right: Chart + Summary -->
+      <div class="right-col">
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div class="t1">가격 차트</div>
 
-            <div class="mt-4 rounded-3xl border border-dashed border-slate-300 bg-white/50 p-6 text-center dark:border-slate-700 dark:bg-slate-950/20">
-              <div class="text-lg font-extrabold text-slate-900 dark:text-slate-50">종목을 선택하세요</div>
-              <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                왼쪽 리스트에서 <b class="text-slate-700 dark:text-slate-200">선택</b> 버튼을 누르면 바로 조회됩니다.
+            {#if selectedCode !== "ALL" && baseClose != null && currentPrice != null}
+              <div class="chart-meta">
+                <span class="pill2">기준일 {baseDate}: {baseClose.toLocaleString()}원</span>
+                <span class="pill2">현재가: {currentPrice.toLocaleString()}원</span>
               </div>
-            </div>
-          </div>
-        {:else}
-          <PriceChart {series} {baseDate} {baseClose} {currentPrice} />
-        {/if}
-
-        <!-- Quick Info Card -->
-        <div class="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-          <div class="flex items-center justify-between gap-2">
-            <div class="text-sm font-extrabold text-slate-900 dark:text-slate-50">요약</div>
-            <span class="text-xs text-slate-500 dark:text-slate-400">UI 퍼블리싱</span>
+            {/if}
           </div>
 
-          <div class="mt-3 grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950/40">
-              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">기준가</div>
-              <div class="mt-1 text-base font-extrabold text-slate-900 dark:text-slate-50">
+          <div class="chart-body">
+            {#if selectedCode === "ALL"}
+              <div class="empty-box">
+                <div class="e1">종목을 선택하세요</div>
+                <div class="e2">
+                  왼쪽 리스트에서 <b>선택</b> 버튼을 누르면 바로 조회됩니다.
+                </div>
+              </div>
+            {:else}
+              <!-- 차트만 횡하게 나오던 문제: 항상 카드 안에서 렌더링 -->
+              <PriceChart {series} {baseDate} {baseClose} {currentPrice} />
+            {/if}
+          </div>
+        </div>
+
+        <div class="card summary">
+          <div class="sum-head">
+            <div class="t1">요약</div>
+            <span class="mini">UI 퍼블리싱</span>
+          </div>
+
+          <div class="sum-grid">
+            <div class="mini-card">
+              <div class="m-label">기준가</div>
+              <div class="m-value">
                 {baseClose != null ? baseClose.toLocaleString() + "원" : "—"}
               </div>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950/40">
-              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">현재가</div>
-              <div class="mt-1 text-base font-extrabold text-slate-900 dark:text-slate-50">
+
+            <div class="mini-card">
+              <div class="m-label">현재가</div>
+              <div class="m-value">
                 {currentPrice != null ? currentPrice.toLocaleString() + "원" : "—"}
               </div>
             </div>
           </div>
 
-          <div class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          <div class="note">
             ※ 실제 API 연동 시 `fetchDemo()`만 API 호출로 교체하면, 화면 구조는 그대로 유지됩니다.
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+</section>
+
+<style>
+  /* ===== page layout */
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ===== hero (토큰 기반) */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 22px;
+    margin-top: 8px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    pointer-events: none;
+    background-image:
+      radial-gradient(900px circle at 15% 10%, rgba(168,85,247,0.24), transparent 55%),
+      radial-gradient(800px circle at 80% 0%, rgba(99,102,241,0.20), transparent 50%),
+      radial-gradient(900px circle at 50% 85%, rgba(236,72,153,0.14), transparent 55%);
+    opacity: 1;
+  }
+
+  :global(html[data-theme="dark"]) .hero::before {
+    background-image:
+      radial-gradient(900px circle at 15% 10%, rgba(34,197,94,0.18), transparent 55%),
+      radial-gradient(800px circle at 80% 0%, rgba(251,191,36,0.14), transparent 50%),
+      radial-gradient(900px circle at 50% 85%, rgba(6,182,212,0.12), transparent 55%);
+  }
+
+  .hero-inner {
+    position: relative;
+    padding: 18px;
+  }
+
+  .hero-title h1 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    font-weight: 1000;
+  }
+
+  .hero-title p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .accent {
+    margin-left: 8px;
+    background: linear-gradient(90deg, var(--brand), rgba(168,85,247,0.95));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ===== shared card */
+  .card {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ===== Search */
+  .search { padding: 14px; background: var(--panel2); }
+
+  .search-grid{
+    display:grid;
+    grid-template-columns: 200px 1fr auto; /* ✅ 버튼은 auto로 */
+    gap: 12px;
+    align-items: end;
+  }
+
+  @media (max-width: 980px){
+    .search-grid{ grid-template-columns: 1fr; align-items: stretch; }
+  }
+
+  .field label{
+    display:block;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 800;
+  }
+
+  /* ✅ 입력/셀렉트는 margin-top 제거하고 control 래퍼에서 통일 */
+  .control{ margin-top: 8px; }
+
+  /* ✅ 공통 컨트롤 */
+  input, select{
+    width: 100%;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.65);
+    color: var(--text);
+    padding: 0 12px;
+    outline: none;
+    margin: 0;
+    box-sizing: border-box;
+
+    /* ✅ 핵심: 셀렉트 기본 UI 정렬 이슈 방지 */
+    line-height: 44px;
+    font-size: 13px;
+  }
+
+  /* 다크 */
+  :global(html[data-theme="dark"]) input,
+  :global(html[data-theme="dark"]) select{
+    background: rgba(2,6,23,0.35);
+  }
+
+  input:focus, select:focus{ box-shadow: var(--ring); }
+
+  /* ✅ select만 추가 보정 */
+  select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+
+    /* 화살표 영역 확보 */
+    padding-right: 44px;
+
+    /* Windows/Chrome에서 높이 틀어짐 방지 */
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 18px) 18px,
+      calc(100% - 12px) 18px;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+  }
+
+  /* ✅ iOS에서 라인하이트가 과하게 먹는 경우 대비 */
+  @supports (-webkit-touch-callout: none) {
+    select { line-height: normal; }
+  }
+
+  .row-between{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .hint-up{
+    font-size: 11px;
+    color: var(--muted);
+    transform: translateY(-2px);
+    white-space: nowrap;
+  }
+
+  .btn-row{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    align-self:end;           /* ✅ 라벨/필드 기준 하단 정렬 */
+  }
+
+  @media (max-width: 980px){
+    .btn-row{ justify-content: stretch; }
+    .btn-row .btn{ flex: 1; }
+  }
+
+
+  .btn {
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.55);
+    color: var(--text);
+    font-weight: 1000;
+    padding: 0 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  :global(html[data-theme="dark"]) .btn {
+    background: rgba(2,6,23,0.30);
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn.primary {
+    border-color: rgba(37,99,235,0.25);
+    background: rgba(37,99,235,0.14);
+  }
+
+  .btn.ghost {
+    background: transparent;
+  }
+
+  .btn.small {
+    height: 34px;
+    border-radius: 12px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .alert {
+    margin-top: 12px;
+    border: 1px solid rgba(239,68,68,0.25);
+    background: rgba(239,68,68,0.08);
+    color: #ef4444;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* ===== container */
+  .container {
+    padding: 0;
+  }
+
+  /* ===== KPI */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 14px 0 14px;
+  }
+
+  @media (max-width: 980px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  .kpi {
+    padding: 14px;
+    background: var(--panel2);
+  }
+
+  .k-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 800;
+  }
+
+  .k-value {
+    margin-top: 10px;
+    font-size: 22px;
+    font-weight: 1100;
+    letter-spacing: -0.02em;
+  }
+
+  .k-value2 {
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: 1100;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .k-sub {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .pos { color: #22c55e; }
+  .neg { color: #ef4444; }
+  .pct {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 1000;
+  }
+  .dash { color: var(--muted); }
+
+  /* ===== main grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* ✅ 50:50 */
+    gap: 14px;
+    align-items: start;
+  }
+
+  @media (max-width: 980px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  .table-card {
+    padding: 14px;
+    background: var(--panel2);
+  }
+
+  .table-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .t1 {
+    font-size: 14px;
+    font-weight: 1100;
+    letter-spacing: -0.02em;
+  }
+
+  .t2 {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .pill {
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    background: var(--panel);
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 1000;
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: rgba(255,255,255,0.45);
+  }
+  :global(html[data-theme="dark"]) thead {
+    background: rgba(2,6,23,0.25);
+  }
+
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr:hover {
+    background: rgba(37,99,235,0.06);
+  }
+  :global(html[data-theme="dark"]) tbody tr:hover {
+    background: rgba(96,165,250,0.10);
+  }
+
+  .right { text-align: right; }
+  .nums { font-variant-numeric: tabular-nums; }
+  .name { font-weight: 1000; }
+  .code { color: var(--muted); }
+
+  .badges {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 900;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+  }
+  .dot.v { background: rgba(168,85,247,0.9); }
+  .dot.f { background: rgba(236,72,153,0.85); }
+
+  /* ===== right column */
+  .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .empty-box {
+    margin-top: 12px;
+    border: 1px dashed var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    text-align: center;
+    background: rgba(255,255,255,0.35);
+  }
+  :global(html[data-theme="dark"]) .empty-box {
+    background: rgba(2,6,23,0.20);
+  }
+
+  .e1 { font-weight: 1100; font-size: 16px; }
+  .e2 { margin-top: 8px; font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+  .summary {
+    padding: 14px;
+    background: var(--panel2);
+  }
+
+  .sum-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .mini {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 900;
+  }
+
+  .sum-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .mini-card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--panel);
+    padding: 12px;
+  }
+
+  .m-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 900;
+  }
+
+  .m-value {
+    margin-top: 8px;
+    font-size: 16px;
+    font-weight: 1100;
+    letter-spacing: -0.02em;
+  }
+
+  .note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  /* ===== Chart Card */
+  .chart-card{
+    padding: 14px;
+    background: var(--panel2);
+  }
+
+  .chart-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+  }
+
+  .chart-meta{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .pill2{
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    background: var(--panel);
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .chart-body{
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--panel);
+    overflow: hidden; /* ✅ 차트가 밖으로 튀는 것 방지 */
+    padding: 12px;    /* ✅ PriceChart가 단독 렌더여도 카드 안에서 보기 좋게 */
+  }
+
+  .empty-box{
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    background: rgba(255,255,255,0.35);
+  }
+  :global(html[data-theme="dark"]) .empty-box{ background: rgba(2,6,23,0.20); }
+
+</style>
