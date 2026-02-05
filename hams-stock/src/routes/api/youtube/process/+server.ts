@@ -7,6 +7,7 @@ import { adminDb, admin } from "$lib/server/fireAdmin";
 import { getTranscriptText, isTranscriptUnavailableError } from "$lib/server/transcript";
 import { getVideoSnippet } from "$lib/server/youtube";
 import { transcribeAudioUrl } from "$lib/server/stt";
+import { fetchSttTranscript } from "$lib/server/sttClient";
 
 type Pick = {
   market: "KOSPI" | "KOSDAQ";
@@ -263,15 +264,13 @@ export async function POST({ request, url }: any) {
     let transcript = "";
     let transcriptMode: "stt" | "description" | "none" = "none";
 
-    if (audioUrl) {
-      try {
-        console.log("[PROCESS] stt start");
-        transcript = await transcribeAudioUrl(String(audioUrl));
-        transcriptMode = "stt";
-        console.log("[PROCESS] stt ok", { len: transcript.length });
-      } catch (e) {
-        console.warn("[PROCESS] stt failed → fallback to description", e);
-      }
+    try {
+      console.log("[PROCESS] stt start (python worker)");
+      transcript = await fetchSttTranscript(String(videoId));
+      transcriptMode = "stt";
+      console.log("[PROCESS] stt ok", { len: transcript.length });
+    } catch (e) {
+      console.warn("[PROCESS] stt failed → fallback to description", e);
     }
 
     if (!transcript) {
