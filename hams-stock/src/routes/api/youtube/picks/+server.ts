@@ -102,6 +102,13 @@ async function aiPickStocks(input: { title?: string; transcript: string }): Prom
     .filter((p: Pick) => (p.market === "KOSPI" || p.market === "KOSDAQ") && /^\d{6}$/.test(p.code) && p.name && p.reason);
 }
 
+function normalizeOrigin(v: string) {
+  const s = (v ?? "").trim().replace(/\/+$/, "");
+  // http/https 아니면 무시
+  if (!/^https?:\/\//i.test(s)) return "";
+  return s;
+}
+
 export async function GET({ url }: any) {
   const channelUrl = url.searchParams.get("channelUrl") ?? "";
   if (!channelUrl) {
@@ -131,14 +138,14 @@ export async function GET({ url }: any) {
     }
     const picks = await aiPickStocks({ title: latest.title, transcript });
 
-
     const notify = url.searchParams.get("notify") === "1";
 
     let queued = false;
     if (notify) {
-      const origin = PUBLIC_BASE_URL || url.origin;
-      const processUrl = `${origin}/api/youtube/process`;
-
+      const envOrigin = normalizeOrigin(PUBLIC_BASE_URL);
+      const origin = envOrigin || url.origin; // url.origin은 보통 https://hamsfam-stock.vercel.app
+      const processUrl = new URL("/api/youtube/process", origin).href;
+      console.log("[QSTASH dest]", processUrl);
       await qstashPublishJSON({
         url: processUrl,
         body: {
