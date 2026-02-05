@@ -218,9 +218,9 @@ export async function POST({ request, url }: any) {
     const { videoId, title, publishedAt, channelId, audioUrl } = await request.json();
     console.log("[PROCESS] payload", { videoId, channelId, hasAudioUrl: !!audioUrl });
 
-    // if (!videoId) return json({ ok: false, error: "videoId is required" }, { status: 400 });
+    if (!videoId) return json({ ok: false, error: "videoId is required" }, { status: 400 });
     if (!audioUrl) console.log("[PROCESS] audioUrl missing → fallback to description");
-    if (!audioUrl) return json({ ok: false, error: "audioUrl is required (for STT)" }, { status: 400 });
+    // if (!audioUrl) return json({ ok: false, error: "audioUrl is required (for STT)" }, { status: 400 });
 
     // 2) Firestore dedup lock
     const ref = adminDb.collection("yt_processed").doc(String(videoId));
