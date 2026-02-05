@@ -30,7 +30,7 @@ export async function qstashPublishJSON(opts: PublishOpts) {
 
   console.log("[QSTASH base]", base);
   console.log("[QSTASH publishUrl]", publishUrl);
-  
+
   const h: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
@@ -47,7 +47,17 @@ export async function qstashPublishJSON(opts: PublishOpts) {
     body: JSON.stringify(opts.body),
   });
 
+  const txt = await res.text();
+
   if (!res.ok) {
-    throw new Error(`QStash publish failed: ${res.status} ${await res.text()}`);
+    console.error("[QSTASH publish failed]", {
+      status: res.status,
+      statusText: res.statusText,
+      body: txt,
+    });
+    throw new Error(`QStash publish failed: ${res.status} ${txt}`);
   }
+
+  // 성공이어도 body 로그(원하면 주석)
+  console.log("[QSTASH publish ok]", txt);
 }
