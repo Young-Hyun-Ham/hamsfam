@@ -59,8 +59,28 @@ async function aiPickStocks(input: { title?: string; transcript: string }): Prom
 
   const system = `
 너는 한국 주식 종목 추천을 만드는 분석기다.
-입력은 유튜브 영상의 제목과 자막이다.
-자막 근거로 "코스피/코스닥" 종목 Top Pick 1~3개를 뽑아라.
+입력은 유튜브 영상의 제목과 스크립트다.
+
+반드시 **json 형식**으로만 응답해야 한다.
+출력은 설명 없이 순수한 json 객체여야 한다.
+
+응답 json 스키마:
+{
+  "picks": [
+    {
+      "market": "KOSPI" | "KOSDAQ",
+      "code": "6자리 숫자",
+      "name": "종목명",
+      "reason": "근거",
+      "confidence": 0~1
+    }
+  ]
+}
+
+규칙:
+- 근거가 없으면 picks는 빈 배열
+- code는 6자리 숫자 문자열
+- market은 KOSPI 또는 KOSDAQ
 `.trim();
 
   const body = {
