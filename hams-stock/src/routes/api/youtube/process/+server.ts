@@ -8,6 +8,7 @@ import { getTranscriptText, isTranscriptUnavailableError } from "$lib/server/tra
 import { getVideoSnippet } from "$lib/server/youtube";
 import { transcribeAudioUrl } from "$lib/server/stt";
 import { fetchSttTranscript } from "$lib/server/sttClient";
+import { dev } from "$app/environment";
 
 type Pick = {
   market: "KOSPI" | "KOSDAQ";
@@ -225,6 +226,7 @@ async function aiPickStocks(input: { title?: string; transcript: string }): Prom
 // }
 
 export async function POST({ request, url }: any) {
+
   try {
     console.log("[PROCESS] hit", {
       hasSignature: !!request.headers.get("Upstash-Signature"),
@@ -233,8 +235,13 @@ export async function POST({ request, url }: any) {
 
     // 1) QStash 서명 검증
     const sig = request.headers.get("Upstash-Signature");
-    verifyQstashRequestOrThrow({ signature: sig, requestUrl: url.href });
-    console.log("[PROCESS] signature ok");
+
+    if (!dev) {
+      verifyQstashRequestOrThrow({ signature: sig, requestUrl: url.href });
+      console.log("[PROCESS] signature ok");
+    } else {
+      console.log("[PROCESS] dev mode → signature bypass");
+    }
 
     const { videoId, title, publishedAt, channelId, audioUrl } = await request.json();
     console.log("[PROCESS] payload", { videoId, channelId, hasAudioUrl: !!audioUrl });
