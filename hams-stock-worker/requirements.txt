@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+yt-dlp
+openai-whisper
+torch
+firebase-admin 
+httpx 
+feedparser 
+python-dotenv
