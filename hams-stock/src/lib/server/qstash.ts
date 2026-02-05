@@ -25,8 +25,15 @@ export async function qstashPublishJSON(opts: PublishOpts) {
 
   const base = normalizeBaseUrl(QSTASH_URL);
 
-  // ✅ 정확한 publish endpoint: {base}/v2/publish/{DESTINATION_URL_ENCODED}
-  const publishUrl = new URL(`/v2/publish/${encodeURIComponent(opts.url)}`, base).toString();
+  const dest = (opts.url ?? "").trim();
+  console.log("[QSTASH dest raw]", opts.url);
+  console.log("[QSTASH dest trim]", dest);
+
+  if (!/^https?:\/\//i.test(dest)) {
+    throw new Error(`Invalid destination url: "${dest}" (must start with http:// or https://)`);
+  }
+
+  const publishUrl = new URL(`/v2/publish/${encodeURIComponent(dest)}`, base).toString();
 
   console.log("[QSTASH base]", base);
   console.log("[QSTASH publishUrl]", publishUrl);
