@@ -239,8 +239,26 @@ export async function POST({ request, url }: any) {
     }
 
     // 3) STT transcript
-    console.log("[PROCESS] stt start");
-    const transcript = await transcribeAudioUrl(String(audioUrl));
+    let transcript = "";
+    let transcriptMode: "stt" | "description" | "none" = "none";
+
+    if (audioUrl) {
+      try {
+        console.log("[PROCESS] stt start");
+        transcript = await transcribeAudioUrl(String(audioUrl));
+        transcriptMode = "stt";
+        console.log("[PROCESS] stt ok", { len: transcript.length });
+      } catch (e) {
+        console.warn("[PROCESS] stt failed → fallback to description", e);
+      }
+    }
+
+    if (!transcript) {
+      const sn = await getVideoSnippet(String(videoId));
+      transcript = sn.description || "";
+      transcriptMode = transcript ? "description" : "none";
+      console.log("[PROCESS] description fallback", { len: transcript.length });
+    }
     console.log("[PROCESS] stt ok", { len: transcript.length });
 
     // 4) AI picks (기존 aiPickStocks 호출)
@@ -261,7 +279,10 @@ export async function POST({ request, url }: any) {
       await sendTelegram(msg);
       console.log("[PROCESS] telegram sent");
     } else {
-      console.log("[PROCESS] no picks -> telegram skipped");
+      console.log("[PROCESS] sending telegram (no picks)");
+      await sendTelegram(
+        `🔔 업로드 감지\n\n🎬 ${title ?? "New Video"}\n🔗 https://www.youtube.com/watch?v=${videoId}\n\n⚠️ 분석 가능한 스크립트가 부족하여 종목 추천을 하지 못했습니다.`
+      );
     }
 
     await ref.set(
