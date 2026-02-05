@@ -19,11 +19,18 @@ function normalizeBaseUrl(u?: string) {
 export async function qstashPublishJSON(opts: PublishOpts) {
   const token = QSTASH_TOKEN;
   if (!token) throw new Error("QSTASH_TOKEN missing");
+  if (!opts.url || !/^https?:\/\//i.test(opts.url)) {
+    throw new Error(`Invalid destination url: ${opts.url} (must start with http:// or https://)`);
+  }
 
   const base = normalizeBaseUrl(QSTASH_URL);
-  const publishUrl = `${base}/${encodeURIComponent(opts.url)}`;
+
+  // ✅ 정확한 publish endpoint: {base}/v2/publish/{DESTINATION_URL_ENCODED}
+  const publishUrl = new URL(`/v2/publish/${encodeURIComponent(opts.url)}`, base).toString();
+
   console.log("[QSTASH base]", base);
   console.log("[QSTASH publishUrl]", publishUrl);
+  
   const h: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
