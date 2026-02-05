@@ -6,6 +6,7 @@ import { verifyQstashRequestOrThrow } from "$lib/server/qstashVerify";
 import { adminDb, admin } from "$lib/server/fireAdmin";
 import { getTranscriptText, isTranscriptUnavailableError } from "$lib/server/transcript";
 import { getVideoSnippet } from "$lib/server/youtube";
+import { transcribeAudioUrl } from "$lib/server/stt";
 
 type Pick = {
   market: "KOSPI" | "KOSDAQ";
@@ -30,7 +31,7 @@ function formatTelegramMessage(args: {
   const videoUrl = `https://www.youtube.com/watch?v=${args.videoId}`;
   const head = [
     `🔔 <b>업로드 감지</b>`,
-    args.analysisNote ? `🧾 <b>${escapeHtml(args.analysisNote)}</b>` : "", // ✅ 추가
+    args.analysisNote ? `🧾 <b>${escapeHtml(args.analysisNote)}</b>` : "",
     args.title ? `🎬 <b>${escapeHtml(args.title)}</b>` : `🎬 <b>New Video</b>`,
     args.publishedAt ? `🕒 ${escapeHtml(args.publishedAt)}` : "",
     `🔗 ${escapeHtml(videoUrl)}`,
@@ -60,19 +61,6 @@ async function aiPickStocks(input: { title?: string; transcript: string }): Prom
 너는 한국 주식 종목 추천을 만드는 분석기다.
 입력은 유튜브 영상의 제목과 자막이다.
 자막 근거로 "코스피/코스닥" 종목 Top Pick 1~3개를 뽑아라.
-
-출력은 JSON만:
-{
-  "picks": [
-    { "market": "KOSPI"|"KOSDAQ", "code": "6자리", "name":"종목명", "reason":"근거", "confidence": 0~1 }
-  ]
-}
-
-규칙:
-- 자막에 근거가 없으면 picks는 빈 배열.
-- code는 6자리 숫자.
-- market은 KOSPI/KOSDAQ만.
-- reason은 2~3문장으로 구체적으로.
 `.trim();
 
   const body = {
@@ -97,7 +85,7 @@ async function aiPickStocks(input: { title?: string; transcript: string }): Prom
   const content = data?.choices?.[0]?.message?.content ?? "{}";
 
   let parsed: any = {};
-  try { parsed = JSON.parse(content); } catch { parsed = {}; }
+  try { parsed = JSON.parse(content); } catch {}
 
   const picks = Array.isArray(parsed?.picks) ? parsed.picks : [];
   return picks
@@ -109,21 +97,132 @@ async function aiPickStocks(input: { title?: string; transcript: string }): Prom
       reason: String(p.reason ?? ""),
       confidence: typeof p.confidence === "number" ? p.confidence : undefined,
     }))
-    .filter((p: Pick) => (p.market === "KOSPI" || p.market === "KOSDAQ") && /^\d{6}$/.test(p.code) && p.name && p.reason);
+    .filter((p: Pick) =>
+      (p.market === "KOSPI" || p.market === "KOSDAQ") &&
+      /^\d{6}$/.test(p.code) &&
+      p.name &&
+      p.reason
+    );
 }
+
+// captions 기반 자막 추출 + description fallback
+// export async function POST({ request, url }: any) {
+//   try {
+//     console.log("[PROCESS] hit", {
+//       hasSignature: !!request.headers.get("Upstash-Signature"),
+//       url: url.href,
+//     });
+
+//     // 1️⃣ QStash 서명 검증
+//     const sig = request.headers.get("Upstash-Signature");
+//     verifyQstashRequestOrThrow({ signature: sig, requestUrl: url.href });
+//     console.log("[PROCESS] signature ok");
+
+//     const { videoId, title, publishedAt, channelId } = await request.json();
+//     console.log("[PROCESS] payload", { videoId, title, publishedAt, channelId });
+
+//     if (!videoId) {
+//       console.log("[PROCESS] missing videoId");
+//       return json({ ok: false, error: "videoId is required" }, { status: 400 });
+//     }
+
+//     // 2️⃣ Firestore dedup
+//     const ref = adminDb.collection("yt_processed").doc(String(videoId));
+//     try {
+//       await ref.create({
+//         videoId: String(videoId),
+//         channelId: channelId ?? null,
+//         title: title ?? null,
+//         publishedAt: publishedAt ?? null,
+//         status: "processing",
+//         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+//       });
+//       console.log("[PROCESS] firestore lock ok", videoId);
+//     } catch (e: any) {
+//       console.log("[PROCESS] firestore skip (already processed)", videoId);
+//       return json({ ok: true, skipped: true, reason: "already-processed", videoId });
+//     }
+
+//     // 3️⃣ Transcript
+//     let transcript = "";
+//     let transcriptMode: "captions" | "description" | "none" = "captions";
+//     try {
+//       transcript = await getTranscriptText(String(videoId));
+//     } catch (e) {
+//       if (isTranscriptUnavailableError(e)) {
+//         const sn = await getVideoSnippet(String(videoId));
+//         transcript = sn.description || "";
+//         transcriptMode = transcript ? "description" : "none";
+//       } else {
+//         throw e;
+//       }
+//     }
+//     console.log("[PROCESS] transcriptMode", transcriptMode, "len", transcript.length);
+
+//     // 4️⃣ AI 분석
+//     const picks = await aiPickStocks({ title, transcript });
+//     console.log("[PROCESS] picks.length", picks.length);
+
+//     // 5️⃣ Telegram
+//     const analysisNote =
+//       transcriptMode === "captions"
+//         ? "자막 기반 분석"
+//         : transcriptMode === "description"
+//           ? "자막 없음 → 설명(description) 기반 분석"
+//           : "자막/설명 부족 → 분석 신뢰도 낮음";
+
+//     if (picks.length > 0) {
+//       console.log("[PROCESS] sending telegram...");
+//       const msg = formatTelegramMessage({
+//         videoId: String(videoId),
+//         title,
+//         publishedAt,
+//         picks,
+//         transcriptSample: transcript.slice(0, 220).trim(),
+//         analysisNote,
+//       });
+//       await sendTelegram(msg);
+//       console.log("[PROCESS] telegram sent");
+//     } else {
+//       console.log("[PROCESS] no picks → telegram skipped");
+//     }
+
+//     await ref.set(
+//       {
+//         transcriptMode,
+//         picksCount: picks.length,
+//         status: picks.length > 0 ? "sent" : "no-picks",
+//       },
+//       { merge: true }
+//     );
+
+//     return json({ ok: true, videoId, picksCount: picks.length });
+//   } catch (e: any) {
+//     console.error("[PROCESS] error", e);
+//     return json({ ok: false, error: e?.message ?? "process failed" }, { status: 500 });
+//   }
+// }
 
 export async function POST({ request, url }: any) {
   try {
-    // ✅ 1) QStash 서명 검증 (외부 임의 호출 차단)
+    console.log("[PROCESS] hit", {
+      hasSignature: !!request.headers.get("Upstash-Signature"),
+      url: url.href,
+    });
+
+    // 1) QStash 서명 검증
     const sig = request.headers.get("Upstash-Signature");
     verifyQstashRequestOrThrow({ signature: sig, requestUrl: url.href });
+    console.log("[PROCESS] signature ok");
 
-    const { videoId, title, publishedAt, channelId } = await request.json();
+    const { videoId, title, publishedAt, channelId, audioUrl } = await request.json();
+    console.log("[PROCESS] payload", { videoId, channelId, hasAudioUrl: !!audioUrl });
+
     if (!videoId) return json({ ok: false, error: "videoId is required" }, { status: 400 });
+    if (!audioUrl) return json({ ok: false, error: "audioUrl is required (for STT)" }, { status: 400 });
 
-    // ✅ 2) Firestore dedup (원자적으로 create)
+    // 2) Firestore dedup lock
     const ref = adminDb.collection("yt_processed").doc(String(videoId));
-
     try {
       await ref.create({
         videoId: String(videoId),
@@ -133,76 +232,53 @@ export async function POST({ request, url }: any) {
         status: "processing",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-    } catch (e: any) {
-      // 이미 존재하면 “이미 처리됨/처리중”으로 보고 스킵 → 중복 전송 방지
-      const code = e?.code || e?.details || "";
-      return json({ ok: true, skipped: true, reason: "already-processed", videoId, firestore: String(code) });
+      console.log("[PROCESS] firestore lock ok", videoId);
+    } catch {
+      console.log("[PROCESS] already processed -> skip", videoId);
+      return json({ ok: true, skipped: true, reason: "already-processed", videoId });
     }
 
-    // 1) 자막 추출
-    let transcript = "";
-    let transcriptMode: "captions" | "description" | "none" = "captions";
-    try {
-      transcript = await getTranscriptText(String(videoId));
-    } catch (e) {
-      if (isTranscriptUnavailableError(e)) {
-        const sn = await getVideoSnippet(String(videoId));
-        transcript = sn.description || "";
-        transcriptMode = transcript ? "description" : "none";
-      } else {
-        throw e;
-      }
-    }
+    // 3) STT transcript
+    console.log("[PROCESS] stt start");
+    const transcript = await transcribeAudioUrl(String(audioUrl));
+    console.log("[PROCESS] stt ok", { len: transcript.length });
 
-    // 2) AI 검증 → TopPick
+    // 4) AI picks (기존 aiPickStocks 호출)
     const picks = await aiPickStocks({ title, transcript });
+    console.log("[PROCESS] picks.length", picks.length);
 
-    // 3) 텔레그램 전송(없으면 생략 정책)
-    const analysisNote =
-      transcriptMode === "captions"
-        ? "자막 기반 분석"
-        : transcriptMode === "description"
-          ? "자막 없음 → 설명(description) 기반 분석"
-          : "자막/설명 부족 → 분석 신뢰도 낮음";
+    // 5) Telegram
     if (picks.length > 0) {
+      console.log("[PROCESS] sending telegram...");
       const msg = formatTelegramMessage({
         videoId: String(videoId),
         title,
         publishedAt,
         picks,
         transcriptSample: transcript.slice(0, 220).trim(),
-        analysisNote,
+        analysisNote: "영상 음성(STT) 기반 분석",
       });
       await sendTelegram(msg);
+      console.log("[PROCESS] telegram sent");
+    } else {
+      console.log("[PROCESS] no picks -> telegram skipped");
     }
 
-    // 처리 결과 저장
-    // await ref.set(
-    //   {
-    //     status: "sent",
-    //     sentAt: admin.firestore.FieldValue.serverTimestamp(),
-    //     picksCount: picks.length,
-    //     picks,
-    //     transcriptSample: transcript.slice(0, 300).trim(),
-    //   },
-    //   { merge: true }
-    // );
-    // Firestore 기록에 transcriptMode도 저장(추천)
     await ref.set(
       {
-        transcriptMode,
-        warning:
-          transcriptMode === "description"
-            ? "captions_unavailable_used_description"
-            : transcriptMode === "none"
-              ? "captions_and_description_missing"
-              : null,
+        status: picks.length > 0 ? "sent" : "no-picks",
+        picksCount: picks.length,
+        picks,
+        transcriptSample: transcript.slice(0, 300).trim(),
+        transcriptMode: "stt",
+        sentAt: picks.length > 0 ? admin.firestore.FieldValue.serverTimestamp() : null,
       },
       { merge: true }
     );
 
     return json({ ok: true, videoId, picksCount: picks.length });
   } catch (e: any) {
+    console.error("[PROCESS] error", e);
     return json({ ok: false, error: e?.message ?? "process failed" }, { status: 500 });
   }
 }
