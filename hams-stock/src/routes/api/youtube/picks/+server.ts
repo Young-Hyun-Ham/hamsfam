@@ -154,7 +154,7 @@ export async function GET({ url }: any) {
           publishedAt: latest.publishedAt,
           channelId,
         },
-        deduplicationId: `yt:${latest.videoId}`,
+        deduplicationId: `yt_${latest.videoId}`,
         retries: 3,
         timeout: "30s",
       });
