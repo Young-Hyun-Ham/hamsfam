@@ -48,7 +48,7 @@ export async function POST({ request, url }: any) {
     await qstashPublishJSON({
       url: processUrl,
       body: { videoId, channelId, title: entryTitle, publishedAt },
-      deduplicationId: `yt:${videoId}`,
+      deduplicationId: `yt_${videoId}`,
       retries: 3,
       timeout: "30s",
     });
