@@ -12,8 +12,7 @@ Thumbs.db
 # Env
 .env
 .env.*
-!.env.example
-!.env.test
+!.env.download
 
 # Package manager files
 *-lock.json
