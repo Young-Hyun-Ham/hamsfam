@@ -71,24 +71,43 @@ Firestore에 생성하는 **백엔드 워커(MVP)** 를 구현한다.
 ## ⚙️ 실행 방법 (Windows / PowerShell 기준)
   - 프로젝트 이동 
   - 가상환경 생성 (권장)
-  ```bash
-    python -m venv .venv
-    .venv\Scripts\Activate.ps1
-  ```
+    - window
+      ```bash
+        python -m venv .venv
+        .venv\Scripts\Activate.ps1
+      ```
+    - mac
+      ```bash
+        python -m venv .venv
+        source .venv/bin/activate
+      ```
   - 의존성 설치
   ```bash
     pip install firebase-admin httpx
   ```
   - 환경변수 설정
-  ```bash
-    $env:GOOGLE_APPLICATION_CREDENTIALS="C:\workspace\hamsfam\hams-stock\serviceAccountKey.json"
-    $env:POLL_SECONDS="60"
-    $env:DEFAULT_UID="demo"
-  ```
-  확인:
-  ```bash
-    echo $env:GOOGLE_APPLICATION_CREDENTIALS
-  ```
+    - widown powershell
+    ```bash
+      # 환경변수 추가
+      $env:GOOGLE_APPLICATION_CREDENTIALS="C:\workspace\hamsfam\hams-stock\serviceAccountKey.json"
+      # 검증
+      echo $env:GOOGLE_APPLICATION_CREDENTIALS
+    ```
+    - mac
+    ```bash
+      # 환경변수 파일 열기
+      nano ~/.zshrc
+      # 환경변수 추가
+      export GOOGLE_APPLICATION_CREDENTIALS="/Users/hyh/workspace/hamsfam/hams-stock-worker/serviceAccountKey.json"
+      export POLL_SECONDS="60"
+      export DEFAULT_UID="demo"
+      # 즉시적용
+      source ~/.zshrc
+      # 검증
+      echo $GOOGLE_APPLICATION_CREDENTIALS
+      echo $POLL_SECONDS
+      echo $DEFAULT_UID
+    ```
   - 워커 실행
   ```bash
     python worker.py run

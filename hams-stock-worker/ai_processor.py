@@ -107,7 +107,7 @@ class AiProcessor:
         )
         return resp.output_parsed  # type: ignore
 
-    async def process_batch(self, db: firestore.Client, uid: Optional[str] = None, telegram_notify: bool = True) -> int:
+    async def process_batch(self, db: firestore.Client, uid: Optional[str] = None, telegram_notify: Optional[bool] = False) -> int:
         """
         uid를 넘기면 해당 uid의 stt_done만 처리 (테스트/운영 편의)
         """

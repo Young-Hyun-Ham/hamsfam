@@ -18,8 +18,14 @@ class TelegramNotifier:
     def _post(self, method: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         url = f"{self.base}/{method}"
         r = requests.post(url, json=payload, timeout=30)
-        r.raise_for_status()
-        data = r.json()
+        try:
+            data = r.json()
+        except Exception:
+            data = {"raw": r.text}
+
+        if r.status_code != 200:
+            raise RuntimeError(f"Telegram HTTP {r.status_code}: {data}")
+
         if not data.get("ok"):
             raise RuntimeError(f"Telegram API error: {data}")
         return data

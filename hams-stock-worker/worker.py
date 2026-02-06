@@ -178,7 +178,7 @@ async def main_loop():
             # queued -> stt_done
             await stt.process_batch(db)
             # stt_done -> ai_done
-            await ai.process_batch(db)
+            await ai.process_batch(db, telegram_notify=True)
         except Exception as e:
             print("[ERROR]", repr(e))
 
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         print(f"[TEST-AI] uid={args.uid}")
         db = init_firestore()
         ai = AiProcessor()
-        asyncio.run(ai.process_batch(db, uid=args.uid))
+        asyncio.run(ai.process_batch(db, uid=args.uid, telegram_notify=True))
 
     elif args.command == "test-all":
         print(f"[TEST] uid={args.uid} channelId={args.channelId} videoId={args.videoId}")
@@ -285,6 +285,6 @@ if __name__ == "__main__":
         stt = SttProcessor()
         asyncio.run(stt.process_batch(db))
         ai = AiProcessor()
-        asyncio.run(ai.process_batch(db, uid=args.uid, telegram_notify=False))
+        asyncio.run(ai.process_batch(db, uid=args.uid, telegram_notify=True))
     else: 
         print("Unknown command")
