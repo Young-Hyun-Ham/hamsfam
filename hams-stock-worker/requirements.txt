@@ -1,9 +1,11 @@
 fastapi
 uvicorn
 yt-dlp
-openai-whisper
-torch
 firebase-admin 
 httpx 
 feedparser 
 python-dotenv
+faster-whisper 
+openai 
+pydantic
+requests

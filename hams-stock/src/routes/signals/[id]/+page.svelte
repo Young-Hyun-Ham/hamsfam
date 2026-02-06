@@ -28,7 +28,7 @@
     return String(t);
   }
 
-  const PREVIEW_CHARS = 600;
+  const PREVIEW_CHARS = 200;
 
   let loading = true;
   let notFound = false;
@@ -191,12 +191,12 @@
         {#if transcriptText}
           <div class="tctl">
             {#if isTranscriptLong}
-              <button class="pill" type="button" on:click={toggleTranscript}>
-                {transcriptOpen ? "접기" : "펼치기"}
-              </button>
               <span class="tmsg">
                 {transcriptOpen ? "전체 표시 중" : `미리보기(${PREVIEW_CHARS.toLocaleString()}자)` }
               </span>
+              <button class="pill" type="button" on:click={toggleTranscript}>
+                {transcriptOpen ? "접기" : "펼치기"}
+              </button>
             {:else}
               <span class="tmsg">전체 스트립트 내용이 짧아서 전체 표시 중</span>
             {/if}

@@ -1,0 +1,23 @@
+node_modules
+
+# Output
+.output
+__pycache__/*
+.venv/*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Package manager files
+*-lock.json
+*-lock.yaml
+
+# Firebase admin SDK key
+serviceAccountKey.json
